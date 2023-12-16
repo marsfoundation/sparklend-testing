@@ -10,3 +10,6 @@
 [submodule "lib/aave-v3-core"]
 	path = lib/aave-v3-core
 	url = git@github.com:marsfoundation/aave-v3-core.git
+[submodule "lib/erc20-helpers"]
+	path = lib/erc20-helpers
+	url = https://github.com/marsfoundation/erc20-helpers
