@@ -5,9 +5,9 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import { InitializableAdminUpgradeabilityProxy } from 'aave-v3-core/contracts/dependencies/openzeppelin/upgradeability/InitializableAdminUpgradeabilityProxy.sol';
+import { InitializableAdminUpgradeabilityProxy } from "aave-v3-core/contracts/dependencies/openzeppelin/upgradeability/InitializableAdminUpgradeabilityProxy.sol";
 
-import { AaveOracle }                               from 'aave-v3-core/contracts/misc/AaveOracle.sol';
+import { AaveOracle }                               from "aave-v3-core/contracts/misc/AaveOracle.sol";
 import { AaveProtocolDataProvider as DataProvider } from "aave-v3-core/contracts/misc/AaveProtocolDataProvider.sol";
 
 import { Pool }             from "aave-v3-core/contracts/protocol/pool/Pool.sol";
@@ -24,7 +24,9 @@ import { VariableDebtToken } from "aave-v3-core/contracts/protocol/tokenization/
 import { IAaveIncentivesController } from "aave-v3-core/contracts/interfaces/IAaveIncentivesController.sol";
 import { IPool }                     from "aave-v3-core/contracts/interfaces/IPool.sol";
 
-// TODO: Use git for submodules
+// TODO: Is the deploy a pool admin on mainnet?
+// TODO: Figure out where token implementations need to be configured.
+// TODO: Remove unnecessary imports.
 
 contract SparklendTestBase is Test {
 
@@ -53,7 +55,6 @@ contract SparklendTestBase is Test {
         pool             = Pool(poolAddressesProvider.getPool());
         poolConfigurator = PoolConfigurator(poolAddressesProvider.getPoolConfigurator());
 
-        // TODO: Configure these
         AToken            aTokenImpl            = new AToken(pool);
         StableDebtToken   stableDebtTokenImpl   = new StableDebtToken(pool);
         VariableDebtToken variableDebtTokenImpl = new VariableDebtToken(pool);
@@ -61,15 +62,13 @@ contract SparklendTestBase is Test {
         address[] memory assets;
         address[] memory oracles;
         AaveOracle aaveOracle = new AaveOracle({
-            provider: poolAddressesProvider,
-            assets: assets,
-            sources: oracles,
-            fallbackOracle: address(0),
-            baseCurrency: address(0),  // USD
+            provider:         poolAddressesProvider,
+            assets:           assets,
+            sources:          oracles,
+            fallbackOracle:   address(0),
+            baseCurrency:     address(0),  // USD
             baseCurrencyUnit: 1e8
         });
-
-        aclManager.addPoolAdmin(deployer);  // TODO: Why is this needed?
 
         poolAddressesProvider.setACLAdmin(deployer);
         poolAddressesProvider.setACLManager(address(aclManager));
@@ -90,7 +89,7 @@ contract SparklendTestBase is Test {
         registry.transferOwnership(admin);
     }
 
-    function test_example() public virtual {
+    function test_example() public {
 
     }
 }
