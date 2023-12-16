@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
+// TODO: Set up remappings
 
-import {stdJson} from "forge-std/StdJson.sol";
+import "forge-std/Test.sol";
 
 import { InitializableAdminUpgradeabilityProxy } from 'aave-v3-core/contracts/dependencies/openzeppelin/upgradeability/InitializableAdminUpgradeabilityProxy.sol';
 
-import { AaveOracle }               from 'aave-v3-core/contracts/misc/AaveOracle.sol';
-import { AaveProtocolDataProvider } from "aave-v3-core/contracts/misc/AaveProtocolDataProvider.sol";
+import { AaveOracle }                               from 'aave-v3-core/contracts/misc/AaveOracle.sol';
+import { AaveProtocolDataProvider as DataProvider } from "aave-v3-core/contracts/misc/AaveProtocolDataProvider.sol";
 
 import { Pool }             from "aave-v3-core/contracts/protocol/pool/Pool.sol";
 import { PoolConfigurator } from "aave-v3-core/contracts/protocol/pool/PoolConfigurator.sol";
@@ -22,23 +22,82 @@ import { StableDebtToken }   from "aave-v3-core/contracts/protocol/tokenization/
 import { VariableDebtToken } from "aave-v3-core/contracts/protocol/tokenization/VariableDebtToken.sol";
 
 import { IAaveIncentivesController } from "aave-v3-core/contracts/interfaces/IAaveIncentivesController.sol";
+import { IPool }                     from "aave-v3-core/contracts/interfaces/IPool.sol";
 
-// import {Collector} from "aave-v3-periphery/treasury/Collector.sol";
-// import {CollectorController} from "aave-v3-periphery/treasury/CollectorController.sol";
-// import {RewardsController} from "aave-v3-periphery/rewards/RewardsController.sol";
-// import {EmissionManager} from "aave-v3-periphery/rewards/EmissionManager.sol";
+// import { Collector }           from "lib/aave-v3-periphery/contracts/treasury/Collector.sol";
+// import { CollectorController } from "lib/aave-v3-periphery/contracts/treasury/CollectorController.sol";
+// import { RewardsController }   from "lib/aave-v3-periphery/contracts/rewards/RewardsController.sol";
+// import { EmissionManager }     from "lib/aave-v3-periphery/contracts/rewards/EmissionManager.sol";
 
-// import {UiPoolDataProviderV3} from "aave-v3-periphery/misc/UiPoolDataProviderV3.sol";
-// import {UiIncentiveDataProviderV3} from "aave-v3-periphery/misc/UiIncentiveDataProviderV3.sol";
-// import {WrappedTokenGatewayV3} from "aave-v3-periphery/misc/WrappedTokenGatewayV3.sol";
-// import {IPool} from "aave-v3-core/contracts/interfaces/IPool.sol";
-// import {WalletBalanceProvider} from "aave-v3-periphery/misc/WalletBalanceProvider.sol";
-// import {IEACAggregatorProxy} from "aave-v3-periphery/misc/interfaces/IEACAggregatorProxy.sol";
+// import { IEACAggregatorProxy }       from "lib/aave-v3-periphery/contracts/misc/interfaces/IEACAggregatorProxy.sol";
+// import { UiIncentiveDataProviderV3 } from "lib/aave-v3-periphery/contracts/misc/UiIncentiveDataProviderV3.sol";
+// import { UiPoolDataProviderV3 }      from "lib/aave-v3-periphery/contracts/misc/UiPoolDataProviderV3.sol";
+// import { WalletBalanceProvider }     from "lib/aave-v3-periphery/contracts/misc/WalletBalanceProvider.sol";
+// import { WrappedTokenGatewayV3 }     from "lib/aave-v3-periphery/contracts/misc/WrappedTokenGatewayV3.sol";
+
+// TODO: Use git for submodules
 
 contract SparklendTestBase is Test {
 
-    function setUp() public virtual {
+    address admin = makeAddr("admin");
 
+    Pool             pool;
+    PoolConfigurator poolConfigurator;
+
+    function setUp() public virtual {
+        address deployer = address(this);
+
+        PoolAddressesProvider poolAddressesProvider = new PoolAddressesProvider("0", deployer);
+        PoolConfigurator      poolConfiguratorImpl  = new PoolConfigurator();
+
+        PoolAddressesProviderRegistry registry = new PoolAddressesProviderRegistry(deployer);
+
+        poolAddressesProvider.setACLAdmin(deployer);
+
+        ACLManager   aclManager           = new ACLManager(poolAddressesProvider);
+        Pool         poolImpl             = new Pool(poolAddressesProvider);
+        DataProvider protocolDataProvider = new DataProvider(poolAddressesProvider);
+
+        poolAddressesProvider.setPoolImpl(address(poolImpl));
+        poolAddressesProvider.setPoolConfiguratorImpl(address(poolConfiguratorImpl));
+
+        pool             = Pool(poolAddressesProvider.getPool());
+        poolConfigurator = PoolConfigurator(poolAddressesProvider.getPoolConfigurator());
+
+        AToken            aTokenImpl            = new AToken(pool);
+        StableDebtToken   stableDebtTokenImpl   = new StableDebtToken(pool);
+        VariableDebtToken variableDebtTokenImpl = new VariableDebtToken(pool);
+
+        address[] memory assets;
+        address[] memory oracles;
+        AaveOracle aaveOracle = new AaveOracle({
+            provider: poolAddressesProvider,
+            assets: assets,
+            sources: oracles,
+            fallbackOracle: address(0),
+            baseCurrency: address(0),  // USD
+            baseCurrencyUnit: 1e8
+        });
+
+        aclManager.addPoolAdmin(deployer);  // TODO: Why is this needed?
+
+        poolAddressesProvider.setACLAdmin(deployer);
+        poolAddressesProvider.setACLManager(address(aclManager));
+        poolAddressesProvider.setPoolDataProvider(address(protocolDataProvider));
+        poolAddressesProvider.setPriceOracle(address(aaveOracle));
+
+        registry.registerAddressesProvider(address(poolAddressesProvider), 1);
+
+        aclManager.addEmergencyAdmin(admin);
+        aclManager.addPoolAdmin(admin);
+        aclManager.removePoolAdmin(deployer);
+        aclManager.grantRole(aclManager.DEFAULT_ADMIN_ROLE(), admin);
+        aclManager.revokeRole(aclManager.DEFAULT_ADMIN_ROLE(), deployer);
+
+        poolAddressesProvider.setACLAdmin(admin);
+        poolAddressesProvider.transferOwnership(admin);
+
+        registry.transferOwnership(admin);
     }
 
     function test_example() public virtual {
