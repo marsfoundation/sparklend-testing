@@ -26,8 +26,8 @@ import { IAaveIncentivesController }    from "aave-v3-core/interfaces/IAaveIncen
 import { IPool }                        from "aave-v3-core/interfaces/IPool.sol";
 import { IReserveInterestRateStrategy } from "aave-v3-core/interfaces/IReserveInterestRateStrategy.sol";
 
-import { IERC20 } from "erc20-helpers/interfaces/IERC20.sol";
-import { ERC20 }  from "erc20-helpers/ERC20.sol";
+import { IERC20 }    from "erc20-helpers/interfaces/IERC20.sol";
+import { MockERC20 } from "erc20-helpers/MockERC20.sol";
 
 // TODO: Is the deploy a pool admin on mainnet?
 // TODO: Figure out where token implementations need to be configured.
@@ -43,6 +43,8 @@ contract SparklendTestBase is Test {
     AToken            aTokenImpl;
     StableDebtToken   stableDebtTokenImpl;
     VariableDebtToken variableDebtTokenImpl;
+
+    MockERC20 borrowAsset;
 
     function setUp() public virtual {
         address deployer = address(this);
@@ -111,11 +113,9 @@ contract SparklendTestBase is Test {
                 optimalStableToTotalDebtRatio: 0
             }));
 
-        _setUpReserve(IERC20(makeAddr("DAI")), strategy);
-    }
+        borrowAsset = new MockERC20("Borrow Asset", "BRRW", 18);
 
-    function test_example() public {
-
+        _setUpReserve(IERC20(address(borrowAsset)), strategy);
     }
 
     function _setUpReserve(IERC20 token, IReserveInterestRateStrategy strategy) internal {
