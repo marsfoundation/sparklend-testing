@@ -8,19 +8,26 @@ import { InitializableAdminUpgradeabilityProxy } from "aave-v3-core/dependencies
 import { AaveOracle }                               from "aave-v3-core/misc/AaveOracle.sol";
 import { AaveProtocolDataProvider as DataProvider } from "aave-v3-core/misc/AaveProtocolDataProvider.sol";
 
-import { Pool }             from "aave-v3-core/protocol/pool/Pool.sol";
-import { PoolConfigurator } from "aave-v3-core/protocol/pool/PoolConfigurator.sol";
-
 import { ACLManager }                    from "aave-v3-core/protocol/configuration/ACLManager.sol";
 import { PoolAddressesProvider }         from "aave-v3-core/protocol/configuration/PoolAddressesProvider.sol";
 import { PoolAddressesProviderRegistry } from "aave-v3-core/protocol/configuration/PoolAddressesProviderRegistry.sol";
+
+import { DefaultReserveInterestRateStrategy } from "aave-v3-core/protocol/pool/DefaultReserveInterestRateStrategy.sol";
+import { Pool }                               from "aave-v3-core/protocol/pool/Pool.sol";
+import { PoolConfigurator }                   from "aave-v3-core/protocol/pool/PoolConfigurator.sol";
+
+import { ConfiguratorInputTypes } from "aave-v3-core/protocol/libraries/types/ConfiguratorInputTypes.sol";
 
 import { AToken }            from "aave-v3-core/protocol/tokenization/AToken.sol";
 import { StableDebtToken }   from "aave-v3-core/protocol/tokenization/StableDebtToken.sol";
 import { VariableDebtToken } from "aave-v3-core/protocol/tokenization/VariableDebtToken.sol";
 
-import { IAaveIncentivesController } from "aave-v3-core/interfaces/IAaveIncentivesController.sol";
-import { IPool }                     from "aave-v3-core/interfaces/IPool.sol";
+import { IAaveIncentivesController }    from "aave-v3-core/interfaces/IAaveIncentivesController.sol";
+import { IPool }                        from "aave-v3-core/interfaces/IPool.sol";
+import { IReserveInterestRateStrategy } from "aave-v3-core/interfaces/IReserveInterestRateStrategy.sol";
+
+import { IERC20 } from "erc20-helpers/interfaces/IERC20.sol";
+import { ERC20 }  from "erc20-helpers/ERC20.sol";
 
 // TODO: Is the deploy a pool admin on mainnet?
 // TODO: Figure out where token implementations need to be configured.
@@ -32,6 +39,10 @@ contract SparklendTestBase is Test {
 
     Pool             pool;
     PoolConfigurator poolConfigurator;
+
+    AToken            aTokenImpl;
+    StableDebtToken   stableDebtTokenImpl;
+    VariableDebtToken variableDebtTokenImpl;
 
     function setUp() public virtual {
         address deployer = address(this);
@@ -53,9 +64,9 @@ contract SparklendTestBase is Test {
         pool             = Pool(poolAddressesProvider.getPool());
         poolConfigurator = PoolConfigurator(poolAddressesProvider.getPoolConfigurator());
 
-        AToken            aTokenImpl            = new AToken(pool);
-        StableDebtToken   stableDebtTokenImpl   = new StableDebtToken(pool);
-        VariableDebtToken variableDebtTokenImpl = new VariableDebtToken(pool);
+        aTokenImpl            = new AToken(pool);
+        stableDebtTokenImpl   = new StableDebtToken(pool);
+        variableDebtTokenImpl = new VariableDebtToken(pool);
 
         address[] memory assets;
         address[] memory oracles;
@@ -85,10 +96,54 @@ contract SparklendTestBase is Test {
         poolAddressesProvider.transferOwnership(admin);
 
         registry.transferOwnership(admin);
+
+        IReserveInterestRateStrategy strategy
+            = IReserveInterestRateStrategy(new DefaultReserveInterestRateStrategy({
+                provider:                      poolAddressesProvider,
+                optimalUsageRatio:             0.90e27,
+                baseVariableBorrowRate:        0.05e27,
+                variableRateSlope1:            0.02e27,
+                variableRateSlope2:            0.3e27,
+                stableRateSlope1:              0,
+                stableRateSlope2:              0,
+                baseStableRateOffset:          0,
+                stableRateExcessOffset:        0,
+                optimalStableToTotalDebtRatio: 0
+            }));
+
+        _setUpReserve(IERC20(makeAddr("DAI")), strategy);
     }
 
     function test_example() public {
 
+    }
+
+    function _setUpReserve(IERC20 token, IReserveInterestRateStrategy strategy) internal {
+        string memory symbol = token.symbol();
+
+        ConfiguratorInputTypes.InitReserveInput[] memory reserveInputs
+            = new ConfiguratorInputTypes.InitReserveInput[](1);
+
+        reserveInputs[0] = ConfiguratorInputTypes.InitReserveInput({
+            aTokenImpl:                  address(aTokenImpl),
+            stableDebtTokenImpl:         address(stableDebtTokenImpl),
+            variableDebtTokenImpl:       address(variableDebtTokenImpl),
+            underlyingAssetDecimals:     token.decimals(),
+            interestRateStrategyAddress: address(strategy),
+            underlyingAsset:             address(token),
+            treasury:                    address(token),  // TODO: Change to treasury
+            incentivesController:        address(0),
+            aTokenName:                  string(string.concat("Spark ",               symbol)),
+            aTokenSymbol:                string(string.concat("sp",                   symbol)),
+            variableDebtTokenName:       string(string.concat("Spark Variable Debt ", symbol)),
+            variableDebtTokenSymbol:     string(string.concat("variableDebt",         symbol)),
+            stableDebtTokenName:         string(string.concat("Spark Stable Debt ",   symbol)),
+            stableDebtTokenSymbol:       string(string.concat("stableDebt",           symbol)),
+            params: ""
+        });
+
+        vm.prank(admin);
+        poolConfigurator.initReserves(reserveInputs);
     }
 
 }
