@@ -53,6 +53,7 @@ contract SparklendTestBase is Test {
         pool             = Pool(poolAddressesProvider.getPool());
         poolConfigurator = PoolConfigurator(poolAddressesProvider.getPoolConfigurator());
 
+        // TODO: Configure these
         AToken            aTokenImpl            = new AToken(pool);
         StableDebtToken   stableDebtTokenImpl   = new StableDebtToken(pool);
         VariableDebtToken variableDebtTokenImpl = new VariableDebtToken(pool);
