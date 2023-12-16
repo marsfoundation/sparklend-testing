@@ -1,3 +1,12 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "lib/sparklend-advanced"]
+	path = lib/sparklend-advanced
+	url = https://github.com/marsfoundation/sparklend-advanced
+[submodule "lib/aave-v3-periphery"]
+	path = lib/aave-v3-periphery
+	url = https://github.com/aave/aave-v3-periphery
+[submodule "lib/aave-v3-core"]
+	path = lib/aave-v3-core
+	url = git@github.com:marsfoundation/aave-v3-core.git
