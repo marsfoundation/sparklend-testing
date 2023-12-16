@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.13;
 
-// TODO: Set up remappings
-
 import "forge-std/Test.sol";
 
 import { InitializableAdminUpgradeabilityProxy } from "aave-v3-core/contracts/dependencies/openzeppelin/upgradeability/InitializableAdminUpgradeabilityProxy.sol";
@@ -27,6 +25,7 @@ import { IPool }                     from "aave-v3-core/contracts/interfaces/IPo
 // TODO: Is the deploy a pool admin on mainnet?
 // TODO: Figure out where token implementations need to be configured.
 // TODO: Remove unnecessary imports.
+// TODO: Set up remappings.
 
 contract SparklendTestBase is Test {
 
