@@ -10,7 +10,13 @@ contract SupplyTests is SparklendTestBase {
     address supplier = makeAddr("supplier");
 
     function test_supply() public {
-        borrowAsset.mint(address(this), 1000 ether);
+        uint256 amount = 1000 ether;
+
+        collateralAsset.mint(supplier, 1000 ether);
+
+        vm.startPrank(supplier);
+        collateralAsset.approve(address(pool), 1000 ether);
+        pool.supply(address(collateralAsset), amount, supplier, 0);
     }
 
 }
