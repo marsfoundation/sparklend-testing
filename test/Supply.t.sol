@@ -7,8 +7,10 @@ import { SparklendTestBase } from "./SparklendTestBase.sol";
 
 contract SupplyTests is SparklendTestBase {
 
-    function test_supply() public {
+    address supplier = makeAddr("supplier");
 
+    function test_supply() public {
+        borrowAsset.mint(address(this), 1000 ether);
     }
 
 }

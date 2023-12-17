@@ -47,8 +47,8 @@ contract SparklendTestBase is Test {
     StableDebtToken   stableDebtTokenImpl;
     VariableDebtToken variableDebtTokenImpl;
 
-
     MockERC20 borrowAsset;
+    MockERC20 collateralAsset;
 
     function setUp() public virtual {
         address deployer = address(this);
@@ -117,10 +117,13 @@ contract SparklendTestBase is Test {
                 optimalStableToTotalDebtRatio: 0
             }));
 
-        borrowAsset = new MockERC20("Borrow Asset", "BRRW", 18);
+        collateralAsset = new MockERC20("Collateral Asset", "BRRW", 18);
+        borrowAsset     = new MockERC20("Borrow Asset", "BRRW", 18);
 
-        _initReserve(IERC20(address(borrowAsset)), strategy);
+        _initReserve(IERC20(address(collateralAsset)), strategy);  // TODO: Use different strategy
+        _initReserve(IERC20(address(borrowAsset)),     strategy);
 
+        _setUpMockOracle(address(borrowAsset), int256(1e8));
         _setUpMockOracle(address(borrowAsset), int256(1e8));
     }
 
