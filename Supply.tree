@@ -1,0 +1,60 @@
+pool.supply()
+├── when amount is zero
+│  └── revert (boundary)
+├── when not active
+│  └── revert
+├── when paused
+│  └── revert
+├── when frozen
+│  └── revert
+├── when not supplyCap == 0 && amount puts over supply cap
+│  └── revert (boundary)
+├── when approval is insufficient
+│  └── revert (boundary)
+├── when `aToken.mint` is not called by the Pool (aToken unit test)
+│  └── revert
+├── when `aToken._mintScaled` results in a scaled amount that's zero (aToken unit test)
+│  └── revert
+├── given incentivesController != address(0) in `MintableIncentivizedERC20._mint`
+│  └── TODO: Handle this case
+└── given incentivesController == address(0)
+   ├── given this is the first supply
+   │  ├── given the debt ceiling is not zero
+   │  │  ├── given msg.sender DOES NOT have ISOLATED_COLLATERAL_SUPPLIER_ROLE
+   │  │  │  └── success without automatic collateral supply
+   │  │  └── given msg.sender DOES have ISOLATED_COLLATERAL_SUPPLIER_ROLE
+   │  │     ├── given the LTV is zero
+   │  │     │  └── success with no automatic collateral supply
+   │  │     └── given the LTV is NOT zero
+   │  │        ├── given the user IS NOT using any other collateral
+   │  │        │  └── success with automatic collateral supply
+   │  │        └── given the user IS using any other collateral
+   │  │           ├── given the user is using a single collateral type
+   │  │           │  ├── given the collateral type has a debt ceiling that is NOT zero
+   │  │           │  │  └── success without automatic collateral supply
+   │  │           │  └── given the collateral type has a debt ceiling that is zero
+   │  │           │     └── success with automatic collateral supply
+   │  │           └── given the user is using multiple collateral types
+   │  │              ├── given the collateral type has a debt ceiling above zero
+   │  │              │  └── success without automatic collateral supply
+   │  │              └── given the collateral type has a debt ceiling that is zero
+   │  │                 └── success with automatic collateral supply
+   │  └── given the debt ceiling is zero
+   │     ├── given the LTV is zero
+   │     │  └── success with no automatic collateral supply
+   │     └── given the LTV is NOT zero
+   │           ├── given the user IS NOT using any other collateral
+   │           │  └── success with automatic collateral supply
+   │           └── given the user IS using any other collateral
+   │              ├── given the user is using a single collateral type
+   │              │  ├── given the collateral type has a debt ceiling that is NOT zero
+   │              │  │  └── success without automatic collateral supply
+   │              │  └── given the collateral type has a debt ceiling that is zero
+   │              │     └── success with automatic collateral supply
+   │              └── given the user is using multiple collateral types
+   │                 ├── given the collateral type has a debt ceiling above zero
+   │                 │  └── success without automatic collateral supply
+   │                 └── given the collateral type has a debt ceiling that is zero
+   │                    └── success with automatic collateral supply
+   └── given this is NOT the first supply
+      └── success without automatic collateral supply

@@ -148,7 +148,7 @@ contract SparklendTestBase is Test {
             variableDebtTokenSymbol:     string(string.concat("variableDebt",         symbol)),
             stableDebtTokenName:         string(string.concat("Spark Stable Debt ",   symbol)),
             stableDebtTokenSymbol:       string(string.concat("stableDebt",           symbol)),
-            params: ""
+            params:                      ""
         });
 
         vm.prank(admin);
