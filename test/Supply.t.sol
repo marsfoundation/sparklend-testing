@@ -8,7 +8,7 @@ import { SparklendTestBase } from "./SparklendTestBase.sol";
 contract SupplyTests is SparklendTestBase {
 
     function test_supply() public {
-        assertTrue(true);
+
     }
 
 }

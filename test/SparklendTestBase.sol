@@ -29,6 +29,8 @@ import { IReserveInterestRateStrategy } from "aave-v3-core/interfaces/IReserveIn
 import { IERC20 }    from "erc20-helpers/interfaces/IERC20.sol";
 import { MockERC20 } from "erc20-helpers/MockERC20.sol";
 
+import { MockOracle } from "./mocks/MockOracle.sol";
+
 // TODO: Is the deploy a pool admin on mainnet?
 // TODO: Figure out where token implementations need to be configured.
 // TODO: Remove unnecessary imports.
@@ -37,12 +39,14 @@ contract SparklendTestBase is Test {
 
     address admin = makeAddr("admin");
 
+    AaveOracle       aaveOracle;
     Pool             pool;
     PoolConfigurator poolConfigurator;
 
     AToken            aTokenImpl;
     StableDebtToken   stableDebtTokenImpl;
     VariableDebtToken variableDebtTokenImpl;
+
 
     MockERC20 borrowAsset;
 
@@ -72,7 +76,7 @@ contract SparklendTestBase is Test {
 
         address[] memory assets;
         address[] memory oracles;
-        AaveOracle aaveOracle = new AaveOracle({
+        aaveOracle = new AaveOracle({
             provider:         poolAddressesProvider,
             assets:           assets,
             sources:          oracles,
@@ -115,10 +119,12 @@ contract SparklendTestBase is Test {
 
         borrowAsset = new MockERC20("Borrow Asset", "BRRW", 18);
 
-        _setUpReserve(IERC20(address(borrowAsset)), strategy);
+        _initReserve(IERC20(address(borrowAsset)), strategy);
+
+        _setUpMockOracle(address(borrowAsset), int256(1e8));
     }
 
-    function _setUpReserve(IERC20 token, IReserveInterestRateStrategy strategy) internal {
+    function _initReserve(IERC20 token, IReserveInterestRateStrategy strategy) internal {
         string memory symbol = token.symbol();
 
         ConfiguratorInputTypes.InitReserveInput[] memory reserveInputs
@@ -144,6 +150,20 @@ contract SparklendTestBase is Test {
 
         vm.prank(admin);
         poolConfigurator.initReserves(reserveInputs);
+    }
+
+    function _setUpMockOracle(address asset, int256 price) internal {
+        MockOracle oracle = new MockOracle();
+
+        oracle.__setPrice(int256(price));
+
+        address[] memory assets  = new address[](1);
+        address[] memory sources = new address[](1);
+        assets[0]  = asset;
+        sources[0] = address(oracle);
+
+        vm.prank(admin);
+        aaveOracle.setAssetSources(assets, sources);
     }
 
 }
