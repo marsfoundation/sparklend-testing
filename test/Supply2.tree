@@ -49,9 +49,6 @@ pool.supply()
                   └── given the collateral type has a debt ceiling that is zero
                      └── it should succeed with automatic collateral supply
                └── when the user is using multiple collateral types
-                  ├── given the collateral type has a debt ceiling above zero
-                     └── it should succeed without automatic collateral supply
-                  └── given the collateral type has a debt ceiling that is zero
-                     └── it should succeed with automatic collateral supply
+                  └── it should succeed with automatic collateral supply (NOTE: DC is already IS zero so condition on line 722 in ValidationLogic doesn't apply)
    └── when this is NOT the first supply
       └── it should succeed without automatic collateral supply

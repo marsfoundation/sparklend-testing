@@ -139,11 +139,18 @@ contract SupplyConcreteTests is SparklendTestBase {
 
     modifier givenFirstSupply { _; }
 
+    modifier givenNotFirstSupply {
+        _supply(makeAddr("new-user"), address(collateralAsset));
+        _;
+    }
+
     modifier givenDebtCeilingGtZero {
         vm.prank(admin);
         poolConfigurator.setDebtCeiling(address(collateralAsset), 1000);
         _;
     }
+
+    modifier givenZeroDebtCeiling { _; }
 
     modifier givenUserHasNoIsolatedCollateralRole { _; }
 
@@ -172,7 +179,7 @@ contract SupplyConcreteTests is SparklendTestBase {
         // NOTE: Have to set the debt ceiling to non-zero value here because once a user supplies
         //       with a zero debt ceiling it cannot be set, can be set to zero though.
         _setCollateralDebtCeiling(otherCollateral1, 1000);
-        _supplyAndUseAsCollateral(otherCollateral1);
+        _supplyAndUseAsCollateral(supplier, otherCollateral1);
         _;
     }
 
@@ -192,12 +199,12 @@ contract SupplyConcreteTests is SparklendTestBase {
         otherCollateral1 = _setUpNewCollateral();
         otherCollateral2 = _setUpNewCollateral();
 
-        _supplyAndUseAsCollateral(otherCollateral1);
-        _supplyAndUseAsCollateral(otherCollateral2);
+        _supplyAndUseAsCollateral(supplier, otherCollateral1);
+        _supplyAndUseAsCollateral(supplier, otherCollateral2);
         _;
     }
 
-    function test_supply_1()
+    function test_supply_01()
         public
         givenFirstSupply
         givenDebtCeilingGtZero
@@ -207,7 +214,7 @@ contract SupplyConcreteTests is SparklendTestBase {
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_2()
+    function test_supply_02()
         public
         givenFirstSupply
         givenDebtCeilingGtZero
@@ -218,7 +225,7 @@ contract SupplyConcreteTests is SparklendTestBase {
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_5()
+    function test_supply_05()
         public
         givenFirstSupply
         givenDebtCeilingGtZero
@@ -230,7 +237,7 @@ contract SupplyConcreteTests is SparklendTestBase {
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_6()
+    function test_supply_06()
         public
         givenFirstSupply
         givenDebtCeilingGtZero
@@ -244,7 +251,7 @@ contract SupplyConcreteTests is SparklendTestBase {
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_7()
+    function test_supply_07()
         public
         givenFirstSupply
         givenDebtCeilingGtZero
@@ -258,7 +265,7 @@ contract SupplyConcreteTests is SparklendTestBase {
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_8()
+    function test_supply_08()
         public
         givenFirstSupply
         givenDebtCeilingGtZero
@@ -266,6 +273,82 @@ contract SupplyConcreteTests is SparklendTestBase {
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
         whenUserIsUsingMultipleOtherCollaterals
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
+
+    function test_supply_09()
+        public
+        givenFirstSupply
+        givenZeroDebtCeiling
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
+
+    function test_supply_10()
+        public
+        givenFirstSupply
+        givenZeroDebtCeiling
+        givenLtvIsZero
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
+
+    function test_supply_11()
+        public
+        givenFirstSupply
+        givenZeroDebtCeiling
+        givenLtvIsNotZero
+        whenUserIsNotUsingOtherCollateral
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
+
+    function test_supply_12()
+        public
+        givenFirstSupply
+        givenZeroDebtCeiling
+        givenLtvIsNotZero
+        whenUserIsUsingOtherCollateral
+        whenUserIsUsingOneOtherCollateral
+        givenOneOtherCollateralHasDebtCeilingGtZero
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
+
+    function test_supply_13()
+        public
+        givenFirstSupply
+        givenZeroDebtCeiling
+        givenLtvIsNotZero
+        whenUserIsUsingOtherCollateral
+        whenUserIsUsingOneOtherCollateral
+        givenOneOtherCollateralHasZeroDebtCeiling
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
+
+    function test_supply_14()
+        public
+        givenFirstSupply
+        givenZeroDebtCeiling
+        givenLtvIsNotZero
+        whenUserIsUsingOtherCollateral
+        whenUserIsUsingMultipleOtherCollaterals
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
+
+    function test_supply_15()
+        public
+        givenNotFirstSupply
     {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
@@ -300,13 +383,22 @@ contract SupplyConcreteTests is SparklendTestBase {
         poolConfigurator.configureReserveAsCollateral(newCollateralAsset, 100, 100, 100_01);
     }
 
-    function _supplyAndUseAsCollateral(address newCollateralAsset) internal {
-        vm.startPrank(supplier);
-        MockERC20(newCollateralAsset).mint(supplier, 1000 ether);
-        MockERC20(newCollateralAsset).approve(address(pool), 1000 ether);
-        pool.supply(newCollateralAsset, 1000 ether, supplier, 0);
+    function _useAsCollateral(address user, address newCollateralAsset) internal {
+        vm.prank(user);
         pool.setUserUseReserveAsCollateral(newCollateralAsset, true);
+    }
+
+    function _supply(address user, address newCollateralAsset) internal {
+        vm.startPrank(user);
+        MockERC20(newCollateralAsset).mint(user, 1000 ether);
+        MockERC20(newCollateralAsset).approve(address(pool), 1000 ether);
+        pool.supply(newCollateralAsset, 1000 ether, user, 0);
         vm.stopPrank();
+    }
+
+    function _supplyAndUseAsCollateral(address user, address newCollateralAsset) internal {
+        _supply(user, newCollateralAsset);
+        _useAsCollateral(user, newCollateralAsset);
     }
 
     function _setCollateralDebtCeiling(address newCollateralAsset, uint256 ceiling) internal {
