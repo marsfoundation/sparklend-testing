@@ -3,8 +3,6 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import { InitializableAdminUpgradeabilityProxy } from "aave-v3-core/dependencies/openzeppelin/upgradeability/InitializableAdminUpgradeabilityProxy.sol";
-
 import { AaveOracle }                               from "aave-v3-core/misc/AaveOracle.sol";
 import { AaveProtocolDataProvider as DataProvider } from "aave-v3-core/misc/AaveProtocolDataProvider.sol";
 
@@ -22,8 +20,6 @@ import { AToken }            from "aave-v3-core/protocol/tokenization/AToken.sol
 import { StableDebtToken }   from "aave-v3-core/protocol/tokenization/StableDebtToken.sol";
 import { VariableDebtToken } from "aave-v3-core/protocol/tokenization/VariableDebtToken.sol";
 
-import { IAaveIncentivesController }    from "aave-v3-core/interfaces/IAaveIncentivesController.sol";
-import { IPool }                        from "aave-v3-core/interfaces/IPool.sol";
 import { IReserveInterestRateStrategy } from "aave-v3-core/interfaces/IReserveInterestRateStrategy.sol";
 
 import { IERC20 }    from "erc20-helpers/interfaces/IERC20.sol";
@@ -39,9 +35,11 @@ contract SparklendTestBase is Test {
 
     address admin = makeAddr("admin");
 
-    AaveOracle       aaveOracle;
-    Pool             pool;
-    PoolConfigurator poolConfigurator;
+    AaveOracle            aaveOracle;
+    ACLManager            aclManager;
+    Pool                  pool;
+    PoolAddressesProvider poolAddressesProvider;
+    PoolConfigurator      poolConfigurator;
 
     AToken            aTokenImpl;
     StableDebtToken   stableDebtTokenImpl;
@@ -53,14 +51,16 @@ contract SparklendTestBase is Test {
     function setUp() public virtual {
         address deployer = address(this);
 
-        PoolAddressesProvider poolAddressesProvider = new PoolAddressesProvider("0", deployer);
-        PoolConfigurator      poolConfiguratorImpl  = new PoolConfigurator();
+        poolAddressesProvider = new PoolAddressesProvider("0", deployer);
+
+        PoolConfigurator poolConfiguratorImpl = new PoolConfigurator();
 
         PoolAddressesProviderRegistry registry = new PoolAddressesProviderRegistry(deployer);
 
         poolAddressesProvider.setACLAdmin(deployer);
 
-        ACLManager   aclManager           = new ACLManager(poolAddressesProvider);
+        aclManager = new ACLManager(poolAddressesProvider);
+
         Pool         poolImpl             = new Pool(poolAddressesProvider);
         DataProvider protocolDataProvider = new DataProvider(poolAddressesProvider);
 
@@ -117,14 +117,14 @@ contract SparklendTestBase is Test {
                 optimalStableToTotalDebtRatio: 0
             }));
 
-        collateralAsset = new MockERC20("Collateral Asset", "BRRW", 18);
-        borrowAsset     = new MockERC20("Borrow Asset", "BRRW", 18);
+        collateralAsset = new MockERC20("Collateral Asset", "COLL", 18);
+        borrowAsset     = new MockERC20("Borrow Asset",     "BRRW", 18);
 
         _initReserve(IERC20(address(collateralAsset)), strategy);  // TODO: Use different strategy
         _initReserve(IERC20(address(borrowAsset)),     strategy);
 
-        _setUpMockOracle(address(borrowAsset), int256(1e8));
-        _setUpMockOracle(address(borrowAsset), int256(1e8));
+        _setUpMockOracle(address(collateralAsset), int256(1e8));
+        _setUpMockOracle(address(borrowAsset),     int256(1e8));
     }
 
     function _initReserve(IERC20 token, IReserveInterestRateStrategy strategy) internal {

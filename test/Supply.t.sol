@@ -3,13 +3,18 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import { Errors } from "lib/aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
+import { Errors }  from "aave-v3-core/protocol/libraries/helpers/Errors.sol";
+import { IAToken } from "aave-v3-core/protocol/tokenization/AToken.sol";
 
-import { IAToken } from "lib/aave-v3-core/contracts/interfaces/IAToken.sol";
+import {
+    DefaultReserveInterestRateStrategy,
+    IERC20,
+    IReserveInterestRateStrategy,
+    MockERC20,
+    SparklendTestBase
+} from "./SparklendTestBase.sol";
 
-import { SparklendTestBase } from "./SparklendTestBase.sol";
-
-contract SupplyConcreteFailureTests is SparklendTestBase {
+contract SupplyFailureTests is SparklendTestBase {
 
     address supplier = makeAddr("supplier");
 
@@ -113,5 +118,122 @@ contract SupplyConcreteFailureTests is SparklendTestBase {
         IAToken(aToken).mint(address(this), address(this), 0, 1e18);
     }
 
+}
+
+contract SupplyConcreteTests is SparklendTestBase {
+
+    address supplier = makeAddr("supplier");
+
+    function setUp() public override {
+        super.setUp();
+
+        collateralAsset.mint(supplier, 1000 ether);
+
+        vm.prank(supplier);
+        collateralAsset.approve(address(pool), 1000 ether);
+    }
+
+    modifier givenFirstSupply { _; }
+
+    modifier givenDebtCeilingGtZero {
+        vm.prank(admin);
+        poolConfigurator.setDebtCeiling(address(collateralAsset), 1000);
+        _;
+    }
+
+    modifier givenUserHasNoIsolatedCollateralRole { _; }
+
+    modifier givenUserDoesHaveIsolatedCollateralRole {
+        vm.prank(admin);
+        aclManager.grantRole(keccak256('ISOLATED_COLLATERAL_SUPPLIER'), supplier);
+        _;
+    }
+
+    modifier givenLtvIsZero { _; }
+
+    modifier givenLtvIsNotZero {
+        // Set LTV to 1%
+        vm.prank(admin);
+        poolConfigurator.configureReserveAsCollateral(address(collateralAsset), 100, 100, 100_01);
+        _;
+    }
+
+    modifier whenUserIsNotUsingOtherCollateral { _; }
+
+    modifier whenUserIsUsingOtherCollateral { _; }
+
+    modifier whenUserIsUsingOneOtherCollateral {
+        IReserveInterestRateStrategy strategy
+            = IReserveInterestRateStrategy(new DefaultReserveInterestRateStrategy({
+                provider:                      poolAddressesProvider,
+                optimalUsageRatio:             0.90e27,
+                baseVariableBorrowRate:        0.05e27,
+                variableRateSlope1:            0.02e27,
+                variableRateSlope2:            0.3e27,
+                stableRateSlope1:              0,
+                stableRateSlope2:              0,
+                baseStableRateOffset:          0,
+                stableRateExcessOffset:        0,
+                optimalStableToTotalDebtRatio: 0
+            }));
+
+        MockERC20 newCollateralAsset = new MockERC20("Collateral Asset", "COLL", 18);
+
+        _initReserve(IERC20(address(newCollateralAsset)), strategy);
+        _setUpMockOracle(address(newCollateralAsset), int256(1e8));
+
+        // Set LTV to 1%
+        vm.prank(admin);
+        poolConfigurator.configureReserveAsCollateral(address(newCollateralAsset), 100, 100, 100_01);
+
+
+        _;
+    }
+
+    function test_supply_1()
+        public
+        givenFirstSupply
+        givenDebtCeilingGtZero
+        givenUserHasNoIsolatedCollateralRole
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
+
+    function test_supply_2()
+        public
+        givenFirstSupply
+        givenDebtCeilingGtZero
+        givenUserDoesHaveIsolatedCollateralRole
+        givenLtvIsZero
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
+
+    function test_supply_5()
+        public
+        givenFirstSupply
+        givenDebtCeilingGtZero
+        givenUserDoesHaveIsolatedCollateralRole
+        givenLtvIsNotZero
+        whenUserIsNotUsingOtherCollateral
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
+
+    function test_supply_6()
+        public
+        givenFirstSupply
+        givenDebtCeilingGtZero
+        givenUserDoesHaveIsolatedCollateralRole
+        givenLtvIsNotZero
+        whenUserIsUsingOtherCollateral
+        whenUserIsUsingOneOtherCollateral
+    {
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+    }
 }
 
