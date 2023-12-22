@@ -30,15 +30,12 @@ pool.supply()
                   └── it should succeed with automatic collateral supply
                └── when the user IS using any other collateral
                   ├── when the user is using a single collateral type
-                     ├── given the collateral type has a debt ceiling that is NOT zero
+                     ├── given the other collateral type has a debt ceiling that is NOT zero
                         └── it should succeed without automatic collateral supply
-                     └── given the collateral type has a debt ceiling that is zero
+                     └── given the other collateral type has a debt ceiling that is zero
                         └── it should succeed with automatic collateral supply
                   └── when the user is using multiple collateral types
-                     ├── given the collateral type has a debt ceiling above zero
-                        └── it should succeed without automatic collateral supply
-                     └── given the collateral type has a debt ceiling that is zero
-                        └── it should succeed with automatic collateral supply
+                     └── it should succeed without automatic collateral supply (NOTE: DC is already NOT zero so condition on line 722 in ValidationLogic doesn't apply)
       └── given the debt ceiling is zero
          ├── given the LTV is zero
             └── it should succeed with no automatic collateral supply
