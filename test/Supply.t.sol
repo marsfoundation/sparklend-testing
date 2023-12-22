@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.0;
 
-import "forge-std/Test.sol";
+// import "forge-std/Test.sol";
 
 import { Errors }  from "aave-v3-core/protocol/libraries/helpers/Errors.sol";
 import { IAToken } from "aave-v3-core/protocol/tokenization/AToken.sol";
@@ -186,7 +186,11 @@ contract SupplyConcreteTests is SparklendTestBase {
         vm.prank(admin);
         poolConfigurator.configureReserveAsCollateral(address(newCollateralAsset), 100, 100, 100_01);
 
-
+        vm.startPrank(supplier);
+        newCollateralAsset.mint(supplier, 1000 ether);
+        newCollateralAsset.approve(address(pool), 1000 ether);
+        pool.supply(address(newCollateralAsset), 1000 ether, supplier, 0);
+        pool.setUserUseReserveAsCollateral(address(newCollateralAsset), true);
         _;
     }
 
