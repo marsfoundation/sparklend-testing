@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
+import { VmSafe } from "forge-std/Vm.sol";
+
 import { Errors }  from "aave-v3-core/protocol/libraries/helpers/Errors.sol";
 import { IAToken } from "aave-v3-core/protocol/tokenization/AToken.sol";
 
@@ -350,35 +352,98 @@ contract SupplyConcreteTests is SparklendTestBase {
         public
         givenNotFirstSupply
     {
-        vm.record();
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        // vm.record();
 
         vm.startStateDiffRecording();
 
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        // TODO: Make assertion helpers for collateralAsset, aToken, and pool, using ReserveLogic etc for maps
+        VmSafe.AccountAccess[] memory records = vm.stopAndReturnStateDiff();
 
-        address aToken = _getAToken(address(collateralAsset));
+        for (uint256 i = 0; i < records.length; i++) {
+            for (uint256 j; j < records[i].storageAccesses.length; j++) {
+                if (!records[i].storageAccesses[j].isWrite) continue;
 
-        ( , bytes32[] memory poolWriteSlots )            = vm.accesses(address(pool));
-        ( , bytes32[] memory aTokenWriteSlots )          = vm.accesses(aToken);
-        ( , bytes32[] memory collateralAssetWriteSlots ) = vm.accesses(address(collateralAsset));
+                if (
+                    records[i].storageAccesses[j].newValue ==
+                    records[i].storageAccesses[j].previousValue
+                ) continue;
 
-        console2.log("--- pool logs ---");
-        for (uint256 i = 0; i < poolWriteSlots.length; i++) {
-            _logSlot(address(pool), poolWriteSlots[i]);
+                console.log("");
+                console2.log("access", i);
+                console2.log("account:  %s", vm.getLabel(records[i].account));
+                console2.log("accessor: %s", vm.getLabel(records[i].accessor));
+
+                _logAddressOrUint("oldValue:", records[i].storageAccesses[j].previousValue);
+                _logAddressOrUint("newValue:", records[i].storageAccesses[j].newValue);
+            }
         }
 
-        console2.log("--- aToken logs ---");
-        for (uint256 i = 0; i < aTokenWriteSlots.length; i++) {
-            _logSlot(aToken, aTokenWriteSlots[i]);
-        }
+        // access 13
+        // account:  0xb6A2DFF6B742D81083bfd357e66622CE72e24486  // ERC20
+        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
+        // oldValue: 1000000000000000000000
+        // newValue: 0
 
-        console2.log("--- collateralAsset logs ---");
-        for (uint256 i = 0; i < collateralAssetWriteSlots.length; i++) {
-            _logSlot(address(collateralAsset), collateralAssetWriteSlots[i]);
-        }
+        // access 13
+        // account:  0xb6A2DFF6B742D81083bfd357e66622CE72e24486  // ERC20
+        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
+        // oldValue: 1000000000000000000000
+        // newValue: 0
+
+        // access 13
+        // account:  0xb6A2DFF6B742D81083bfd357e66622CE72e24486  // ERC20
+        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
+        // oldValue: 1000000000000000000000
+        // newValue: 2000000000000000000000
+
+        // access 15
+        // account:  0x98493F6786Aa9e7d93Ef477E01F7506497B071e6  // AToken
+        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
+        // oldValue: 0
+        // newValue: 0xe800000000000000000000000000000000000000
+
+        // access 15
+        // account:  0x98493F6786Aa9e7d93Ef477E01F7506497B071e6  // AToken
+        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
+        // oldValue: 1000000000000000000000
+        // newValue: 2000000000000000000000
+
+        // access 15
+        // account:  0x98493F6786Aa9e7d93Ef477E01F7506497B071e6  // AToken
+        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
+        // oldValue: 0xe800000000000000000000000000000000000000
+        // newValue: 340282366920938463463374607431768211456000001000000000000000000000
+
+        // assertEq(records.length, 3);
+        // Vm.AccountAccess memory fooCall = records[0];
+        // assertEq(fooCall.kind, Vm.AccountAccessKind.Call);
+        // assertEq(fooCall.account, address(foo));
+        // assertEq(fooCall.accessor, address(this));
+
+        // // TODO: Make assertion helpers for collateralAsset, aToken, and pool, using ReserveLogic etc for maps
+
+        // address aToken = _getAToken(address(collateralAsset));
+
+        // ( , bytes32[] memory poolWriteSlots )            = vm.accesses(address(pool));
+        // ( , bytes32[] memory aTokenWriteSlots )          = vm.accesses(aToken);
+        // ( , bytes32[] memory collateralAssetWriteSlots ) = vm.accesses(address(collateralAsset));
+
+        // console2.log("--- pool logs ---");
+        // for (uint256 i = 0; i < poolWriteSlots.length; i++) {
+        //     _logSlot(address(pool), poolWriteSlots[i]);
+        // }
+
+        // console2.log("--- aToken logs ---");
+        // for (uint256 i = 0; i < aTokenWriteSlots.length; i++) {
+        //     _logSlot(aToken, aTokenWriteSlots[i]);
+        // }
+
+        // console2.log("--- collateralAsset logs ---");
+        // for (uint256 i = 0; i < collateralAssetWriteSlots.length; i++) {
+        //     _logSlot(address(collateralAsset), collateralAssetWriteSlots[i]);
+        // }
     }
 
     function _logSlot(address target, bytes32 slot) internal view {
@@ -415,6 +480,28 @@ contract SupplyConcreteTests is SparklendTestBase {
         // Set LTV to 1%
         vm.prank(admin);
         poolConfigurator.configureReserveAsCollateral(newCollateralAsset, 100, 100, 100_01);
+    }
+
+    function _logAddressOrUint(string memory key, bytes32 _bytes) internal view {
+        if (isAddress(_bytes)) {
+            console.log(key, vm.toString(bytes32ToAddress(_bytes)));
+        } else {
+            console.log(key, vm.toString(uint256(_bytes)));
+        }
+    }
+
+    function isAddress(bytes32 _bytes) public pure returns (bool isAddress_) {
+        if (_bytes == 0) return false;
+
+        for (uint256 i = 20; i < 32; i++) {
+            if (_bytes[i] != 0) return false;
+        }
+        isAddress_ = true;
+    }
+
+    function bytes32ToAddress(bytes32 _bytes) public pure returns (address) {
+        require(isAddress(_bytes), "bytes32ToAddress/invalid-address");
+        return address(uint160(uint256(_bytes)));
     }
 
     function _useAsCollateral(address user, address newCollateralAsset) internal {
