@@ -13,12 +13,23 @@ import {
     IERC20,
     IReserveInterestRateStrategy,
     MockERC20,
-    SparklendTestBase
-} from "./SparklendTestBase.sol";
+    SparkLendTestBase
+} from "./SparkLendTestBase.sol";
 
-contract SupplyFailureTests is SparklendTestBase {
-
+contract SupplyTestBase is SparkLendTestBase {
     address supplier = makeAddr("supplier");
+
+    IAToken aToken;
+
+    function setUp() public virtual override {
+        super.setUp();
+
+        aToken = IAToken(pool.getReserveData(address(collateralAsset)).aTokenAddress);
+    }
+
+}
+
+contract SupplyFailureTests is SupplyTestBase {
 
     function test_supply_success_replaceThis() public {
         vm.startPrank(supplier);
@@ -106,25 +117,19 @@ contract SupplyFailureTests is SparklendTestBase {
     }
 
     function test_supply_aTokenMintNotCalledByPool() public {
-        address aToken = pool.getReserveData(address(collateralAsset)).aTokenAddress;
-
         vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
-        IAToken(aToken).mint(address(this), address(this), 1000 ether, 1e18);
+        aToken.mint(address(this), address(this), 1000 ether, 1e18);
     }
 
     function test_supply_aTokenMintScaledInvalidAmount() public {
-        address aToken = pool.getReserveData(address(collateralAsset)).aTokenAddress;
-
         vm.prank(address(pool));
         vm.expectRevert(bytes(Errors.INVALID_MINT_AMOUNT));
-        IAToken(aToken).mint(address(this), address(this), 0, 1e18);
+        aToken.mint(address(this), address(this), 0, 1e18);
     }
 
 }
 
-contract SupplyConcreteTests is SparklendTestBase {
-
-    address supplier = makeAddr("supplier");
+contract SupplyConcreteTests is SupplyTestBase {
 
     // NOTE: Have to use storage for these values so they can be used across modifiers.
     address otherCollateral1;
@@ -142,7 +147,7 @@ contract SupplyConcreteTests is SparklendTestBase {
     modifier givenFirstSupply { _; }
 
     modifier givenNotFirstSupply {
-        _supply(makeAddr("new-user"), address(collateralAsset));
+        _supply(makeAddr("new-user"), address(collateralAsset), 500 ether);
         _;
     }
 
@@ -181,7 +186,7 @@ contract SupplyConcreteTests is SparklendTestBase {
         // NOTE: Have to set the debt ceiling to non-zero value here because once a user supplies
         //       with a zero debt ceiling it cannot be set, can be set to zero though.
         _setCollateralDebtCeiling(otherCollateral1, 1000);
-        _supplyAndUseAsCollateral(supplier, otherCollateral1);
+        _supplyAndUseAsCollateral(supplier, otherCollateral1, 1000 ether);
         _;
     }
 
@@ -201,8 +206,8 @@ contract SupplyConcreteTests is SparklendTestBase {
         otherCollateral1 = _setUpNewCollateral();
         otherCollateral2 = _setUpNewCollateral();
 
-        _supplyAndUseAsCollateral(supplier, otherCollateral1);
-        _supplyAndUseAsCollateral(supplier, otherCollateral2);
+        _supplyAndUseAsCollateral(supplier, otherCollateral1, 1000 ether);
+        _supplyAndUseAsCollateral(supplier, otherCollateral2, 1000 ether);
         _;
     }
 
@@ -349,6 +354,36 @@ contract SupplyConcreteTests is SparklendTestBase {
     }
 
     function test_supply_15()
+        public
+        givenNotFirstSupply
+    {
+        _assertATokenStateSupply({
+            userBalance: 0,
+            totalSupply: 500 ether
+        });
+
+        _assertAssetStateSupply({
+            allowance:     1000 ether,
+            userBalance:   1000 ether,
+            aTokenBalance: 500 ether
+        });
+
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+        _assertATokenStateSupply({
+            userBalance: 1000 ether,
+            totalSupply: 1500 ether
+        });
+
+        _assertAssetStateSupply({
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1500 ether
+        });
+    }
+
+    function test_supply_stateDiffing()
         public
         givenNotFirstSupply
     {
@@ -509,16 +544,16 @@ contract SupplyConcreteTests is SparklendTestBase {
         pool.setUserUseReserveAsCollateral(newCollateralAsset, true);
     }
 
-    function _supply(address user, address newCollateralAsset) internal {
+    function _supply(address user, address newCollateralAsset, uint256 amount) internal {
         vm.startPrank(user);
-        MockERC20(newCollateralAsset).mint(user, 1000 ether);
-        MockERC20(newCollateralAsset).approve(address(pool), 1000 ether);
-        pool.supply(newCollateralAsset, 1000 ether, user, 0);
+        MockERC20(newCollateralAsset).mint(user, amount);
+        MockERC20(newCollateralAsset).approve(address(pool), amount);
+        pool.supply(newCollateralAsset, amount, user, 0);
         vm.stopPrank();
     }
 
-    function _supplyAndUseAsCollateral(address user, address newCollateralAsset) internal {
-        _supply(user, newCollateralAsset);
+    function _supplyAndUseAsCollateral(address user, address newCollateralAsset, uint256 amount) internal {
+        _supply(user, newCollateralAsset, amount);
         _useAsCollateral(user, newCollateralAsset);
     }
 
@@ -526,5 +561,30 @@ contract SupplyConcreteTests is SparklendTestBase {
         vm.prank(admin);
         poolConfigurator.setDebtCeiling(newCollateralAsset, ceiling);
     }
+
+    function _assertPoolStateSupply() internal view {}
+
+    function _assertAssetStateSupply(
+        uint256 allowance,
+        uint256 userBalance,
+        uint256 aTokenBalance
+    )
+        internal
+    {
+        assertEq(collateralAsset.allowance(supplier, address(pool)), allowance,     "allowance");
+        assertEq(collateralAsset.balanceOf(supplier),                userBalance,   "userBalance");
+        assertEq(collateralAsset.balanceOf(address(aToken)),         aTokenBalance, "aTokenBalance");
+    }
+
+    function _assertATokenStateSupply(
+        uint256 userBalance,
+        uint256 totalSupply
+    )
+        internal
+    {
+        assertEq(aToken.balanceOf(supplier), userBalance, "userBalance");
+        assertEq(aToken.totalSupply(),       totalSupply, "totalSupply");
+    }
+
 }
 

@@ -31,7 +31,7 @@ import { MockOracle } from "./mocks/MockOracle.sol";
 // TODO: Figure out where token implementations need to be configured.
 // TODO: Remove unnecessary imports.
 
-contract SparklendTestBase is Test {
+contract SparkLendTestBase is Test {
 
     address admin = makeAddr("admin");
 
