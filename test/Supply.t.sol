@@ -350,8 +350,42 @@ contract SupplyConcreteTests is SparklendTestBase {
         public
         givenNotFirstSupply
     {
+        vm.record();
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+        vm.startStateDiffRecording();
+
+
+        // TODO: Make assertion helpers for collateralAsset, aToken, and pool, using ReserveLogic etc for maps
+
+        address aToken = _getAToken(address(collateralAsset));
+
+        ( , bytes32[] memory poolWriteSlots )            = vm.accesses(address(pool));
+        ( , bytes32[] memory aTokenWriteSlots )          = vm.accesses(aToken);
+        ( , bytes32[] memory collateralAssetWriteSlots ) = vm.accesses(address(collateralAsset));
+
+        console2.log("--- pool logs ---");
+        for (uint256 i = 0; i < poolWriteSlots.length; i++) {
+            _logSlot(address(pool), poolWriteSlots[i]);
+        }
+
+        console2.log("--- aToken logs ---");
+        for (uint256 i = 0; i < aTokenWriteSlots.length; i++) {
+            _logSlot(aToken, aTokenWriteSlots[i]);
+        }
+
+        console2.log("--- collateralAsset logs ---");
+        for (uint256 i = 0; i < collateralAssetWriteSlots.length; i++) {
+            _logSlot(address(collateralAsset), collateralAssetWriteSlots[i]);
+        }
+    }
+
+    function _logSlot(address target, bytes32 slot) internal view {
+        console2.log(
+            "slot: %s, value: %s",
+            vm.toString(slot), vm.toString(uint256(vm.load(target, slot)))
+        );
     }
 
     /**********************************************************************************************/

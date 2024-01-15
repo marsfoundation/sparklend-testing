@@ -37,6 +37,7 @@ contract SparklendTestBase is Test {
 
     AaveOracle            aaveOracle;
     ACLManager            aclManager;
+    DataProvider          protocolDataProvider;
     Pool                  pool;
     PoolAddressesProvider poolAddressesProvider;
     PoolConfigurator      poolConfigurator;
@@ -59,10 +60,10 @@ contract SparklendTestBase is Test {
 
         poolAddressesProvider.setACLAdmin(deployer);
 
-        aclManager = new ACLManager(poolAddressesProvider);
+        aclManager           = new ACLManager(poolAddressesProvider);
+        protocolDataProvider = new DataProvider(poolAddressesProvider);
 
-        Pool         poolImpl             = new Pool(poolAddressesProvider);
-        DataProvider protocolDataProvider = new DataProvider(poolAddressesProvider);
+        Pool poolImpl = new Pool(poolAddressesProvider);
 
         poolAddressesProvider.setPoolImpl(address(poolImpl));
         poolAddressesProvider.setPoolConfiguratorImpl(address(poolConfiguratorImpl));
@@ -167,6 +168,10 @@ contract SparklendTestBase is Test {
 
         vm.prank(admin);
         aaveOracle.setAssetSources(assets, sources);
+    }
+
+    function _getAToken(address reserve) internal view returns (address aToken) {
+        return pool.getReserveData(reserve).aTokenAddress;
     }
 
 }
