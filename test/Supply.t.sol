@@ -156,6 +156,10 @@ contract SupplyConcreteTests is SupplyTestBase {
         collateralAsset.approve(address(pool), 1000 ether);
     }
 
+    /**********************************************************************************************/
+    /*** BTT modifiers                                                                          ***/
+    /**********************************************************************************************/
+
     modifier givenFirstSupply { _; }
 
     modifier givenNotFirstSupply {
@@ -230,160 +234,9 @@ contract SupplyConcreteTests is SupplyTestBase {
         _;
     }
 
-    modifier logStateDiff() {
-        vm.startStateDiffRecording();
-
-        _;
-
-        VmSafe.AccountAccess[] memory records = vm.stopAndReturnStateDiff();
-
-        console.log("--- STATE DIFF ---");
-
-        for (uint256 i = 0; i < records.length; i++) {
-            for (uint256 j; j < records[i].storageAccesses.length; j++) {
-                if (!records[i].storageAccesses[j].isWrite) continue;
-
-                if (
-                    records[i].storageAccesses[j].newValue ==
-                    records[i].storageAccesses[j].previousValue
-                ) continue;
-
-                console.log("");
-                console2.log("account:  %s", vm.getLabel(records[i].account));
-                console2.log("accessor: %s", vm.getLabel(records[i].accessor));
-                console2.log("slot:     %s", vm.toString(records[i].storageAccesses[j].slot));
-
-                _logAddressOrUint("oldValue:", records[i].storageAccesses[j].previousValue);
-                _logAddressOrUint("newValue:", records[i].storageAccesses[j].newValue);
-            }
-        }
-    }
-
-    function _noAutomaticCollateralSupplyTest() internal {
-        _assertPoolReserveStateSupply({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0,
-            currentStableBorrowRate:   0,
-            lastUpdateTimestamp:       0,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
-
-        _assertATokenStateSupply({
-            userBalance: 0,
-            totalSupply: 0
-        });
-
-        _assertAssetStateSupply({
-            allowance:     1000 ether,
-            userBalance:   1000 ether,
-            aTokenBalance: 0
-        });
-
-        assertEq(block.timestamp, 1);
-
-        assertEq(
-            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
-            false,
-            "isUsingAsCollateral"
-        );
-
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
-
-        _assertPoolReserveStateSupply({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
-            currentStableBorrowRate:   0.07e27,
-            lastUpdateTimestamp:       1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
-
-        _assertATokenStateSupply({
-            userBalance: 1000 ether,
-            totalSupply: 1000 ether
-        });
-
-        _assertAssetStateSupply({
-            allowance:     0,
-            userBalance:   0,
-            aTokenBalance: 1000 ether
-        });
-
-        assertEq(
-            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
-            false,
-            "isUsingAsCollateral"
-        );
-    }
-
-    function _automaticCollateralSupplyTest() internal {
-        _assertPoolReserveStateSupply({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0,
-            currentStableBorrowRate:   0,
-            lastUpdateTimestamp:       0,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
-
-        _assertATokenStateSupply({
-            userBalance: 0,
-            totalSupply: 0
-        });
-
-        _assertAssetStateSupply({
-            allowance:     1000 ether,
-            userBalance:   1000 ether,
-            aTokenBalance: 0
-        });
-
-        assertEq(block.timestamp, 1);
-
-        assertEq(
-            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
-            false,
-            "isUsingAsCollateral"
-        );
-
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
-
-        _assertPoolReserveStateSupply({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
-            currentStableBorrowRate:   0.07e27,
-            lastUpdateTimestamp:       1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
-
-        _assertATokenStateSupply({
-            userBalance: 1000 ether,
-            totalSupply: 1000 ether
-        });
-
-        _assertAssetStateSupply({
-            allowance:     0,
-            userBalance:   0,
-            aTokenBalance: 1000 ether
-        });
-
-        assertEq(
-            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
-            true,
-            "isUsingAsCollateral"
-        );
-    }
+    /**********************************************************************************************/
+    /*** BTT tests                                                                              ***/
+    /**********************************************************************************************/
 
     function test_supply_01()
         public
@@ -539,86 +392,139 @@ contract SupplyConcreteTests is SupplyTestBase {
         });
     }
 
-    function _logSlot(address target, bytes32 slot) internal view {
-        console2.log(
-            "slot: %s, value: %s",
-            vm.toString(slot), vm.toString(uint256(vm.load(target, slot)))
+    /**********************************************************************************************/
+    /*** Test running functions                                                                 ***/
+    /**********************************************************************************************/
+
+    function _noAutomaticCollateralSupplyTest() internal {
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       0,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateSupply({
+            userBalance: 0,
+            totalSupply: 0
+        });
+
+        _assertAssetStateSupply({
+            allowance:     1000 ether,
+            userBalance:   1000 ether,
+            aTokenBalance: 0
+        });
+
+        assertEq(block.timestamp, 1);
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0.07e27,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateSupply({
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        _assertAssetStateSupply({
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+    }
+
+    function _automaticCollateralSupplyTest() internal {
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       0,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateSupply({
+            userBalance: 0,
+            totalSupply: 0
+        });
+
+        _assertAssetStateSupply({
+            allowance:     1000 ether,
+            userBalance:   1000 ether,
+            aTokenBalance: 0
+        });
+
+        assertEq(block.timestamp, 1);
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0.07e27,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateSupply({
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        _assertAssetStateSupply({
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            true,
+            "isUsingAsCollateral"
         );
     }
 
     /**********************************************************************************************/
-    /*** Helper functions                                                                       ***/
+    /*** Assertion helper functions                                                             ***/
     /**********************************************************************************************/
-
-    function _setUpNewCollateral() internal returns (address newCollateralAsset) {
-        IReserveInterestRateStrategy strategy
-            = IReserveInterestRateStrategy(new DefaultReserveInterestRateStrategy({
-                provider:                      poolAddressesProvider,
-                optimalUsageRatio:             0.90e27,
-                baseVariableBorrowRate:        0.05e27,
-                variableRateSlope1:            0.02e27,
-                variableRateSlope2:            0.3e27,
-                stableRateSlope1:              0,
-                stableRateSlope2:              0,
-                baseStableRateOffset:          0,
-                stableRateExcessOffset:        0,
-                optimalStableToTotalDebtRatio: 0
-            }));
-
-        newCollateralAsset = address(new MockERC20("Collateral Asset", "COLL", 18));
-
-        _initReserve(IERC20(newCollateralAsset), strategy);
-        _setUpMockOracle(newCollateralAsset, int256(1e8));
-
-        // Set LTV to 1%
-        vm.prank(admin);
-        poolConfigurator.configureReserveAsCollateral(newCollateralAsset, 100, 100, 100_01);
-    }
-
-    function _logAddressOrUint(string memory key, bytes32 _bytes) internal view {
-        if (isAddress(_bytes)) {
-            console.log(key, vm.toString(bytes32ToAddress(_bytes)));
-        } else {
-            console.log(key, vm.toString(uint256(_bytes)));
-        }
-    }
-
-    function isAddress(bytes32 _bytes) public view returns (bool isAddress_) {
-        if (_bytes == 0) return false;
-
-        for (uint256 i = 20; i < 32; i++) {
-            if (_bytes[i] != 0) return false;
-        }
-        isAddress_ = true;
-    }
-
-    function bytes32ToAddress(bytes32 _bytes) public view returns (address) {
-        require(isAddress(_bytes), "bytes32ToAddress/invalid-address");
-        return address(uint160(uint256(_bytes)));
-    }
-
-    function _useAsCollateral(address user, address newCollateralAsset) internal {
-        vm.prank(user);
-        pool.setUserUseReserveAsCollateral(newCollateralAsset, true);
-    }
-
-    function _supply(address user, address newCollateralAsset, uint256 amount) internal {
-        vm.startPrank(user);
-        MockERC20(newCollateralAsset).mint(user, amount);
-        MockERC20(newCollateralAsset).approve(address(pool), amount);
-        pool.supply(newCollateralAsset, amount, user, 0);
-        vm.stopPrank();
-    }
-
-    function _supplyAndUseAsCollateral(address user, address newCollateralAsset, uint256 amount) internal {
-        _supply(user, newCollateralAsset, amount);
-        _useAsCollateral(user, newCollateralAsset);
-    }
-
-    function _setCollateralDebtCeiling(address newCollateralAsset, uint256 ceiling) internal {
-        vm.prank(admin);
-        poolConfigurator.setDebtCeiling(newCollateralAsset, ceiling);
-    }
 
     function _assertPoolReserveStateSupply(
         uint256 liquidityIndex,
@@ -649,24 +555,13 @@ contract SupplyConcreteTests is SupplyTestBase {
         // - uint128 isolationModeTotalDebt;
     }
 
-    function _assertAssetStateSupply(
-        uint256 allowance,
-        uint256 userBalance,
-        uint256 aTokenBalance
-    )
-        internal
-    {
+    function _assertAssetStateSupply(uint256 allowance, uint256 userBalance, uint256 aTokenBalance) internal {
         assertEq(collateralAsset.allowance(supplier, address(pool)), allowance,     "allowance");
         assertEq(collateralAsset.balanceOf(supplier),                userBalance,   "userBalance");
         assertEq(collateralAsset.balanceOf(address(aToken)),         aTokenBalance, "aTokenBalance");
     }
 
-    function _assertATokenStateSupply(
-        uint256 userBalance,
-        uint256 totalSupply
-    )
-        internal
-    {
+    function _assertATokenStateSupply(uint256 userBalance, uint256 totalSupply) internal {
         assertEq(aToken.balanceOf(supplier), userBalance, "userBalance");
         assertEq(aToken.totalSupply(),       totalSupply, "totalSupply");
     }

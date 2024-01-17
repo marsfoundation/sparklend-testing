@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
+import { VmSafe } from "forge-std/Vm.sol";
+
 import { AaveOracle }                               from "aave-v3-core/misc/AaveOracle.sol";
 import { AaveProtocolDataProvider as DataProvider } from "aave-v3-core/misc/AaveProtocolDataProvider.sol";
 
@@ -128,6 +130,10 @@ contract SparkLendTestBase is Test {
         _setUpMockOracle(address(borrowAsset),     int256(1e8));
     }
 
+    /**********************************************************************************************/
+    /*** Admin helper functions                                                                 ***/
+    /**********************************************************************************************/
+
     function _initReserve(IERC20 token, IReserveInterestRateStrategy strategy) internal {
         string memory symbol = token.symbol();
 
@@ -170,8 +176,122 @@ contract SparkLendTestBase is Test {
         aaveOracle.setAssetSources(assets, sources);
     }
 
+    // TODO: More parameters
+    function _setUpNewCollateral() internal returns (address newCollateralAsset) {
+        IReserveInterestRateStrategy strategy
+            = IReserveInterestRateStrategy(new DefaultReserveInterestRateStrategy({
+                provider:                      poolAddressesProvider,
+                optimalUsageRatio:             0.90e27,
+                baseVariableBorrowRate:        0.05e27,
+                variableRateSlope1:            0.02e27,
+                variableRateSlope2:            0.3e27,
+                stableRateSlope1:              0,
+                stableRateSlope2:              0,
+                baseStableRateOffset:          0,
+                stableRateExcessOffset:        0,
+                optimalStableToTotalDebtRatio: 0
+            }));
+
+        newCollateralAsset = address(new MockERC20("Collateral Asset", "COLL", 18));
+
+        _initReserve(IERC20(newCollateralAsset), strategy);
+        _setUpMockOracle(newCollateralAsset, int256(1e8));
+
+        // Set LTV to 1%
+        vm.prank(admin);
+        poolConfigurator.configureReserveAsCollateral(newCollateralAsset, 100, 100, 100_01);
+    }
+
+    /**********************************************************************************************/
+    /*** User helper functions                                                                  ***/
+    /**********************************************************************************************/
+
+    function _useAsCollateral(address user, address newCollateralAsset) internal {
+        vm.prank(user);
+        pool.setUserUseReserveAsCollateral(newCollateralAsset, true);
+    }
+
+    function _supply(address user, address newCollateralAsset, uint256 amount) internal {
+        vm.startPrank(user);
+        MockERC20(newCollateralAsset).mint(user, amount);
+        MockERC20(newCollateralAsset).approve(address(pool), amount);
+        pool.supply(newCollateralAsset, amount, user, 0);
+        vm.stopPrank();
+    }
+
+    function _supplyAndUseAsCollateral(address user, address newCollateralAsset, uint256 amount)
+        internal
+    {
+        _supply(user, newCollateralAsset, amount);
+        _useAsCollateral(user, newCollateralAsset);
+    }
+
+    function _setCollateralDebtCeiling(address newCollateralAsset, uint256 ceiling) internal {
+        vm.prank(admin);
+        poolConfigurator.setDebtCeiling(newCollateralAsset, ceiling);
+    }
+
+    /**********************************************************************************************/
+    /*** View helper functions                                                                  ***/
+    /**********************************************************************************************/
+
     function _getAToken(address reserve) internal view returns (address aToken) {
         return pool.getReserveData(reserve).aTokenAddress;
+    }
+
+    /**********************************************************************************************/
+    /*** State diff functions and modifiers                                                     ***/
+    /**********************************************************************************************/
+
+    modifier logStateDiff() {
+        vm.startStateDiffRecording();
+
+        _;
+
+        VmSafe.AccountAccess[] memory records = vm.stopAndReturnStateDiff();
+
+        console.log("--- STATE DIFF ---");
+
+        for (uint256 i = 0; i < records.length; i++) {
+            for (uint256 j; j < records[i].storageAccesses.length; j++) {
+                if (!records[i].storageAccesses[j].isWrite) continue;
+
+                if (
+                    records[i].storageAccesses[j].newValue ==
+                    records[i].storageAccesses[j].previousValue
+                ) continue;
+
+                console.log("");
+                console2.log("account:  %s", vm.getLabel(records[i].account));
+                console2.log("accessor: %s", vm.getLabel(records[i].accessor));
+                console2.log("slot:     %s", vm.toString(records[i].storageAccesses[j].slot));
+
+                _logAddressOrUint("oldValue:", records[i].storageAccesses[j].previousValue);
+                _logAddressOrUint("newValue:", records[i].storageAccesses[j].newValue);
+            }
+        }
+    }
+
+    function _logAddressOrUint(string memory key, bytes32 _bytes) internal view {
+        if (isAddress(_bytes)) {
+            console.log(key, vm.toString(bytes32ToAddress(_bytes)));
+        } else {
+            console.log(key, vm.toString(uint256(_bytes)));
+        }
+    }
+
+    function isAddress(bytes32 _bytes) public pure returns (bool isAddress_) {
+        if (_bytes == 0) return false;
+
+        for (uint256 i = 20; i < 32; i++) {
+            if (_bytes[i] != 0) return false;
+        }
+        isAddress_ = true;
+    }
+
+    function bytes32ToAddress(bytes32 _bytes) public pure returns (address) {
+        require(isAddress(_bytes), "bytes32ToAddress/invalid-address");
+        return address(uint160(uint256(_bytes)));
     }
 
 }
