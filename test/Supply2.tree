@@ -50,8 +50,22 @@ pool.supply()
                      └── it should succeed with automatic collateral supply [10]
                └── when the user is using multiple collateral types
                   └── it should succeed with automatic collateral supply [11] (NOTE: DC is already IS zero so condition on line 722 in ValidationLogic doesn't apply)
-   └── when this is NOT the first supply
-      └── it should succeed without automatic collateral supply [12]
+   └── when this is NOT the first supply (no automatic collateral supply for these cases)
+      └── given no time has passed after supply
+         └── given there is no active borrow
+            └── it should succeed and update lastUpdated timestamp [12]
+         └── given there is an active borrow
+            └── given no time has passed after borrow
+               └── it should succeed and update the lastUpdated timestamp, indexes, and rates [13]
+            └── given som time has passed after borrow
+      └── given time has passed after supply
+         └── given there is no active borrow
+            └── it should succeed and update lastUpdated timestamp [13]
+         └── given there is an active borrow
+            └── given no time has passed since the last borrow
+               └── it should succeed and update the lastUpdated timestamp, indexes, and rates [14]
+            └── given som time has passed since the last borrow
+
 
 
 Problem statement:

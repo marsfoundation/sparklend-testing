@@ -227,9 +227,36 @@ contract SupplyConcreteTests is SupplyTestBase {
         _;
     }
 
-    modifier givenNoTimeHasPassed { _; }
+    modifier givenNoTimeHasPassedAfterSupply { _; }
 
-    modifier givenSomeTimeHasPassed() {
+    modifier givenSomeTimeHasPassedAfterSupply() {
+        vm.warp(1000 seconds);
+        _;
+    }
+
+    modifier givenNoActiveBorrow { _; }
+
+    modifier givenActiveBorrow {
+        // Allow borrowAsset to be collateral to demo collateralAsset accruing interest
+        _initCollateral({
+            asset:                address(borrowAsset),
+            ltv:                  5000,
+            liquidationThreshold: 6000,
+            liquidationBonus:     100_01
+        });
+
+        vm.prank(admin);
+        poolConfigurator.setReserveBorrowing(address(collateralAsset), true);
+
+        address borrower = makeAddr("borrower");
+        _supplyAndUseAsCollateral(borrower, address(borrowAsset), 1000 ether);
+        _borrow(borrower, address(collateralAsset), 100 ether);
+        _;
+    }
+
+    modifier givenNoTimeHasPassedAfterBorrow { _; }
+
+    modifier givenSomeTimeHasPassedAfterBorrow() {
         vm.warp(1000 seconds);
         _;
     }
@@ -364,8 +391,20 @@ contract SupplyConcreteTests is SupplyTestBase {
     function test_supply_12()
         public
         givenNotFirstSupply
-        givenNoTimeHasPassed
+        givenNoTimeHasPassedAfterSupply
+        givenNoActiveBorrow
     {
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0.07e27,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
         _assertATokenStateSupply({
             userBalance: 0,
             totalSupply: 500 ether
@@ -377,8 +416,27 @@ contract SupplyConcreteTests is SupplyTestBase {
             aTokenBalance: 500 ether
         });
 
+        assertEq(block.timestamp, 1);
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0.07e27,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
 
         _assertATokenStateSupply({
             userBalance: 1000 ether,
@@ -390,7 +448,218 @@ contract SupplyConcreteTests is SupplyTestBase {
             userBalance:   0,
             aTokenBalance: 1500 ether
         });
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
     }
+
+    function test_supply_13()
+        public
+        givenNotFirstSupply
+        givenNoTimeHasPassedAfterSupply
+        givenActiveBorrow
+        givenNoTimeHasPassedAfterBorrow
+    {
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0.07e27,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        // _assertATokenStateSupply({
+        //     userBalance: 0,
+        //     totalSupply: 500 ether
+        // });
+
+        // _assertAssetStateSupply({
+        //     allowance:     1000 ether,
+        //     userBalance:   1000 ether,
+        //     aTokenBalance: 500 ether
+        // });
+
+        // assertEq(block.timestamp, 1);
+
+        // assertEq(
+        //     pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+        //     false,
+        //     "isUsingAsCollateral"
+        // );
+
+        // vm.prank(supplier);
+        // pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+        // _assertPoolReserveStateSupply({
+        //     liquidityIndex:            1e27,
+        //     currentLiquidityRate:      0,
+        //     variableBorrowIndex:       1e27,
+        //     currentVariableBorrowRate: 0.05e27,
+        //     currentStableBorrowRate:   0.07e27,
+        //     lastUpdateTimestamp:       1,
+        //     accruedToTreasury:         0,
+        //     unbacked:                  0
+        // });
+
+        // _assertATokenStateSupply({
+        //     userBalance: 1000 ether,
+        //     totalSupply: 1500 ether
+        // });
+
+        // _assertAssetStateSupply({
+        //     allowance:     0,
+        //     userBalance:   0,
+        //     aTokenBalance: 1500 ether
+        // });
+
+        // assertEq(
+        //     pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+        //     false,
+        //     "isUsingAsCollateral"
+        // );
+    }
+
+    // function test_supply_14()
+    //     public
+    //     givenNotFirstSupply
+    //     givenSomeTimeHasPassedAfterSupply
+    //     givenNoActiveBorrow
+    // {
+    //     _assertPoolReserveStateSupply({
+    //         liquidityIndex:            1e27,
+    //         currentLiquidityRate:      0,
+    //         variableBorrowIndex:       1e27,
+    //         currentVariableBorrowRate: 0.05e27,
+    //         currentStableBorrowRate:   0.07e27,
+    //         lastUpdateTimestamp:       1,
+    //         accruedToTreasury:         0,
+    //         unbacked:                  0
+    //     });
+
+    //     _assertATokenStateSupply({
+    //         userBalance: 0,
+    //         totalSupply: 500 ether
+    //     });
+
+    //     _assertAssetStateSupply({
+    //         allowance:     1000 ether,
+    //         userBalance:   1000 ether,
+    //         aTokenBalance: 500 ether
+    //     });
+
+    //     assertEq(block.timestamp, 1000);
+
+    //     assertEq(
+    //         pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+    //         false,
+    //         "isUsingAsCollateral"
+    //     );
+
+    //     vm.prank(supplier);
+    //     pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+    //     _assertPoolReserveStateSupply({
+    //         liquidityIndex:            1e27,
+    //         currentLiquidityRate:      0,
+    //         variableBorrowIndex:       1e27,
+    //         currentVariableBorrowRate: 0.05e27,
+    //         currentStableBorrowRate:   0.07e27,
+    //         lastUpdateTimestamp:       1000,  // lastUpdated has been changed
+    //         accruedToTreasury:         0,
+    //         unbacked:                  0
+    //     });
+
+    //     _assertATokenStateSupply({
+    //         userBalance: 1000 ether,
+    //         totalSupply: 1500 ether
+    //     });
+
+    //     _assertAssetStateSupply({
+    //         allowance:     0,
+    //         userBalance:   0,
+    //         aTokenBalance: 1500 ether
+    //     });
+
+    //     assertEq(
+    //         pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+    //         false,
+    //         "isUsingAsCollateral"
+    //     );
+    // }
+
+    // function test_supply_15()
+    //     public
+    //     givenNotFirstSupply
+    //     givenSomeTimeHasPassedAfterSupply
+    //     givenActiveBorrow
+    // {
+    //     _assertPoolReserveStateSupply({
+    //         liquidityIndex:            1e27,
+    //         currentLiquidityRate:      0,
+    //         variableBorrowIndex:       1e27,
+    //         currentVariableBorrowRate: 0.05e27,
+    //         currentStableBorrowRate:   0.07e27,
+    //         lastUpdateTimestamp:       1,
+    //         accruedToTreasury:         0,
+    //         unbacked:                  0
+    //     });
+
+    //     _assertATokenStateSupply({
+    //         userBalance: 0,
+    //         totalSupply: 500 ether
+    //     });
+
+    //     _assertAssetStateSupply({
+    //         allowance:     1000 ether,
+    //         userBalance:   1000 ether,
+    //         aTokenBalance: 500 ether
+    //     });
+
+    //     assertEq(block.timestamp, 1000);
+
+    //     assertEq(
+    //         pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+    //         false,
+    //         "isUsingAsCollateral"
+    //     );
+
+    //     vm.prank(supplier);
+    //     pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+    //     _assertPoolReserveStateSupply({
+    //         liquidityIndex:            1e27,
+    //         currentLiquidityRate:      0,
+    //         variableBorrowIndex:       1e27,
+    //         currentVariableBorrowRate: 0.05e27,
+    //         currentStableBorrowRate:   0.07e27,
+    //         lastUpdateTimestamp:       1000,  // lastUpdated has been changed
+    //         accruedToTreasury:         0,
+    //         unbacked:                  0
+    //     });
+
+    //     _assertATokenStateSupply({
+    //         userBalance: 1000 ether,
+    //         totalSupply: 1500 ether
+    //     });
+
+    //     _assertAssetStateSupply({
+    //         allowance:     0,
+    //         userBalance:   0,
+    //         aTokenBalance: 1500 ether
+    //     });
+
+    //     assertEq(
+    //         pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+    //         false,
+    //         "isUsingAsCollateral"
+    //     );
+    // }
 
     /**********************************************************************************************/
     /*** Test running functions                                                                 ***/

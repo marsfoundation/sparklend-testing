@@ -176,6 +176,24 @@ contract SparkLendTestBase is Test {
         aaveOracle.setAssetSources(assets, sources);
     }
 
+    function _initCollateral(
+        address asset,
+        uint256 ltv,
+        uint256 liquidationThreshold,
+        uint256 liquidationBonus
+    )
+        internal
+    {
+        // Set LTV to 1%
+        vm.prank(admin);
+        poolConfigurator.configureReserveAsCollateral(
+            asset,
+            ltv,
+            liquidationThreshold,
+            liquidationBonus
+        );
+    }
+
     // TODO: More parameters
     function _setUpNewCollateral() internal returns (address newCollateralAsset) {
         IReserveInterestRateStrategy strategy
@@ -211,24 +229,30 @@ contract SparkLendTestBase is Test {
         pool.setUserUseReserveAsCollateral(newCollateralAsset, true);
     }
 
-    function _supply(address user, address newCollateralAsset, uint256 amount) internal {
+    function _borrow(address user, address borrowAsset_, uint256 amount) internal {
         vm.startPrank(user);
-        MockERC20(newCollateralAsset).mint(user, amount);
-        MockERC20(newCollateralAsset).approve(address(pool), amount);
-        pool.supply(newCollateralAsset, amount, user, 0);
+        pool.borrow(borrowAsset_, amount, 2, 0, user);
         vm.stopPrank();
     }
 
-    function _supplyAndUseAsCollateral(address user, address newCollateralAsset, uint256 amount)
-        internal
-    {
-        _supply(user, newCollateralAsset, amount);
-        _useAsCollateral(user, newCollateralAsset);
+    function _supply(address user, address collateralAsset_, uint256 amount) internal {
+        vm.startPrank(user);
+        MockERC20(collateralAsset_).mint(user, amount);
+        MockERC20(collateralAsset_).approve(address(pool), amount);
+        pool.supply(collateralAsset_, amount, user, 0);
+        vm.stopPrank();
     }
 
-    function _setCollateralDebtCeiling(address newCollateralAsset, uint256 ceiling) internal {
+    function _supplyAndUseAsCollateral(address user, address collateralAsset_, uint256 amount)
+        internal
+    {
+        _supply(user, collateralAsset_, amount);
+        _useAsCollateral(user, collateralAsset_);
+    }
+
+    function _setCollateralDebtCeiling(address collateralAsset_, uint256 ceiling) internal {
         vm.prank(admin);
-        poolConfigurator.setDebtCeiling(newCollateralAsset, ceiling);
+        poolConfigurator.setDebtCeiling(collateralAsset_, ceiling);
     }
 
     /**********************************************************************************************/
