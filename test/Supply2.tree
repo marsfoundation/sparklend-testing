@@ -56,8 +56,8 @@ pool.supply()
             └── it should succeed and update lastUpdated timestamp [12]
          └── given there is an active borrow
             └── given no time has passed after borrow
-               └── it should succeed and update the lastUpdated timestamp, indexes, and rates [13]
-            └── given som time has passed after borrow
+               └── it should succeed and update rates only [13]
+            └── given some time has passed after borrow
       └── given time has passed after supply
          └── given there is no active borrow
             └── it should succeed and update lastUpdated timestamp [13]

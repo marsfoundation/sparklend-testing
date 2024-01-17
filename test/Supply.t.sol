@@ -3,15 +3,12 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { VmSafe } from "forge-std/Vm.sol";
-
-import { UserConfiguration } from "aave-v3-core/protocol/libraries/configuration/UserConfiguration.sol";
-import { Errors }            from "aave-v3-core/protocol/libraries/helpers/Errors.sol";
-import { DataTypes }         from "aave-v3-core/protocol/libraries/types/DataTypes.sol";
-import { IAToken }           from "aave-v3-core/protocol/tokenization/AToken.sol";
+import { UserConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
+import { Errors }            from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
+import { DataTypes }         from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
+import { IAToken }           from "aave-v3-core/contracts/protocol/tokenization/AToken.sol";
 
 import {
-    DefaultReserveInterestRateStrategy,
     IERC20,
     IReserveInterestRateStrategy,
     MockERC20,
@@ -270,7 +267,6 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenFirstSupply
         givenDebtCeilingGtZero
         givenUserHasNoIsolatedCollateralRole
-        logStateDiff
     {
         _noAutomaticCollateralSupplyTest();
     }
@@ -485,7 +481,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         //     aTokenBalance: 500 ether
         // });
 
-        // assertEq(block.timestamp, 1);
+        assertEq(block.timestamp, 1);
 
         // assertEq(
         //     pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),

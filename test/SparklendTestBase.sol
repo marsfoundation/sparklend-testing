@@ -5,24 +5,25 @@ import "forge-std/Test.sol";
 
 import { VmSafe } from "forge-std/Vm.sol";
 
-import { AaveOracle }                               from "aave-v3-core/misc/AaveOracle.sol";
-import { AaveProtocolDataProvider as DataProvider } from "aave-v3-core/misc/AaveProtocolDataProvider.sol";
+import { AaveOracle }                               from "aave-v3-core/contracts/misc/AaveOracle.sol";
+import { AaveProtocolDataProvider as DataProvider } from "aave-v3-core/contracts/misc/AaveProtocolDataProvider.sol";
 
-import { ACLManager }                    from "aave-v3-core/protocol/configuration/ACLManager.sol";
-import { PoolAddressesProvider }         from "aave-v3-core/protocol/configuration/PoolAddressesProvider.sol";
-import { PoolAddressesProviderRegistry } from "aave-v3-core/protocol/configuration/PoolAddressesProviderRegistry.sol";
+import { ACLManager }                    from "aave-v3-core/contracts/protocol/configuration/ACLManager.sol";
+import { PoolAddressesProvider }         from "aave-v3-core/contracts/protocol/configuration/PoolAddressesProvider.sol";
+import { PoolAddressesProviderRegistry } from "aave-v3-core/contracts/protocol/configuration/PoolAddressesProviderRegistry.sol";
 
-import { DefaultReserveInterestRateStrategy } from "aave-v3-core/protocol/pool/DefaultReserveInterestRateStrategy.sol";
-import { Pool }                               from "aave-v3-core/protocol/pool/Pool.sol";
-import { PoolConfigurator }                   from "aave-v3-core/protocol/pool/PoolConfigurator.sol";
+import { Pool }                               from "aave-v3-core/contracts/protocol/pool/Pool.sol";
+import { PoolConfigurator }                   from "aave-v3-core/contracts/protocol/pool/PoolConfigurator.sol";
 
-import { ConfiguratorInputTypes } from "aave-v3-core/protocol/libraries/types/ConfiguratorInputTypes.sol";
+import { ConfiguratorInputTypes } from "aave-v3-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
 
-import { AToken }            from "aave-v3-core/protocol/tokenization/AToken.sol";
-import { StableDebtToken }   from "aave-v3-core/protocol/tokenization/StableDebtToken.sol";
-import { VariableDebtToken } from "aave-v3-core/protocol/tokenization/VariableDebtToken.sol";
+import { AToken }            from "aave-v3-core/contracts/protocol/tokenization/AToken.sol";
+import { StableDebtToken }   from "aave-v3-core/contracts/protocol/tokenization/StableDebtToken.sol";
+import { VariableDebtToken } from "aave-v3-core/contracts/protocol/tokenization/VariableDebtToken.sol";
 
-import { IReserveInterestRateStrategy } from "aave-v3-core/interfaces/IReserveInterestRateStrategy.sol";
+import { IReserveInterestRateStrategy } from "aave-v3-core/contracts/interfaces/IReserveInterestRateStrategy.sol";
+
+import { VariableBorrowInterestRateStrategy } from "sparklend-advanced/VariableBorrowInterestRateStrategy.sol";
 
 import { IERC20 }    from "erc20-helpers/interfaces/IERC20.sol";
 import { MockERC20 } from "erc20-helpers/MockERC20.sol";
@@ -107,17 +108,12 @@ contract SparkLendTestBase is Test {
         registry.transferOwnership(admin);
 
         IReserveInterestRateStrategy strategy
-            = IReserveInterestRateStrategy(new DefaultReserveInterestRateStrategy({
-                provider:                      poolAddressesProvider,
-                optimalUsageRatio:             0.90e27,
-                baseVariableBorrowRate:        0.05e27,
-                variableRateSlope1:            0.02e27,
-                variableRateSlope2:            0.3e27,
-                stableRateSlope1:              0,
-                stableRateSlope2:              0,
-                baseStableRateOffset:          0.05e27,  // Setting to the same so stable rate = kink
-                stableRateExcessOffset:        0,
-                optimalStableToTotalDebtRatio: 0
+            = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
+                provider:               poolAddressesProvider,
+                optimalUsageRatio:      0.90e27,
+                baseVariableBorrowRate: 0.05e27,
+                variableRateSlope1:     0.02e27,
+                variableRateSlope2:     0.3e27
             }));
 
         collateralAsset = new MockERC20("Collateral Asset", "COLL", 18);
@@ -197,17 +193,12 @@ contract SparkLendTestBase is Test {
     // TODO: More parameters
     function _setUpNewCollateral() internal returns (address newCollateralAsset) {
         IReserveInterestRateStrategy strategy
-            = IReserveInterestRateStrategy(new DefaultReserveInterestRateStrategy({
+            = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
                 provider:                      poolAddressesProvider,
                 optimalUsageRatio:             0.90e27,
                 baseVariableBorrowRate:        0.05e27,
                 variableRateSlope1:            0.02e27,
-                variableRateSlope2:            0.3e27,
-                stableRateSlope1:              0,
-                stableRateSlope2:              0,
-                baseStableRateOffset:          0,
-                stableRateExcessOffset:        0,
-                optimalStableToTotalDebtRatio: 0
+                variableRateSlope2:            0.3e27
             }));
 
         newCollateralAsset = address(new MockERC20("Collateral Asset", "COLL", 18));
