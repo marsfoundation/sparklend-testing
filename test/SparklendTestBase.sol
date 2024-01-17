@@ -27,7 +27,7 @@ import { IReserveInterestRateStrategy } from "aave-v3-core/interfaces/IReserveIn
 import { IERC20 }    from "erc20-helpers/interfaces/IERC20.sol";
 import { MockERC20 } from "erc20-helpers/MockERC20.sol";
 
-import { MockOracle } from "./mocks/MockOracle.sol";
+import { MockOracle } from "test/mocks/MockOracle.sol";
 
 // TODO: Is the deploy a pool admin on mainnet?
 // TODO: Figure out where token implementations need to be configured.

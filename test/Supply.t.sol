@@ -16,7 +16,7 @@ import {
     IReserveInterestRateStrategy,
     MockERC20,
     SparkLendTestBase
-} from "./SparkLendTestBase.sol";
+} from "test/SparkLendTestBase.sol";
 
 contract SupplyTestBase is SparkLendTestBase {
 
