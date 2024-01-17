@@ -21,34 +21,46 @@ pool.supply()
    ├── when this is the first supply
       ├── given the debt ceiling is not zero
          ├── when msg.sender DOES NOT have ISOLATED_COLLATERAL_SUPPLIER_ROLE
-            └── it should succeed without automatic collateral supply
+            └── it should succeed without automatic collateral supply [01]
          └── when msg.sender DOES have ISOLATED_COLLATERAL_SUPPLIER_ROLE
             ├── given the LTV is zero
-               └── it should succeed with no automatic collateral supply
+               └── it should succeed without automatic collateral supply [02]
             └── given the LTV is NOT zero
                ├── when the user IS NOT using any other collateral
-                  └── it should succeed with automatic collateral supply
+                  └── it should succeed with automatic collateral supply [03]
                └── when the user IS using any other collateral
                   ├── when the user is using a single collateral type
                      ├── given the other collateral type has a debt ceiling that is NOT zero
-                        └── it should succeed without automatic collateral supply
+                        └── it should succeed without automatic collateral supply [04]
                      └── given the other collateral type has a debt ceiling that is zero
-                        └── it should succeed with automatic collateral supply
+                        └── it should succeed without automatic collateral supply [05]
                   └── when the user is using multiple collateral types
-                     └── it should succeed without automatic collateral supply (NOTE: DC is already NOT zero so condition on line 722 in ValidationLogic doesn't apply)
+                     └── it should succeed without automatic collateral supply [06] (NOTE: DC is already NOT zero so condition on line 722 in ValidationLogic doesn't apply)
       └── given the debt ceiling is zero
          ├── given the LTV is zero
-            └── it should succeed with no automatic collateral supply
+            └── it should succeed with no automatic collateral supply [07]
          └── given the LTV is NOT zero
             ├── when the user IS NOT using any other collateral
-               └── it should succeed with automatic collateral supply
+               └── it should succeed with automatic collateral supply [08]
             └── when the user IS using any other collateral
                ├── when the user is using a single collateral type
                   ├── given the collateral type has a debt ceiling that is NOT zero
-                     └── it should succeed without automatic collateral supply
+                     └── it should succeed without automatic collateral supply [09]
                   └── given the collateral type has a debt ceiling that is zero
-                     └── it should succeed with automatic collateral supply
+                     └── it should succeed with automatic collateral supply [10]
                └── when the user is using multiple collateral types
-                  └── it should succeed with automatic collateral supply (NOTE: DC is already IS zero so condition on line 722 in ValidationLogic doesn't apply)
+                  └── it should succeed with automatic collateral supply [11] (NOTE: DC is already IS zero so condition on line 722 in ValidationLogic doesn't apply)
    └── when this is NOT the first supply
-      └── it should succeed without automatic collateral supply
+      └── it should succeed without automatic collateral supply [12]
+
+
+Problem statement:
+- Write a bunch of tests in a way that is both maximally conprehensive and maximally efficient
+
+Solutions
+
+Issues
+- Code logic is abstracted into functions. Logic branches early on cause the test to run twice in different ways.
+
+One approach for duplicated logic branches is leverage inheritance. If we expect the same thing to happen in multiple logic
+branches, maybe with slight modifications, we can create a base test class. We can also specify this in the tree file.

@@ -59,4 +59,10 @@ pool.supply()
    │                 └── given the collateral type has a debt ceiling that is zero
    │                    └── it should succeed with automatic collateral supply
    └── given this is NOT the first supply
-      └── it should succeed without automatic collateral supply
+      ├── given NO time has passed
+      │  └── it should succeed without automatic collateral supply WITHOUT interest rate updates
+      └── given SOME time has passed
+         └── it should succeed without automatic collateral supply WITHOUT interest rate updates
+
+
+TODO: Add reserveFactor != 0

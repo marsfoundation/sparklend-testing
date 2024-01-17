@@ -113,7 +113,7 @@ contract SparkLendTestBase is Test {
                 variableRateSlope2:            0.3e27,
                 stableRateSlope1:              0,
                 stableRateSlope2:              0,
-                baseStableRateOffset:          0,
+                baseStableRateOffset:          0.05e27,  // Setting to the same so stable rate = kink
                 stableRateExcessOffset:        0,
                 optimalStableToTotalDebtRatio: 0
             }));

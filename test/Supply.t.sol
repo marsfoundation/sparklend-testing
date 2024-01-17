@@ -5,8 +5,10 @@ import "forge-std/Test.sol";
 
 import { VmSafe } from "forge-std/Vm.sol";
 
-import { Errors }  from "aave-v3-core/protocol/libraries/helpers/Errors.sol";
-import { IAToken } from "aave-v3-core/protocol/tokenization/AToken.sol";
+import { UserConfiguration } from "aave-v3-core/protocol/libraries/configuration/UserConfiguration.sol";
+import { Errors }            from "aave-v3-core/protocol/libraries/helpers/Errors.sol";
+import { DataTypes }         from "aave-v3-core/protocol/libraries/types/DataTypes.sol";
+import { IAToken }           from "aave-v3-core/protocol/tokenization/AToken.sol";
 
 import {
     DefaultReserveInterestRateStrategy,
@@ -17,14 +19,22 @@ import {
 } from "./SparkLendTestBase.sol";
 
 contract SupplyTestBase is SparkLendTestBase {
+
     address supplier = makeAddr("supplier");
+
+    uint16 reserveId;
 
     IAToken aToken;
 
     function setUp() public virtual override {
         super.setUp();
 
-        aToken = IAToken(pool.getReserveData(address(collateralAsset)).aTokenAddress);
+        reserveId = pool.getReserveData(address(collateralAsset)).id;
+        aToken    = IAToken(pool.getReserveData(address(collateralAsset)).aTokenAddress);
+
+        vm.label(address(collateralAsset), "collateralAsset");
+        vm.label(address(aToken),          "aToken");
+        vm.label(address(pool),            "pool");
     }
 
 }
@@ -131,6 +141,8 @@ contract SupplyFailureTests is SupplyTestBase {
 
 contract SupplyConcreteTests is SupplyTestBase {
 
+    using UserConfiguration for DataTypes.UserConfigurationMap;
+
     // NOTE: Have to use storage for these values so they can be used across modifiers.
     address otherCollateral1;
     address otherCollateral2;
@@ -211,14 +223,176 @@ contract SupplyConcreteTests is SupplyTestBase {
         _;
     }
 
+    modifier givenNoTimeHasPassed { _; }
+
+    modifier givenSomeTimeHasPassed() {
+        vm.warp(1000 seconds);
+        _;
+    }
+
+    modifier logStateDiff() {
+        vm.startStateDiffRecording();
+
+        _;
+
+        VmSafe.AccountAccess[] memory records = vm.stopAndReturnStateDiff();
+
+        console.log("--- STATE DIFF ---");
+
+        for (uint256 i = 0; i < records.length; i++) {
+            for (uint256 j; j < records[i].storageAccesses.length; j++) {
+                if (!records[i].storageAccesses[j].isWrite) continue;
+
+                if (
+                    records[i].storageAccesses[j].newValue ==
+                    records[i].storageAccesses[j].previousValue
+                ) continue;
+
+                console.log("");
+                console2.log("account:  %s", vm.getLabel(records[i].account));
+                console2.log("accessor: %s", vm.getLabel(records[i].accessor));
+                console2.log("slot:     %s", vm.toString(records[i].storageAccesses[j].slot));
+
+                _logAddressOrUint("oldValue:", records[i].storageAccesses[j].previousValue);
+                _logAddressOrUint("newValue:", records[i].storageAccesses[j].newValue);
+            }
+        }
+    }
+
+    function _noAutomaticCollateralSupplyTest() internal {
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       0,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateSupply({
+            userBalance: 0,
+            totalSupply: 0
+        });
+
+        _assertAssetStateSupply({
+            allowance:     1000 ether,
+            userBalance:   1000 ether,
+            aTokenBalance: 0
+        });
+
+        assertEq(block.timestamp, 1);
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0.07e27,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateSupply({
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        _assertAssetStateSupply({
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+    }
+
+    function _automaticCollateralSupplyTest() internal {
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       0,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateSupply({
+            userBalance: 0,
+            totalSupply: 0
+        });
+
+        _assertAssetStateSupply({
+            allowance:     1000 ether,
+            userBalance:   1000 ether,
+            aTokenBalance: 0
+        });
+
+        assertEq(block.timestamp, 1);
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0.07e27,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateSupply({
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        _assertAssetStateSupply({
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            true,
+            "isUsingAsCollateral"
+        );
+    }
+
     function test_supply_01()
         public
         givenFirstSupply
         givenDebtCeilingGtZero
         givenUserHasNoIsolatedCollateralRole
+        logStateDiff
     {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _noAutomaticCollateralSupplyTest();
     }
 
     function test_supply_02()
@@ -228,8 +402,31 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenUserDoesHaveIsolatedCollateralRole
         givenLtvIsZero
     {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _noAutomaticCollateralSupplyTest();
+    }
+
+    function test_supply_03()
+        public
+        givenFirstSupply
+        givenDebtCeilingGtZero
+        givenUserDoesHaveIsolatedCollateralRole
+        givenLtvIsNotZero
+        whenUserIsNotUsingOtherCollateral
+    {
+        _automaticCollateralSupplyTest();
+    }
+
+    function test_supply_04()
+        public
+        givenFirstSupply
+        givenDebtCeilingGtZero
+        givenUserDoesHaveIsolatedCollateralRole
+        givenLtvIsNotZero
+        whenUserIsUsingOtherCollateral
+        whenUserIsUsingOneOtherCollateral
+        givenOneOtherCollateralHasDebtCeilingGtZero
+    {
+        _noAutomaticCollateralSupplyTest();
     }
 
     function test_supply_05()
@@ -238,10 +435,11 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenDebtCeilingGtZero
         givenUserDoesHaveIsolatedCollateralRole
         givenLtvIsNotZero
-        whenUserIsNotUsingOtherCollateral
+        whenUserIsUsingOtherCollateral
+        whenUserIsUsingOneOtherCollateral
+        givenOneOtherCollateralHasZeroDebtCeiling
     {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _noAutomaticCollateralSupplyTest();
     }
 
     function test_supply_06()
@@ -251,57 +449,52 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenUserDoesHaveIsolatedCollateralRole
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
-        whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasDebtCeilingGtZero
+        whenUserIsUsingMultipleOtherCollaterals
     {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _noAutomaticCollateralSupplyTest();
     }
 
     function test_supply_07()
         public
         givenFirstSupply
-        givenDebtCeilingGtZero
-        givenUserDoesHaveIsolatedCollateralRole
-        givenLtvIsNotZero
-        whenUserIsUsingOtherCollateral
-        whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasZeroDebtCeiling
+        givenZeroDebtCeiling
+        givenLtvIsZero
     {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _noAutomaticCollateralSupplyTest();
     }
 
     function test_supply_08()
         public
         givenFirstSupply
-        givenDebtCeilingGtZero
-        givenUserDoesHaveIsolatedCollateralRole
+        givenZeroDebtCeiling
         givenLtvIsNotZero
-        whenUserIsUsingOtherCollateral
-        whenUserIsUsingMultipleOtherCollaterals
+        whenUserIsNotUsingOtherCollateral
     {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _automaticCollateralSupplyTest();
     }
 
     function test_supply_09()
         public
         givenFirstSupply
         givenZeroDebtCeiling
+        givenLtvIsNotZero
+        whenUserIsUsingOtherCollateral
+        whenUserIsUsingOneOtherCollateral
+        givenOneOtherCollateralHasDebtCeilingGtZero
     {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _noAutomaticCollateralSupplyTest();
     }
 
     function test_supply_10()
         public
         givenFirstSupply
         givenZeroDebtCeiling
-        givenLtvIsZero
+        givenLtvIsNotZero
+        whenUserIsUsingOtherCollateral
+        whenUserIsUsingOneOtherCollateral
+        givenOneOtherCollateralHasZeroDebtCeiling
     {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _automaticCollateralSupplyTest();
     }
 
     function test_supply_11()
@@ -309,53 +502,16 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenFirstSupply
         givenZeroDebtCeiling
         givenLtvIsNotZero
-        whenUserIsNotUsingOtherCollateral
+        whenUserIsUsingOtherCollateral
+        whenUserIsUsingMultipleOtherCollaterals
     {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _automaticCollateralSupplyTest();
     }
 
     function test_supply_12()
         public
-        givenFirstSupply
-        givenZeroDebtCeiling
-        givenLtvIsNotZero
-        whenUserIsUsingOtherCollateral
-        whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasDebtCeilingGtZero
-    {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
-    }
-
-    function test_supply_13()
-        public
-        givenFirstSupply
-        givenZeroDebtCeiling
-        givenLtvIsNotZero
-        whenUserIsUsingOtherCollateral
-        whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasZeroDebtCeiling
-    {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
-    }
-
-    function test_supply_14()
-        public
-        givenFirstSupply
-        givenZeroDebtCeiling
-        givenLtvIsNotZero
-        whenUserIsUsingOtherCollateral
-        whenUserIsUsingMultipleOtherCollaterals
-    {
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
-    }
-
-    function test_supply_15()
-        public
         givenNotFirstSupply
+        givenNoTimeHasPassed
     {
         _assertATokenStateSupply({
             userBalance: 0,
@@ -381,104 +537,6 @@ contract SupplyConcreteTests is SupplyTestBase {
             userBalance:   0,
             aTokenBalance: 1500 ether
         });
-    }
-
-    function test_supply_stateDiffing()
-        public
-        givenNotFirstSupply
-    {
-        // vm.record();
-
-        vm.startStateDiffRecording();
-
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
-
-        VmSafe.AccountAccess[] memory records = vm.stopAndReturnStateDiff();
-
-        for (uint256 i = 0; i < records.length; i++) {
-            for (uint256 j; j < records[i].storageAccesses.length; j++) {
-                if (!records[i].storageAccesses[j].isWrite) continue;
-
-                if (
-                    records[i].storageAccesses[j].newValue ==
-                    records[i].storageAccesses[j].previousValue
-                ) continue;
-
-                console.log("");
-                console2.log("access", i);
-                console2.log("account:  %s", vm.getLabel(records[i].account));
-                console2.log("accessor: %s", vm.getLabel(records[i].accessor));
-
-                _logAddressOrUint("oldValue:", records[i].storageAccesses[j].previousValue);
-                _logAddressOrUint("newValue:", records[i].storageAccesses[j].newValue);
-            }
-        }
-
-        // access 13
-        // account:  0xb6A2DFF6B742D81083bfd357e66622CE72e24486  // ERC20
-        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
-        // oldValue: 1000000000000000000000
-        // newValue: 0
-
-        // access 13
-        // account:  0xb6A2DFF6B742D81083bfd357e66622CE72e24486  // ERC20
-        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
-        // oldValue: 1000000000000000000000
-        // newValue: 0
-
-        // access 13
-        // account:  0xb6A2DFF6B742D81083bfd357e66622CE72e24486  // ERC20
-        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
-        // oldValue: 1000000000000000000000
-        // newValue: 2000000000000000000000
-
-        // access 15
-        // account:  0x98493F6786Aa9e7d93Ef477E01F7506497B071e6  // AToken
-        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
-        // oldValue: 0
-        // newValue: 0xe800000000000000000000000000000000000000
-
-        // access 15
-        // account:  0x98493F6786Aa9e7d93Ef477E01F7506497B071e6  // AToken
-        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
-        // oldValue: 1000000000000000000000
-        // newValue: 2000000000000000000000
-
-        // access 15
-        // account:  0x98493F6786Aa9e7d93Ef477E01F7506497B071e6  // AToken
-        // accessor: 0x85545Fd1c77C25bCf270A733DE81E81C99329e55  // Pool
-        // oldValue: 0xe800000000000000000000000000000000000000
-        // newValue: 340282366920938463463374607431768211456000001000000000000000000000
-
-        // assertEq(records.length, 3);
-        // Vm.AccountAccess memory fooCall = records[0];
-        // assertEq(fooCall.kind, Vm.AccountAccessKind.Call);
-        // assertEq(fooCall.account, address(foo));
-        // assertEq(fooCall.accessor, address(this));
-
-        // // TODO: Make assertion helpers for collateralAsset, aToken, and pool, using ReserveLogic etc for maps
-
-        // address aToken = _getAToken(address(collateralAsset));
-
-        // ( , bytes32[] memory poolWriteSlots )            = vm.accesses(address(pool));
-        // ( , bytes32[] memory aTokenWriteSlots )          = vm.accesses(aToken);
-        // ( , bytes32[] memory collateralAssetWriteSlots ) = vm.accesses(address(collateralAsset));
-
-        // console2.log("--- pool logs ---");
-        // for (uint256 i = 0; i < poolWriteSlots.length; i++) {
-        //     _logSlot(address(pool), poolWriteSlots[i]);
-        // }
-
-        // console2.log("--- aToken logs ---");
-        // for (uint256 i = 0; i < aTokenWriteSlots.length; i++) {
-        //     _logSlot(aToken, aTokenWriteSlots[i]);
-        // }
-
-        // console2.log("--- collateralAsset logs ---");
-        // for (uint256 i = 0; i < collateralAssetWriteSlots.length; i++) {
-        //     _logSlot(address(collateralAsset), collateralAssetWriteSlots[i]);
-        // }
     }
 
     function _logSlot(address target, bytes32 slot) internal view {
@@ -525,7 +583,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         }
     }
 
-    function isAddress(bytes32 _bytes) public pure returns (bool isAddress_) {
+    function isAddress(bytes32 _bytes) public view returns (bool isAddress_) {
         if (_bytes == 0) return false;
 
         for (uint256 i = 20; i < 32; i++) {
@@ -534,7 +592,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         isAddress_ = true;
     }
 
-    function bytes32ToAddress(bytes32 _bytes) public pure returns (address) {
+    function bytes32ToAddress(bytes32 _bytes) public view returns (address) {
         require(isAddress(_bytes), "bytes32ToAddress/invalid-address");
         return address(uint160(uint256(_bytes)));
     }
@@ -562,7 +620,34 @@ contract SupplyConcreteTests is SupplyTestBase {
         poolConfigurator.setDebtCeiling(newCollateralAsset, ceiling);
     }
 
-    function _assertPoolStateSupply() internal view {}
+    function _assertPoolReserveStateSupply(
+        uint256 liquidityIndex,
+        uint256 currentLiquidityRate,
+        uint256 variableBorrowIndex,
+        uint256 currentVariableBorrowRate,
+        uint256 currentStableBorrowRate,
+        uint256 lastUpdateTimestamp,
+        uint256 accruedToTreasury,
+        uint256 unbacked
+    ) internal {
+        assertEq(pool.getReserveData(address(collateralAsset)).liquidityIndex,            liquidityIndex,            "liquidityIndex");
+        assertEq(pool.getReserveData(address(collateralAsset)).currentLiquidityRate,      currentLiquidityRate,      "currentLiquidityRate");
+        assertEq(pool.getReserveData(address(collateralAsset)).variableBorrowIndex,       variableBorrowIndex,       "variableBorrowIndex");
+        assertEq(pool.getReserveData(address(collateralAsset)).currentVariableBorrowRate, currentVariableBorrowRate, "currentVariableBorrowRate");
+        assertEq(pool.getReserveData(address(collateralAsset)).currentStableBorrowRate,   currentStableBorrowRate,   "currentStableBorrowRate");
+        assertEq(pool.getReserveData(address(collateralAsset)).lastUpdateTimestamp,       lastUpdateTimestamp,       "lastUpdateTimestamp");
+        assertEq(pool.getReserveData(address(collateralAsset)).accruedToTreasury,         accruedToTreasury,         "accruedToTreasury");
+        assertEq(pool.getReserveData(address(collateralAsset)).unbacked,                  unbacked,                  "unbacked");
+
+        // NOTE: Intentionally left out the following as they do not change on supply
+        // - ReserveConfigurationMap configuration;
+        // - uint16 id;
+        // - address aTokenAddress;
+        // - address stableDebtTokenAddress;
+        // - address variableDebtTokenAddress;
+        // - address interestRateStrategyAddress;
+        // - uint128 isolationModeTotalDebt;
+    }
 
     function _assertAssetStateSupply(
         uint256 allowance,
