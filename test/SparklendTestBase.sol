@@ -36,6 +36,9 @@ import { MockOracle } from "test/mocks/MockOracle.sol";
 
 contract SparkLendTestBase is Test {
 
+    // 3.65 days in seconds - gives clean numbers for testing (1% of APR)
+    uint256 constant WARP_TIME = 365 days / 100;
+
     address admin = makeAddr("admin");
 
     AaveOracle            aaveOracle;
@@ -110,7 +113,7 @@ contract SparkLendTestBase is Test {
         IReserveInterestRateStrategy strategy
             = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
                 provider:               poolAddressesProvider,
-                optimalUsageRatio:      0.90e27,
+                optimalUsageRatio:      0.80e27,
                 baseVariableBorrowRate: 0.05e27,
                 variableRateSlope1:     0.02e27,
                 variableRateSlope2:     0.3e27
@@ -119,7 +122,7 @@ contract SparkLendTestBase is Test {
         collateralAsset = new MockERC20("Collateral Asset", "COLL", 18);
         borrowAsset     = new MockERC20("Borrow Asset",     "BRRW", 18);
 
-        _initReserve(IERC20(address(collateralAsset)), strategy);  // TODO: Use different strategy
+        _initReserve(IERC20(address(collateralAsset)), strategy);
         _initReserve(IERC20(address(borrowAsset)),     strategy);
 
         _setUpMockOracle(address(collateralAsset), int256(1e8));
@@ -194,11 +197,11 @@ contract SparkLendTestBase is Test {
     function _setUpNewCollateral() internal returns (address newCollateralAsset) {
         IReserveInterestRateStrategy strategy
             = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
-                provider:                      poolAddressesProvider,
-                optimalUsageRatio:             0.90e27,
-                baseVariableBorrowRate:        0.05e27,
-                variableRateSlope1:            0.02e27,
-                variableRateSlope2:            0.3e27
+                provider:               poolAddressesProvider,
+                optimalUsageRatio:      0.80e27,
+                baseVariableBorrowRate: 0.05e27,
+                variableRateSlope1:     0.02e27,
+                variableRateSlope2:     0.30e27
             }));
 
         newCollateralAsset = address(new MockERC20("Collateral Asset", "COLL", 18));
@@ -252,6 +255,48 @@ contract SparkLendTestBase is Test {
 
     function _getAToken(address reserve) internal view returns (address aToken) {
         return pool.getReserveData(reserve).aTokenAddress;
+    }
+
+    /**********************************************************************************************/
+    /*** Utility calculation functions                                                          ***/
+    /**********************************************************************************************/
+
+    function _getCompoundedNormalizedInterest(uint256 rate, uint256 timeDelta)
+        internal pure returns (uint256 interestRate)
+    {
+        // interest = 1 + nx + (n/2)(n-1)x^2 + (n/6)(n-1)(n-2)x^3
+        // where n = timeDelta and x = rate / 365 days
+
+        uint256 term1 = 1e27;
+        uint256 term2 = rate * timeDelta / 365 days;
+        uint256 term3 = _rateExp(rate, 2) * timeDelta * (timeDelta - 1) / 2;
+        uint256 term4 = _rateExp(rate, 3) * timeDelta * (timeDelta - 1) * (timeDelta - 2) / 6;
+
+        interestRate = term1 + term2 + term3 + term4;
+    }
+
+    function _rateExp(uint256 x, uint256 n) internal pure returns (uint256 result) {
+        result = x / 365 days;
+
+        for (uint256 i = 1; i < n; i++) {
+            result = result * x / 1e27 / 365 days;
+        }
+    }
+
+    function _getUpdatedRates(
+        uint256 borrowed,
+        uint256 totalValue,
+        uint256 baseRate,
+        uint256 slope1,
+        uint256 optimizedUtilization
+    )
+        internal pure returns (uint256, uint256)
+    {
+        uint256 borrowRatio   = borrowed * 1e27 / totalValue;
+        uint256 borrowRate    = baseRate + slope1 * borrowRatio / optimizedUtilization;
+        uint256 liquidityRate = borrowRate * borrowRatio / 1e27;
+
+        return (borrowRate, liquidityRate);
     }
 
     /**********************************************************************************************/
