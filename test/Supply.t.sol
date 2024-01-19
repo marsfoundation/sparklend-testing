@@ -596,11 +596,6 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(expectedLiquidityIndex,      1.00011e27);
         assertEq(expectedVariableBorrowIndex, 1.000550151275656075434506e27);
 
-        uint256 debt = IERC20(pool.getReserveData(address(collateralAsset)).variableDebtTokenAddress).totalSupply();
-
-        console.log("debt", debt);
-        console.log("real", 100 ether + borrowerDebt);
-
         // NOTE: Utilization is based off of the totalDebt / totalLiquidityPlusDebt, this means that the
         //       totalValue of the market is based off of the DEBT OWED, not the amount of yield generated for the suppliers.
         //       These two numbers are close, but borrowerDebt is always slightly higher than supplierYield because of
@@ -640,141 +635,256 @@ contract SupplyConcreteTests is SupplyTestBase {
         );
     }
 
-    // function test_supply_14()
-    //     public
-    //     givenNotFirstSupply
-    //     givenSomeTimeHasPassedAfterSupply
-    //     givenNoActiveBorrow
-    // {
-    //     _assertPoolReserveStateSupply({
-    //         liquidityIndex:            1e27,
-    //         currentLiquidityRate:      0,
-    //         variableBorrowIndex:       1e27,
-    //         currentVariableBorrowRate: 0.05e27,
-    //         currentStableBorrowRate:   0,  // TODO: Remove?
-    //         lastUpdateTimestamp:       1,
-    //         accruedToTreasury:         0,
-    //         unbacked:                  0
-    //     });
+    function test_supply_15()
+        public
+        givenNotFirstSupply
+        givenSomeTimeHasPassedAfterSupply
+        givenNoActiveBorrow
+    {
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
 
-    //     _assertATokenStateSupply({
-    //         userBalance: 0,
-    //         totalSupply: 500 ether
-    //     });
+        _assertATokenStateSupply({
+            userBalance: 0,
+            totalSupply: 500 ether
+        });
 
-    //     _assertAssetStateSupply({
-    //         allowance:     1000 ether,
-    //         userBalance:   1000 ether,
-    //         aTokenBalance: 500 ether
-    //     });
+        _assertAssetStateSupply({
+            allowance:     1000 ether,
+            userBalance:   1000 ether,
+            aTokenBalance: 500 ether
+        });
 
-    //     assertEq(block.timestamp, 1000);
+        assertEq(block.timestamp, WARP_TIME + 1);
 
-    //     assertEq(
-    //         pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
-    //         false,
-    //         "isUsingAsCollateral"
-    //     );
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
 
-    //     vm.prank(supplier);
-    //     pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-    //     _assertPoolReserveStateSupply({
-    //         liquidityIndex:            1e27,
-    //         currentLiquidityRate:      0,
-    //         variableBorrowIndex:       1e27,
-    //         currentVariableBorrowRate: 0.05e27,
-    //         currentStableBorrowRate:   0,  // TODO: Remove?
-    //         lastUpdateTimestamp:       1000,  // lastUpdated has been changed
-    //         accruedToTreasury:         0,
-    //         unbacked:                  0
-    //     });
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       WARP_TIME + 1,  // Only state diff in reserves
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
 
-    //     _assertATokenStateSupply({
-    //         userBalance: 1000 ether,
-    //         totalSupply: 1500 ether
-    //     });
+        _assertATokenStateSupply({
+            userBalance: 1000 ether,
+            totalSupply: 1500 ether
+        });
 
-    //     _assertAssetStateSupply({
-    //         allowance:     0,
-    //         userBalance:   0,
-    //         aTokenBalance: 1500 ether
-    //     });
+        _assertAssetStateSupply({
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1500 ether
+        });
 
-    //     assertEq(
-    //         pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
-    //         false,
-    //         "isUsingAsCollateral"
-    //     );
-    // }
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+    }
 
-    // function test_supply_15()
-    //     public
-    //     givenNotFirstSupply
-    //     givenSomeTimeHasPassedAfterSupply
-    //     givenActiveBorrow
-    // {
-    //     _assertPoolReserveStateSupply({
-    //         liquidityIndex:            1e27,
-    //         currentLiquidityRate:      0,
-    //         variableBorrowIndex:       1e27,
-    //         currentVariableBorrowRate: 0.05e27,
-    //         currentStableBorrowRate:   0,  // TODO: Remove?
-    //         lastUpdateTimestamp:       1,
-    //         accruedToTreasury:         0,
-    //         unbacked:                  0
-    //     });
+    function test_supply_16()
+        public
+        givenNotFirstSupply
+        givenSomeTimeHasPassedAfterSupply
+        givenActiveBorrow
+        givenNoTimeHasPassedAfterBorrow
+    {
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
-    //     _assertATokenStateSupply({
-    //         userBalance: 0,
-    //         totalSupply: 500 ether
-    //     });
+        assertEq(borrowRate,    0.055e27);
+        assertEq(liquidityRate, 0.011e27);
 
-    //     _assertAssetStateSupply({
-    //         allowance:     1000 ether,
-    //         userBalance:   1000 ether,
-    //         aTokenBalance: 500 ether
-    //     });
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       WARP_TIME + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
 
-    //     assertEq(block.timestamp, 1000);
+        _assertATokenStateSupply({
+            userBalance: 0,
+            totalSupply: 500 ether
+        });
 
-    //     assertEq(
-    //         pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
-    //         false,
-    //         "isUsingAsCollateral"
-    //     );
+        _assertAssetStateSupply({
+            allowance:     1000 ether,
+            userBalance:   1000 ether,
+            aTokenBalance: 400 ether  // 100 borrowed
+        });
 
-    //     vm.prank(supplier);
-    //     pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        assertEq(block.timestamp, WARP_TIME + 1);
 
-    //     _assertPoolReserveStateSupply({
-    //         liquidityIndex:            1e27,
-    //         currentLiquidityRate:      0,
-    //         variableBorrowIndex:       1e27,
-    //         currentVariableBorrowRate: 0.05e27,
-    //         currentStableBorrowRate:   0,  // TODO: Remove?
-    //         lastUpdateTimestamp:       1000,  // lastUpdated has been changed
-    //         accruedToTreasury:         0,
-    //         unbacked:                  0
-    //     });
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
 
-    //     _assertATokenStateSupply({
-    //         userBalance: 1000 ether,
-    //         totalSupply: 1500 ether
-    //     });
+        // Approving 750 instead of 1000 to get cleaner numbers
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 750 ether, supplier, 0);
 
-    //     _assertAssetStateSupply({
-    //         allowance:     0,
-    //         userBalance:   0,
-    //         aTokenBalance: 1500 ether
-    //     });
+        ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether, 1250 ether);
 
-    //     assertEq(
-    //         pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
-    //         false,
-    //         "isUsingAsCollateral"
-    //     );
-    // }
+        // Both are lower because supply decreased utilization
+        assertEq(borrowRate,    0.052e27);
+        assertEq(liquidityRate, 0.00416e27);
+
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       WARP_TIME + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateSupply({
+            userBalance: 750 ether,
+            totalSupply: 1250 ether
+        });
+
+        _assertAssetStateSupply({
+            allowance:     250 ether,  // Remaining from 1000
+            userBalance:   250 ether,  // Remaining from 1000
+            aTokenBalance: 1150 ether  // 100 borrowed
+        });
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+    }
+
+    function test_supply_17()
+        public
+        givenNotFirstSupply
+        givenSomeTimeHasPassedAfterSupply
+        givenActiveBorrow
+        givenSomeTimeHasPassedAfterBorrow
+    {
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
+
+        assertEq(borrowRate,    0.055e27);
+        assertEq(liquidityRate, 0.011e27);
+
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       WARP_TIME + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        uint256 supplierYield = 0.011e27 * 500 ether / 100 / 1e27;  // 1% of APR
+
+        uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
+
+        uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 100 ether / 1e27;
+
+        // Borrower owes slightly more than lender has earned because of compounded interest
+        assertEq(supplierYield,                0.055 ether);
+        assertEq(compoundedNormalizedInterest, 1.000550151275656075434506e27);
+        assertEq(borrowerDebt,                 0.055015127565607543 ether);
+
+        _assertATokenStateSupply({
+            userBalance: 0,
+            totalSupply: 500 ether + supplierYield
+        });
+
+        _assertAssetStateSupply({
+            allowance:     1000 ether,
+            userBalance:   1000 ether,
+            aTokenBalance: 400 ether  // 100 borrowed
+        });
+
+        assertEq(block.timestamp, WARP_TIME * 2 + 1);
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+
+        // Approving 750 instead of 1000 to get cleaner numbers
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 750 ether, supplier, 0);
+
+        uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
+        uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
+
+        assertEq(expectedLiquidityIndex,      1.00011e27);
+        assertEq(expectedVariableBorrowIndex, 1.000550151275656075434506e27);
+
+        // NOTE: Utilization is based off of the totalDebt / totalLiquidityPlusDebt, this means that the
+        //       totalValue of the market is based off of the DEBT OWED, not the amount of yield generated for the suppliers.
+        //       These two numbers are close, but borrowerDebt is always slightly higher than supplierYield because of
+        //       compounded interest.
+        ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether + borrowerDebt, 1250 ether + borrowerDebt);
+
+        // // Both are lower because supply decreased utilization
+        assertEq(borrowRate,    0.052001012233796670018774935e27);
+        assertEq(liquidityRate, 0.004162186465985497605393897e27);
+
+        _assertPoolReserveStateSupply({
+            liquidityIndex:            expectedLiquidityIndex,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       expectedVariableBorrowIndex,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       WARP_TIME * 2 + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateSupply({
+            userBalance: 750 ether,
+            totalSupply: 1250 ether + supplierYield
+        });
+
+        _assertAssetStateSupply({
+            allowance:     250 ether,  // Remaining from 1000
+            userBalance:   250 ether,  // Remaining from 1000
+            aTokenBalance: 1150 ether  // 100 borrowed
+        });
+
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+    }
 
     /**********************************************************************************************/
     /*** Test running functions                                                                 ***/

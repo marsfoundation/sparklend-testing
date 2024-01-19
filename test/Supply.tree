@@ -53,7 +53,7 @@ pool.supply()
    └── when this is NOT the first supply (no automatic collateral supply for these cases)
       └── given no time has passed after supply
          └── given there is no active borrow
-            └── it should succeed and update lastUpdated timestamp [12]
+            └── it should succeed and update no reserve state [12]
          └── given there is an active borrow
             └── given no time has passed after borrow
                └── it should succeed and update rates only [13]
@@ -61,11 +61,12 @@ pool.supply()
                └── it should succeed and update the lastUpdated timestamp, indexes, and rates [14]
       └── given time has passed after supply
          └── given there is no active borrow
-            └── it should succeed and update lastUpdated timestamp [13]
+            └── it should succeed and update lastUpdated timestamp [15]
          └── given there is an active borrow
             └── given no time has passed since the last borrow
-               └── it should succeed and update the lastUpdated timestamp, indexes, and rates [14]
-            └── given som time has passed since the last borrow
+               └── it should succeed and update the rates only [16]
+            └── given some time has passed since the last borrow
+               └── it should succeed and update the rates only [17]
 
 
 
