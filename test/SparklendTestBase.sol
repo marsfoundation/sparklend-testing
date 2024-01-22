@@ -12,8 +12,8 @@ import { ACLManager }                    from "aave-v3-core/contracts/protocol/c
 import { PoolAddressesProvider }         from "aave-v3-core/contracts/protocol/configuration/PoolAddressesProvider.sol";
 import { PoolAddressesProviderRegistry } from "aave-v3-core/contracts/protocol/configuration/PoolAddressesProviderRegistry.sol";
 
-import { Pool }                               from "aave-v3-core/contracts/protocol/pool/Pool.sol";
-import { PoolConfigurator }                   from "aave-v3-core/contracts/protocol/pool/PoolConfigurator.sol";
+import { Pool }             from "aave-v3-core/contracts/protocol/pool/Pool.sol";
+import { PoolConfigurator } from "aave-v3-core/contracts/protocol/pool/PoolConfigurator.sol";
 
 import { ConfiguratorInputTypes } from "aave-v3-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
 
