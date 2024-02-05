@@ -20,6 +20,8 @@ contract WithdrawTestBase is SparkLendTestBase {
         super.setUp();
 
         _supply(user, address(collateralAsset), 1000 ether);
+
+        vm.label(user, "user");
     }
 
 }
@@ -92,6 +94,8 @@ contract WithdrawFailureTests is WithdrawTestBase {
         pool.withdraw(address(collateralAsset), 500 ether + 1e10, user);
     }
 
+    // TODO: Add liquidity failure boundary
+
     // TODO: Believe that this code is unreachable because the LTV is checked in two places
     //       and this only fails if one is zero and the other is not.
     // function test_withdraw_LtvValidationFailed() {}
@@ -137,16 +141,39 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     function test_withdraw_01()
         givenNoTimeHasPassedAfterSupply
         givenNoActiveBorrow
-        logStateDiff
         public
     {
         _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0,
+            currentVariableBorrowRate: 0.05e27,
             currentStableBorrowRate:   0,
-            lastUpdateTimestamp:       0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateWithdraw({
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        vm.prank(user);
+        pool.withdraw(address(collateralAsset), 1000 ether, user);
+
+        _assertPoolReserveState({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
             unbacked:                  0
         });
@@ -157,32 +184,80 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         });
 
         _assertAssetStateWithdraw({
-            allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 0
         });
+    }
+
+    function test_withdraw_02()
+        givenNoTimeHasPassedAfterSupply
+        givenActiveBorrow
+        givenNoTimeHasPassedAfterBorrow
+        public
+    {
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
+
+        assertEq(borrowRate,    0.0525e27);   // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
+
+        _assertPoolReserveState({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateWithdraw({
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   0,
+            aTokenBalance: 900 ether  // 100 borrowed
+        });
 
         vm.prank(user);
-        pool.withdraw(address(collateralAsset), 500 ether, user);
+        pool.withdraw(address(collateralAsset), 800 ether, user);
+
+        ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether, 200 ether);
+
+        assertEq(borrowRate,    0.0625e27);   // 5% + 50%/80% of 2% = 6.25%
+        assertEq(liquidityRate, 0.03125e27);  // 50% of 6.25% = 3.125%
+
+        _assertPoolReserveState({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateWithdraw({
+            userBalance: 200 ether,
+            totalSupply: 200 ether
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   800 ether,
+            aTokenBalance: 100 ether
+        });
     }
 
     /**********************************************************************************************/
     /*** Assertion helper functions                                                             ***/
     /**********************************************************************************************/
 
-    function _assertAssetStateWithdraw(
-        uint256 allowance,
-        uint256 userBalance,
-        uint256 aTokenBalance
-    )
-        internal
-    {
-        _assertAssetState({
-            user:          user,
-            allowance:     allowance,
-            userBalance:   userBalance,
-            aTokenBalance: aTokenBalance
-        });
+    function _assertAssetStateWithdraw(uint256 userBalance,uint256 aTokenBalance) internal {
+        assertEq(collateralAsset.balanceOf(user),                      userBalance,   "userBalance");
+        assertEq(collateralAsset.balanceOf(address(aCollateralAsset)), aTokenBalance, "aTokenBalance");
     }
 
     function _assertATokenStateWithdraw(uint256 userBalance, uint256 totalSupply) internal {

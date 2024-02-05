@@ -34,6 +34,7 @@ import { MockOracle } from "test/mocks/MockOracle.sol";
 // TODO: Is the deploy a pool admin on mainnet?
 // TODO: Figure out where token implementations need to be configured.
 // TODO: Remove unnecessary imports.
+// TODO: In dedicated AToken tests, explore UserState mapping so index can be asserted.
 
 contract SparkLendTestBase is Test {
 
@@ -134,6 +135,12 @@ contract SparkLendTestBase is Test {
 
         aBorrowAsset     = AToken(_getAToken(address(borrowAsset)));
         aCollateralAsset = AToken(_getAToken(address(collateralAsset)));
+
+        vm.label(address(borrowAsset),      "borrowAsset");
+        vm.label(address(collateralAsset),  "collateralAsset");
+        vm.label(address(aBorrowAsset),     "aBorrowAsset");
+        vm.label(address(aCollateralAsset), "aCollateralAsset");
+        vm.label(address(pool),             "pool");
     }
 
     /**********************************************************************************************/

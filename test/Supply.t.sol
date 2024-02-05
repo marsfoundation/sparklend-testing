@@ -25,9 +25,7 @@ contract SupplyTestBase is SparkLendTestBase {
 
         reserveId = pool.getReserveData(address(collateralAsset)).id;
 
-        vm.label(address(collateralAsset),  "collateralAsset");
-        vm.label(address(aCollateralAsset), "aCollateralAsset");
-        vm.label(address(pool),             "pool");
+        vm.label(supplier, "supplier");
     }
 
 }
@@ -263,7 +261,6 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenFirstSupply
         givenDebtCeilingGtZero
         givenUserHasNoIsolatedCollateralRole
-        logStateDiff
     {
         _noAutomaticCollateralSupplyTest();
     }
