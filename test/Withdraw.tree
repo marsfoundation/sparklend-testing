@@ -1,0 +1,31 @@
+pool.withdraw()
+├── when amount is zero
+   └── it should revert (boundary)
+├── when amount is less than balance
+   └── it should revert (boundary)
+├── given not active
+   └── it should revert
+├── given paused
+   └── it should revert
+├── when resulting health factor is below liquidation threshold
+   └── it should revert (boundary)
+├── when resulting health factor is below liquidation threshold
+   └── it should revert (boundary)
+├── when resulting LTV of collateral is not zero but the LTV of the reserve config is zero
+   └── it should revert
+└── given no time has passed after supply
+    └── given there is no active borrow
+        └── it should succeed and update no reserve state [12]
+    └── given there is an active borrow
+        └── given no time has passed after borrow
+            └── it should succeed and update rates only [13]
+        └── given some time has passed after borrow
+            └── it should succeed and update the lastUpdated timestamp, indexes, and rates [14]
+└── given time has passed after supply
+    └── given there is no active borrow
+        └── it should succeed and update lastUpdated timestamp [15]
+    └── given there is an active borrow
+        └── given no time has passed since the last borrow
+            └── it should succeed and update the rates only [16]
+        └── given some time has passed since the last borrow
+            └── it should succeed and update the rates only [17]

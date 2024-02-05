@@ -80,3 +80,6 @@ Issues
 
 One approach for duplicated logic branches is leverage inheritance. If we expect the same thing to happen in multiple logic
 branches, maybe with slight modifications, we can create a base test class. We can also specify this in the tree file.
+
+TODO: Consider how to add unexpected balance into tests
+TODO: Use structs for assertions

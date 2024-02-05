@@ -267,6 +267,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenFirstSupply
         givenDebtCeilingGtZero
         givenUserHasNoIsolatedCollateralRole
+        logStateDiff
     {
         _noAutomaticCollateralSupplyTest();
     }
