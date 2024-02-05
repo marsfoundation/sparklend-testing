@@ -92,4 +92,106 @@ contract WithdrawFailureTests is WithdrawTestBase {
         pool.withdraw(address(collateralAsset), 500 ether + 1e10, user);
     }
 
+    // TODO: Believe that this code is unreachable because the LTV is checked in two places
+    //       and this only fails if one is zero and the other is not.
+    // function test_withdraw_LtvValidationFailed() {}
+
+}
+
+contract WithdrawConcreteTests is WithdrawTestBase {
+
+    modifier givenNoTimeHasPassedAfterSupply { _; }
+
+    modifier givenSomeTimeHasPassedAfterSupply() {
+        skip(WARP_TIME);
+        _;
+    }
+
+    modifier givenNoActiveBorrow { _; }
+
+    modifier givenActiveBorrow {
+        // Allow borrowAsset to be collateral to demo collateralAsset accruing interest
+        _initCollateral({
+            asset:                address(borrowAsset),
+            ltv:                  5000,
+            liquidationThreshold: 6000,
+            liquidationBonus:     100_01
+        });
+
+        vm.prank(admin);
+        poolConfigurator.setReserveBorrowing(address(collateralAsset), true);
+
+        address borrower = makeAddr("borrower");
+        _supplyAndUseAsCollateral(borrower, address(borrowAsset), 1000 ether);
+        _borrow(borrower, address(collateralAsset), 100 ether);
+        _;
+    }
+
+    modifier givenNoTimeHasPassedAfterBorrow { _; }
+
+    modifier givenSomeTimeHasPassedAfterBorrow() {
+        skip(WARP_TIME);
+        _;
+    }
+
+    function test_withdraw_01()
+        givenNoTimeHasPassedAfterSupply
+        givenNoActiveBorrow
+        logStateDiff
+        public
+    {
+        _assertPoolReserveState({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       0,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateWithdraw({
+            userBalance: 0,
+            totalSupply: 0
+        });
+
+        _assertAssetStateWithdraw({
+            allowance:     1000 ether,
+            userBalance:   1000 ether,
+            aTokenBalance: 0
+        });
+
+        vm.prank(user);
+        pool.withdraw(address(collateralAsset), 500 ether, user);
+    }
+
+    /**********************************************************************************************/
+    /*** Assertion helper functions                                                             ***/
+    /**********************************************************************************************/
+
+    function _assertAssetStateWithdraw(
+        uint256 allowance,
+        uint256 userBalance,
+        uint256 aTokenBalance
+    )
+        internal
+    {
+        _assertAssetState({
+            user:          user,
+            allowance:     allowance,
+            userBalance:   userBalance,
+            aTokenBalance: aTokenBalance
+        });
+    }
+
+    function _assertATokenStateWithdraw(uint256 userBalance, uint256 totalSupply) internal {
+        _assertATokenState({
+            user:        user,
+            aToken:      address(aCollateralAsset),
+            userBalance: userBalance,
+            totalSupply: totalSupply
+        });
+    }
+
 }

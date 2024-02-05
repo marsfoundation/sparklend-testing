@@ -6,7 +6,6 @@ import "forge-std/Test.sol";
 import { UserConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
 import { Errors }            from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
 import { DataTypes }         from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
-import { IAToken }           from "aave-v3-core/contracts/protocol/tokenization/AToken.sol";
 
 import {
     IERC20,
@@ -21,17 +20,14 @@ contract SupplyTestBase is SparkLendTestBase {
 
     uint16 reserveId;
 
-    IAToken aToken;
-
     function setUp() public virtual override {
         super.setUp();
 
         reserveId = pool.getReserveData(address(collateralAsset)).id;
-        aToken    = IAToken(pool.getReserveData(address(collateralAsset)).aTokenAddress);
 
-        vm.label(address(collateralAsset), "collateralAsset");
-        vm.label(address(aToken),          "aToken");
-        vm.label(address(pool),            "pool");
+        vm.label(address(collateralAsset),  "collateralAsset");
+        vm.label(address(aCollateralAsset), "aCollateralAsset");
+        vm.label(address(pool),             "pool");
     }
 
 }
@@ -125,13 +121,13 @@ contract SupplyFailureTests is SupplyTestBase {
 
     function test_supply_aTokenMintNotCalledByPool() public {
         vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
-        aToken.mint(address(this), address(this), 1000 ether, 1e18);
+        aCollateralAsset.mint(address(this), address(this), 1000 ether, 1e18);
     }
 
     function test_supply_aTokenMintScaledInvalidAmount() public {
         vm.prank(address(pool));
         vm.expectRevert(bytes(Errors.INVALID_MINT_AMOUNT));
-        aToken.mint(address(this), address(this), 0, 1e18);
+        aCollateralAsset.mint(address(this), address(this), 0, 1e18);
     }
 
 }
@@ -391,7 +387,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenNoTimeHasPassedAfterSupply
         givenNoActiveBorrow
     {
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -424,7 +420,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -465,7 +461,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.055e27);
         assertEq(liquidityRate, 0.011e27);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -505,7 +501,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.052e27);
         assertEq(liquidityRate, 0.00416e27);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -546,7 +542,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.055e27);
         assertEq(liquidityRate, 0.011e27);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -607,7 +603,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.052001012233796670018774935e27);
         assertEq(liquidityRate, 0.004162186465985497605393897e27);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            expectedLiquidityIndex,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       expectedVariableBorrowIndex,
@@ -642,7 +638,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenSomeTimeHasPassedAfterSupply
         givenNoActiveBorrow
     {
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -675,7 +671,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -716,7 +712,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.055e27);
         assertEq(liquidityRate, 0.011e27);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -756,7 +752,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.052e27);
         assertEq(liquidityRate, 0.00416e27);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -797,7 +793,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.055e27);
         assertEq(liquidityRate, 0.011e27);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -858,7 +854,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.052001012233796670018774935e27);
         assertEq(liquidityRate, 0.004162186465985497605393897e27);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            expectedLiquidityIndex,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       expectedVariableBorrowIndex,
@@ -892,7 +888,7 @@ contract SupplyConcreteTests is SupplyTestBase {
     /**********************************************************************************************/
 
     function _noAutomaticCollateralSupplyTest() internal {
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -925,7 +921,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -955,7 +951,7 @@ contract SupplyConcreteTests is SupplyTestBase {
     }
 
     function _automaticCollateralSupplyTest() internal {
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -988,7 +984,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        _assertPoolReserveStateSupply({
+        _assertPoolReserveState({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -1018,57 +1014,27 @@ contract SupplyConcreteTests is SupplyTestBase {
     }
 
     /**********************************************************************************************/
-    /*** Utility functions                                                                      ***/
-    /**********************************************************************************************/
-
-    function _getUpdatedRates(uint256 borrowed, uint256 supplied)
-        internal view returns (uint256, uint256)
-    {
-        return _getUpdatedRates(borrowed, supplied, 0.05e27, 0.02e27, 0.8e27);
-    }
-
-    /**********************************************************************************************/
     /*** Assertion helper functions                                                             ***/
     /**********************************************************************************************/
 
-    function _assertPoolReserveStateSupply(
-        uint256 liquidityIndex,
-        uint256 currentLiquidityRate,
-        uint256 variableBorrowIndex,
-        uint256 currentVariableBorrowRate,
-        uint256 currentStableBorrowRate,
-        uint256 lastUpdateTimestamp,
-        uint256 accruedToTreasury,
-        uint256 unbacked
-    ) internal {
-        assertEq(pool.getReserveData(address(collateralAsset)).liquidityIndex,            liquidityIndex,            "liquidityIndex");
-        assertEq(pool.getReserveData(address(collateralAsset)).currentLiquidityRate,      currentLiquidityRate,      "currentLiquidityRate");
-        assertEq(pool.getReserveData(address(collateralAsset)).variableBorrowIndex,       variableBorrowIndex,       "variableBorrowIndex");
-        assertEq(pool.getReserveData(address(collateralAsset)).currentVariableBorrowRate, currentVariableBorrowRate, "currentVariableBorrowRate");
-        assertEq(pool.getReserveData(address(collateralAsset)).currentStableBorrowRate,   currentStableBorrowRate,   "currentStableBorrowRate");
-        assertEq(pool.getReserveData(address(collateralAsset)).lastUpdateTimestamp,       lastUpdateTimestamp,       "lastUpdateTimestamp");
-        assertEq(pool.getReserveData(address(collateralAsset)).accruedToTreasury,         accruedToTreasury,         "accruedToTreasury");
-        assertEq(pool.getReserveData(address(collateralAsset)).unbacked,                  unbacked,                  "unbacked");
-
-        // NOTE: Intentionally left out the following as they do not change on supply
-        // - ReserveConfigurationMap configuration;
-        // - uint16 id;
-        // - address aTokenAddress;
-        // - address stableDebtTokenAddress;
-        // - address variableDebtTokenAddress;
-        // - address interestRateStrategyAddress;
-        // - uint128 isolationModeTotalDebt;
-    }
-
-    function _assertAssetStateSupply(uint256 allowance, uint256 userBalance, uint256 aTokenBalance) internal {
-        assertEq(collateralAsset.allowance(supplier, address(pool)), allowance,     "allowance");
-        assertEq(collateralAsset.balanceOf(supplier),                userBalance,   "userBalance");
-        assertEq(collateralAsset.balanceOf(address(aToken)),         aTokenBalance, "aTokenBalance");
+    function _assertAssetStateSupply(uint256 allowance, uint256 userBalance, uint256 aTokenBalance)
+        internal
+    {
+        _assertAssetState({
+            user:          supplier,
+            allowance:     allowance,
+            userBalance:   userBalance,
+            aTokenBalance: aTokenBalance
+        });
     }
 
     function _assertATokenStateSupply(uint256 userBalance, uint256 totalSupply) internal {
-        assertEq(aToken.balanceOf(supplier), userBalance, "userBalance");
-        assertEq(aToken.totalSupply(),       totalSupply, "totalSupply");
+        _assertATokenState({
+            user:        supplier,
+            aToken:      address(aCollateralAsset),
+            userBalance: userBalance,
+            totalSupply: totalSupply
+        });
     }
 
 }
