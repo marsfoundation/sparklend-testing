@@ -384,27 +384,34 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenNoTimeHasPassedAfterSupply
         givenNoActiveBorrow
     {
-        _assertPoolReserveState({
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.05e27,
-            currentStableBorrowRate:   0,  // TODO: Remove?
+            currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
             unbacked:                  0
         });
 
-        _assertATokenStateSupply({
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        supplier,
+            aToken:      address(aCollateralAsset),
             userBalance: 0,
             totalSupply: 500 ether
         });
 
-        _assertAssetStateSupply({
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          supplier,
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 500 ether
         });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(block.timestamp, 1);
 
@@ -417,27 +424,16 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        _assertPoolReserveState({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
-            currentStableBorrowRate:   0,  // TODO: Remove?
-            lastUpdateTimestamp:       1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
+        aTokenParams.userBalance = 1000 ether;
+        aTokenParams.totalSupply = 1500 ether;
 
-        _assertATokenStateSupply({
-            userBalance: 1000 ether,
-            totalSupply: 1500 ether
-        });
+        assetParams.allowance     = 0;
+        assetParams.userBalance   = 0;
+        assetParams.aTokenBalance = 1500 ether;
 
-        _assertAssetStateSupply({
-            allowance:     0,
-            userBalance:   0,
-            aTokenBalance: 1500 ether
-        });
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
@@ -458,27 +454,34 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.055e27);
         assertEq(liquidityRate, 0.011e27);
 
-        _assertPoolReserveState({
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: borrowRate,
-            currentStableBorrowRate:   0,  // TODO: Remove?
+            currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
             unbacked:                  0
         });
 
-        _assertATokenStateSupply({
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        supplier,
+            aToken:      address(aCollateralAsset),
             userBalance: 0,
             totalSupply: 500 ether
         });
 
-        _assertAssetStateSupply({
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          supplier,
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
         });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(block.timestamp, 1);
 
@@ -498,27 +501,19 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.052e27);
         assertEq(liquidityRate, 0.00416e27);
 
-        _assertPoolReserveState({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      liquidityRate,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: borrowRate,
-            currentStableBorrowRate:   0,  // TODO: Remove?
-            lastUpdateTimestamp:       1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
+        poolParams.currentLiquidityRate      = liquidityRate;
+        poolParams.currentVariableBorrowRate = borrowRate;
 
-        _assertATokenStateSupply({
-            userBalance: 750 ether,
-            totalSupply: 1250 ether
-        });
+        aTokenParams.userBalance = 750 ether;
+        aTokenParams.totalSupply = 1250 ether;
 
-        _assertAssetStateSupply({
-            allowance:     250 ether,  // Remaining from 1000
-            userBalance:   250 ether,  // Remaining from 1000
-            aTokenBalance: 1150 ether  // 100 borrowed
-        });
+        assetParams.allowance     = 250 ether;   // Remaining from 1000
+        assetParams.userBalance   = 250 ether;   // Remaining from 1000
+        assetParams.aTokenBalance = 1150 ether;  // 100 borrowed
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
@@ -539,17 +534,6 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.055e27);
         assertEq(liquidityRate, 0.011e27);
 
-        _assertPoolReserveState({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      liquidityRate,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: borrowRate,
-            currentStableBorrowRate:   0,  // TODO: Remove?
-            lastUpdateTimestamp:       1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
-
         uint256 supplierYield = 0.011e27 * 500 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
@@ -561,16 +545,34 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(compoundedNormalizedInterest, 1.000550151275656075434506e27);
         assertEq(borrowerDebt,                 0.055015127565607543 ether);
 
-        _assertATokenStateSupply({
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        supplier,
+            aToken:      address(aCollateralAsset),
             userBalance: 0,
             totalSupply: 500 ether + supplierYield
         });
 
-        _assertAssetStateSupply({
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          supplier,
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
         });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(block.timestamp, WARP_TIME + 1);
 
@@ -600,27 +602,22 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.052001012233796670018774935e27);
         assertEq(liquidityRate, 0.004162186465985497605393897e27);
 
-        _assertPoolReserveState({
-            liquidityIndex:            expectedLiquidityIndex,
-            currentLiquidityRate:      liquidityRate,
-            variableBorrowIndex:       expectedVariableBorrowIndex,
-            currentVariableBorrowRate: borrowRate,
-            currentStableBorrowRate:   0,  // TODO: Remove?
-            lastUpdateTimestamp:       WARP_TIME + 1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
+        poolParams.liquidityIndex            = expectedLiquidityIndex;
+        poolParams.currentLiquidityRate      = liquidityRate;
+        poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
+        poolParams.currentVariableBorrowRate = borrowRate;
+        poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
 
-        _assertATokenStateSupply({
-            userBalance: 750 ether,
-            totalSupply: 1250 ether + supplierYield
-        });
+        aTokenParams.userBalance = 750 ether;
+        aTokenParams.totalSupply = 1250 ether + supplierYield;
 
-        _assertAssetStateSupply({
-            allowance:     250 ether,  // Remaining from 1000
-            userBalance:   250 ether,  // Remaining from 1000
-            aTokenBalance: 1150 ether  // 100 borrowed
-        });
+        assetParams.allowance     = 250 ether;  // Remaining from 1000
+        assetParams.userBalance   = 250 ether;  // Remaining from 1000
+        assetParams.aTokenBalance = 1150 ether; // 100 borrowed
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
@@ -635,27 +632,34 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenSomeTimeHasPassedAfterSupply
         givenNoActiveBorrow
     {
-        _assertPoolReserveState({
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.05e27,
-            currentStableBorrowRate:   0,  // TODO: Remove?
+            currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
             unbacked:                  0
         });
 
-        _assertATokenStateSupply({
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        supplier,
+            aToken:      address(aCollateralAsset),
             userBalance: 0,
             totalSupply: 500 ether
         });
 
-        _assertAssetStateSupply({
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          supplier,
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 500 ether
         });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(block.timestamp, WARP_TIME + 1);
 
@@ -668,27 +672,18 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        _assertPoolReserveState({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
-            currentStableBorrowRate:   0,  // TODO: Remove?
-            lastUpdateTimestamp:       WARP_TIME + 1,  // Only state diff in reserves
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
+        poolParams.lastUpdateTimestamp = WARP_TIME + 1;
 
-        _assertATokenStateSupply({
-            userBalance: 1000 ether,
-            totalSupply: 1500 ether
-        });
+        aTokenParams.userBalance = 1000 ether;
+        aTokenParams.totalSupply = 1500 ether;
 
-        _assertAssetStateSupply({
-            allowance:     0,
-            userBalance:   0,
-            aTokenBalance: 1500 ether
-        });
+        assetParams.allowance     = 0;
+        assetParams.userBalance   = 0;
+        assetParams.aTokenBalance = 1500 ether;
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
@@ -709,27 +704,34 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.055e27);
         assertEq(liquidityRate, 0.011e27);
 
-        _assertPoolReserveState({
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: borrowRate,
-            currentStableBorrowRate:   0,  // TODO: Remove?
+            currentStableBorrowRate:   0,
             lastUpdateTimestamp:       WARP_TIME + 1,
             accruedToTreasury:         0,
             unbacked:                  0
         });
 
-        _assertATokenStateSupply({
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        supplier,
+            aToken:      address(aCollateralAsset),
             userBalance: 0,
             totalSupply: 500 ether
         });
 
-        _assertAssetStateSupply({
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          supplier,
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
         });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(block.timestamp, WARP_TIME + 1);
 
@@ -749,27 +751,19 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.052e27);
         assertEq(liquidityRate, 0.00416e27);
 
-        _assertPoolReserveState({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      liquidityRate,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: borrowRate,
-            currentStableBorrowRate:   0,  // TODO: Remove?
-            lastUpdateTimestamp:       WARP_TIME + 1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
+        poolParams.currentLiquidityRate      = liquidityRate;
+        poolParams.currentVariableBorrowRate = borrowRate;
 
-        _assertATokenStateSupply({
-            userBalance: 750 ether,
-            totalSupply: 1250 ether
-        });
+        aTokenParams.userBalance = 750 ether;
+        aTokenParams.totalSupply = 1250 ether;
 
-        _assertAssetStateSupply({
-            allowance:     250 ether,  // Remaining from 1000
-            userBalance:   250 ether,  // Remaining from 1000
-            aTokenBalance: 1150 ether  // 100 borrowed
-        });
+        assetParams.allowance     = 250 ether;   // Remaining from 1000
+        assetParams.userBalance   = 250 ether;   // Remaining from 1000
+        assetParams.aTokenBalance = 1150 ether;  // 100 borrowed
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
@@ -790,17 +784,6 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.055e27);
         assertEq(liquidityRate, 0.011e27);
 
-        _assertPoolReserveState({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      liquidityRate,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: borrowRate,
-            currentStableBorrowRate:   0,  // TODO: Remove?
-            lastUpdateTimestamp:       WARP_TIME + 1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
-
         uint256 supplierYield = 0.011e27 * 500 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
@@ -812,16 +795,34 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(compoundedNormalizedInterest, 1.000550151275656075434506e27);
         assertEq(borrowerDebt,                 0.055015127565607543 ether);
 
-        _assertATokenStateSupply({
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       WARP_TIME + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        supplier,
+            aToken:      address(aCollateralAsset),
             userBalance: 0,
             totalSupply: 500 ether + supplierYield
         });
 
-        _assertAssetStateSupply({
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          supplier,
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
         });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(block.timestamp, WARP_TIME * 2 + 1);
 
@@ -851,27 +852,22 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowRate,    0.052001012233796670018774935e27);
         assertEq(liquidityRate, 0.004162186465985497605393897e27);
 
-        _assertPoolReserveState({
-            liquidityIndex:            expectedLiquidityIndex,
-            currentLiquidityRate:      liquidityRate,
-            variableBorrowIndex:       expectedVariableBorrowIndex,
-            currentVariableBorrowRate: borrowRate,
-            currentStableBorrowRate:   0,  // TODO: Remove?
-            lastUpdateTimestamp:       WARP_TIME * 2 + 1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
+        poolParams.liquidityIndex            = expectedLiquidityIndex;
+        poolParams.currentLiquidityRate      = liquidityRate;
+        poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
+        poolParams.currentVariableBorrowRate = borrowRate;
+        poolParams.lastUpdateTimestamp       = WARP_TIME * 2 + 1;
 
-        _assertATokenStateSupply({
-            userBalance: 750 ether,
-            totalSupply: 1250 ether + supplierYield
-        });
+        aTokenParams.userBalance = 750 ether;
+        aTokenParams.totalSupply = 1250 ether + supplierYield;
 
-        _assertAssetStateSupply({
-            allowance:     250 ether,  // Remaining from 1000
-            userBalance:   250 ether,  // Remaining from 1000
-            aTokenBalance: 1150 ether  // 100 borrowed
-        });
+        assetParams.allowance     = 250 ether;  // Remaining from 1000
+        assetParams.userBalance   = 250 ether;  // Remaining from 1000
+        assetParams.aTokenBalance = 1150 ether; // 100 borrowed
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
@@ -885,7 +881,7 @@ contract SupplyConcreteTests is SupplyTestBase {
     /**********************************************************************************************/
 
     function _noAutomaticCollateralSupplyTest() internal {
-        _assertPoolReserveState({
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -896,16 +892,23 @@ contract SupplyConcreteTests is SupplyTestBase {
             unbacked:                  0
         });
 
-        _assertATokenStateSupply({
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        supplier,
+            aToken:      address(aCollateralAsset),
             userBalance: 0,
             totalSupply: 0
         });
 
-        _assertAssetStateSupply({
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          supplier,
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 0
         });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(block.timestamp, 1);
 
@@ -918,27 +921,19 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        _assertPoolReserveState({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
-            currentStableBorrowRate:   0,  // TODO: Remove?
-            lastUpdateTimestamp:       1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
+        poolParams.currentVariableBorrowRate = 0.05e27;
+        poolParams.lastUpdateTimestamp       = 1;
 
-        _assertATokenStateSupply({
-            userBalance: 1000 ether,
-            totalSupply: 1000 ether
-        });
+        aTokenParams.userBalance = 1000 ether;
+        aTokenParams.totalSupply = 1000 ether;
 
-        _assertAssetStateSupply({
-            allowance:     0,
-            userBalance:   0,
-            aTokenBalance: 1000 ether
-        });
+        assetParams.allowance     = 0;
+        assetParams.userBalance   = 0;
+        assetParams.aTokenBalance = 1000 ether;
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
@@ -948,7 +943,7 @@ contract SupplyConcreteTests is SupplyTestBase {
     }
 
     function _automaticCollateralSupplyTest() internal {
-        _assertPoolReserveState({
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -959,16 +954,23 @@ contract SupplyConcreteTests is SupplyTestBase {
             unbacked:                  0
         });
 
-        _assertATokenStateSupply({
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        supplier,
+            aToken:      address(aCollateralAsset),
             userBalance: 0,
             totalSupply: 0
         });
 
-        _assertAssetStateSupply({
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          supplier,
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 0
         });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(block.timestamp, 1);
 
@@ -981,57 +983,25 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        _assertPoolReserveState({
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
-            currentStableBorrowRate:   0,  // TODO: Remove?
-            lastUpdateTimestamp:       1,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
+        poolParams.currentVariableBorrowRate = 0.05e27;
+        poolParams.lastUpdateTimestamp       = 1;
 
-        _assertATokenStateSupply({
-            userBalance: 1000 ether,
-            totalSupply: 1000 ether
-        });
+        aTokenParams.userBalance = 1000 ether;
+        aTokenParams.totalSupply = 1000 ether;
 
-        _assertAssetStateSupply({
-            allowance:     0,
-            userBalance:   0,
-            aTokenBalance: 1000 ether
-        });
+        assetParams.allowance     = 0;
+        assetParams.userBalance   = 0;
+        assetParams.aTokenBalance = 1000 ether;
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
             true,
             "isUsingAsCollateral"
         );
-    }
-
-    /**********************************************************************************************/
-    /*** Assertion helper functions                                                             ***/
-    /**********************************************************************************************/
-
-    function _assertAssetStateSupply(uint256 allowance, uint256 userBalance, uint256 aTokenBalance)
-        internal
-    {
-        _assertAssetState({
-            user:          supplier,
-            allowance:     allowance,
-            userBalance:   userBalance,
-            aTokenBalance: aTokenBalance
-        });
-    }
-
-    function _assertATokenStateSupply(uint256 userBalance, uint256 totalSupply) internal {
-        _assertATokenState({
-            user:        supplier,
-            aToken:      address(aCollateralAsset),
-            userBalance: userBalance,
-            totalSupply: totalSupply
-        });
     }
 
 }
