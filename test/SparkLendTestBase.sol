@@ -338,41 +338,18 @@ contract SparkLendTestBase is Test {
         uint256 unbacked;
     }
 
-    function _assertPoolReserveState(
-        AssertPoolReserveStateParams memory params
-    ) internal {
-        _assertPoolReserveState(
-            params.liquidityIndex,
-            params.currentLiquidityRate,
-            params.variableBorrowIndex,
-            params.currentVariableBorrowRate,
-            params.currentStableBorrowRate,
-            params.lastUpdateTimestamp,
-            params.accruedToTreasury,
-            params.unbacked
-        );
-    }
+    function _assertPoolReserveState(AssertPoolReserveStateParams memory params) internal {
 
-    function _assertPoolReserveState(
-        uint256 liquidityIndex,
-        uint256 currentLiquidityRate,
-        uint256 variableBorrowIndex,
-        uint256 currentVariableBorrowRate,
-        uint256 currentStableBorrowRate,
-        uint256 lastUpdateTimestamp,
-        uint256 accruedToTreasury,
-        uint256 unbacked
-    ) internal {
         DataTypes.ReserveData memory data = pool.getReserveData(address(collateralAsset));
 
-        assertEq(data.liquidityIndex,            liquidityIndex,            "liquidityIndex");
-        assertEq(data.currentLiquidityRate,      currentLiquidityRate,      "currentLiquidityRate");
-        assertEq(data.variableBorrowIndex,       variableBorrowIndex,       "variableBorrowIndex");
-        assertEq(data.currentVariableBorrowRate, currentVariableBorrowRate, "variableBorrowRate");
-        assertEq(data.currentStableBorrowRate,   currentStableBorrowRate,   "stableBorrowRate");
-        assertEq(data.lastUpdateTimestamp,       lastUpdateTimestamp,       "lastUpdateTimestamp");
-        assertEq(data.accruedToTreasury,         accruedToTreasury,         "accruedToTreasury");
-        assertEq(data.unbacked,                  unbacked,                  "unbacked");
+        assertEq(data.liquidityIndex,            params.liquidityIndex,            "liquidityIndex");
+        assertEq(data.currentLiquidityRate,      params.currentLiquidityRate,      "currentLiquidityRate");
+        assertEq(data.variableBorrowIndex,       params.variableBorrowIndex,       "variableBorrowIndex");
+        assertEq(data.currentVariableBorrowRate, params.currentVariableBorrowRate, "variableBorrowRate");
+        assertEq(data.currentStableBorrowRate,   params.currentStableBorrowRate,   "stableBorrowRate");
+        assertEq(data.lastUpdateTimestamp,       params.lastUpdateTimestamp,       "lastUpdateTimestamp");
+        assertEq(data.accruedToTreasury,         params.accruedToTreasury,         "accruedToTreasury");
+        assertEq(data.unbacked,                  params.unbacked,                  "unbacked");
 
         // NOTE: Intentionally left out the following as they do not change on user actions
         // - ReserveConfigurationMap configuration;
@@ -391,32 +368,13 @@ contract SparkLendTestBase is Test {
         uint256 aTokenBalance;
     }
 
-    function _assertAssetState(
-        AssertAssetStateParams memory params
-    )
-        internal
-    {
-        _assertAssetState(
-            params.user,
-            params.allowance,
-            params.userBalance,
-            params.aTokenBalance
-        );
-    }
-
-    function _assertAssetState(
-        address user,
-        uint256 allowance,
-        uint256 userBalance,
-        uint256 aTokenBalance
-    )
-        internal
-    {
+    function _assertAssetState(AssertAssetStateParams memory params) internal {
         address aToken = pool.getReserveData(address(collateralAsset)).aTokenAddress;
 
-        assertEq(collateralAsset.allowance(user, address(pool)), allowance,     "allowance");
-        assertEq(collateralAsset.balanceOf(user),                userBalance,   "userBalance");
-        assertEq(collateralAsset.balanceOf(aToken),              aTokenBalance, "aTokenBalance");
+        assertEq(collateralAsset.allowance(params.user, address(pool)), params.allowance, "allowance");
+
+        assertEq(collateralAsset.balanceOf(params.user), params.userBalance,   "userBalance");
+        assertEq(collateralAsset.balanceOf(aToken),      params.aTokenBalance, "aTokenBalance");
     }
 
     struct AssertATokenStateParams {
@@ -426,29 +384,9 @@ contract SparkLendTestBase is Test {
         uint256 totalSupply;
     }
 
-    function _assertATokenState(
-        AssertATokenStateParams memory params
-    )
-        internal
-    {
-        _assertATokenState(
-            params.user,
-            params.aToken,
-            params.userBalance,
-            params.totalSupply
-        );
-    }
-
-    function _assertATokenState(
-        address user,
-        address aToken,
-        uint256 userBalance,
-        uint256 totalSupply
-    )
-        internal
-    {
-        assertEq(IERC20(aToken).balanceOf(user), userBalance, "userBalance");
-        assertEq(IERC20(aToken).totalSupply(),   totalSupply, "totalSupply");
+    function _assertATokenState(AssertATokenStateParams memory params) internal {
+        assertEq(IERC20(params.aToken).balanceOf(params.user), params.userBalance, "userBalance");
+        assertEq(IERC20(params.aToken).totalSupply(),          params.totalSupply, "totalSupply");
     }
 
     /**********************************************************************************************/
