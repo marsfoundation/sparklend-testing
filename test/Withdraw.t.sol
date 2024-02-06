@@ -445,6 +445,64 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         });
     }
 
+    function test_withdraw_05_structs()
+        givenSomeTimeHasPassedAfterSupply
+        givenActiveBorrow
+        givenNoTimeHasPassedAfterBorrow
+        public
+    {
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
+
+        assertEq(borrowRate,    0.0525e27);   // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
+
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       WARP_TIME + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        AssertATokenStateWithdrawParams memory aTokenParams = AssertATokenStateWithdrawParams({
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        AssertAssetStateWithdrawParams memory assetParams = AssertAssetStateWithdrawParams({
+            userBalance:   0,
+            aTokenBalance: 900 ether  // 100 borrowed
+        });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenStateWithdraw(aTokenParams);
+        _assertAssetStateWithdraw(assetParams);
+
+        vm.prank(user);
+        pool.withdraw(address(collateralAsset), 800 ether, user);
+
+        ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether, 200 ether);
+
+        assertEq(borrowRate,    0.0625e27);   // 5% + 50%/80% of 2% = 6.25%
+        assertEq(liquidityRate, 0.03125e27);  // 50% of 6.25% = 3.125%
+
+        poolParams.currentLiquidityRate      = liquidityRate;
+        poolParams.currentVariableBorrowRate = borrowRate;
+
+        aTokenParams.userBalance = 200 ether;
+        aTokenParams.totalSupply = 200 ether;
+
+        assetParams.userBalance   = 800 ether;
+        assetParams.aTokenBalance = 100 ether;
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenStateWithdraw(aTokenParams);
+        _assertAssetStateWithdraw(assetParams);
+    }
+
     function test_withdraw_06()
         givenSomeTimeHasPassedAfterSupply
         givenActiveBorrow
@@ -530,9 +588,27 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     /*** Assertion helper functions                                                             ***/
     /**********************************************************************************************/
 
-    function _assertAssetStateWithdraw(uint256 userBalance,uint256 aTokenBalance) internal {
+    struct AssertAssetStateWithdrawParams {
+        uint256 userBalance;
+        uint256 aTokenBalance;
+    }
+
+    function _assertAssetStateWithdraw(AssertAssetStateWithdrawParams memory params) internal {
+        _assertAssetStateWithdraw(params.userBalance, params.aTokenBalance);
+    }
+
+    function _assertAssetStateWithdraw(uint256 userBalance, uint256 aTokenBalance) internal {
         assertEq(collateralAsset.balanceOf(user),                      userBalance,   "userBalance");
         assertEq(collateralAsset.balanceOf(address(aCollateralAsset)), aTokenBalance, "aTokenBalance");
+    }
+
+    struct AssertATokenStateWithdrawParams {
+        uint256 userBalance;
+        uint256 totalSupply;
+    }
+
+    function _assertATokenStateWithdraw(AssertATokenStateWithdrawParams memory params) internal {
+        _assertATokenStateWithdraw(params.userBalance, params.totalSupply);
     }
 
     function _assertATokenStateWithdraw(uint256 userBalance, uint256 totalSupply) internal {

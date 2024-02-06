@@ -327,6 +327,32 @@ contract SparkLendTestBase is Test {
     /*** Assertion helper functions                                                             ***/
     /**********************************************************************************************/
 
+    struct AssertPoolReserveStateParams {
+        uint256 liquidityIndex;
+        uint256 currentLiquidityRate;
+        uint256 variableBorrowIndex;
+        uint256 currentVariableBorrowRate;
+        uint256 currentStableBorrowRate;
+        uint256 lastUpdateTimestamp;
+        uint256 accruedToTreasury;
+        uint256 unbacked;
+    }
+
+    function _assertPoolReserveState(
+        AssertPoolReserveStateParams memory params
+    ) internal {
+        _assertPoolReserveState(
+            params.liquidityIndex,
+            params.currentLiquidityRate,
+            params.variableBorrowIndex,
+            params.currentVariableBorrowRate,
+            params.currentStableBorrowRate,
+            params.lastUpdateTimestamp,
+            params.accruedToTreasury,
+            params.unbacked
+        );
+    }
+
     function _assertPoolReserveState(
         uint256 liquidityIndex,
         uint256 currentLiquidityRate,
@@ -358,6 +384,26 @@ contract SparkLendTestBase is Test {
         // - uint128 isolationModeTotalDebt;
     }
 
+    struct AssertAssetStateParams {
+        address user;
+        uint256 allowance;
+        uint256 userBalance;
+        uint256 aTokenBalance;
+    }
+
+    function _assertAssetState(
+        AssertAssetStateParams memory params
+    )
+        internal
+    {
+        _assertAssetState(
+            params.user,
+            params.allowance,
+            params.userBalance,
+            params.aTokenBalance
+        );
+    }
+
     function _assertAssetState(
         address user,
         uint256 allowance,
@@ -371,6 +417,26 @@ contract SparkLendTestBase is Test {
         assertEq(collateralAsset.allowance(user, address(pool)), allowance,     "allowance");
         assertEq(collateralAsset.balanceOf(user),                userBalance,   "userBalance");
         assertEq(collateralAsset.balanceOf(aToken),              aTokenBalance, "aTokenBalance");
+    }
+
+    struct AssertATokenStateParams {
+        address user;
+        address aToken;
+        uint256 userBalance;
+        uint256 totalSupply;
+    }
+
+    function _assertATokenState(
+        AssertATokenStateParams memory params
+    )
+        internal
+    {
+        _assertATokenState(
+            params.user,
+            params.aToken,
+            params.userBalance,
+            params.totalSupply
+        );
     }
 
     function _assertATokenState(
