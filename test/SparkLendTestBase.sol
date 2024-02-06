@@ -16,6 +16,7 @@ import { Pool }             from "aave-v3-core/contracts/protocol/pool/Pool.sol"
 import { PoolConfigurator } from "aave-v3-core/contracts/protocol/pool/PoolConfigurator.sol";
 
 import { ConfiguratorInputTypes } from "aave-v3-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
+import { DataTypes }              from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
 
 import { AToken }            from "aave-v3-core/contracts/protocol/tokenization/AToken.sol";
 import { StableDebtToken }   from "aave-v3-core/contracts/protocol/tokenization/StableDebtToken.sol";
@@ -33,6 +34,7 @@ import { MockOracle } from "test/mocks/MockOracle.sol";
 // TODO: Is the deploy a pool admin on mainnet?
 // TODO: Figure out where token implementations need to be configured.
 // TODO: Remove unnecessary imports.
+// TODO: In dedicated AToken tests, explore UserState mapping so index can be asserted.
 
 contract SparkLendTestBase is Test {
 
@@ -54,6 +56,9 @@ contract SparkLendTestBase is Test {
 
     MockERC20 borrowAsset;
     MockERC20 collateralAsset;
+
+    AToken aBorrowAsset;
+    AToken aCollateralAsset;
 
     function setUp() public virtual {
         address deployer = address(this);
@@ -127,6 +132,15 @@ contract SparkLendTestBase is Test {
 
         _setUpMockOracle(address(collateralAsset), int256(1e8));
         _setUpMockOracle(address(borrowAsset),     int256(1e8));
+
+        aBorrowAsset     = AToken(_getAToken(address(borrowAsset)));
+        aCollateralAsset = AToken(_getAToken(address(collateralAsset)));
+
+        vm.label(address(borrowAsset),      "borrowAsset");
+        vm.label(address(collateralAsset),  "collateralAsset");
+        vm.label(address(aBorrowAsset),     "aBorrowAsset");
+        vm.label(address(aCollateralAsset), "aCollateralAsset");
+        vm.label(address(pool),             "pool");
     }
 
     /**********************************************************************************************/
@@ -297,6 +311,144 @@ contract SparkLendTestBase is Test {
         uint256 liquidityRate = borrowRate * borrowRatio / 1e27;
 
         return (borrowRate, liquidityRate);
+    }
+
+    /**********************************************************************************************/
+    /*** Utility functions                                                                      ***/
+    /**********************************************************************************************/
+
+    function _getUpdatedRates(uint256 borrowed, uint256 supplied)
+        internal pure returns (uint256, uint256)
+    {
+        return _getUpdatedRates(borrowed, supplied, 0.05e27, 0.02e27, 0.8e27);
+    }
+
+    /**********************************************************************************************/
+    /*** Assertion helper functions                                                             ***/
+    /**********************************************************************************************/
+
+    struct AssertPoolReserveStateParams {
+        uint256 liquidityIndex;
+        uint256 currentLiquidityRate;
+        uint256 variableBorrowIndex;
+        uint256 currentVariableBorrowRate;
+        uint256 currentStableBorrowRate;
+        uint256 lastUpdateTimestamp;
+        uint256 accruedToTreasury;
+        uint256 unbacked;
+    }
+
+    function _assertPoolReserveState(
+        AssertPoolReserveStateParams memory params
+    ) internal {
+        _assertPoolReserveState(
+            params.liquidityIndex,
+            params.currentLiquidityRate,
+            params.variableBorrowIndex,
+            params.currentVariableBorrowRate,
+            params.currentStableBorrowRate,
+            params.lastUpdateTimestamp,
+            params.accruedToTreasury,
+            params.unbacked
+        );
+    }
+
+    function _assertPoolReserveState(
+        uint256 liquidityIndex,
+        uint256 currentLiquidityRate,
+        uint256 variableBorrowIndex,
+        uint256 currentVariableBorrowRate,
+        uint256 currentStableBorrowRate,
+        uint256 lastUpdateTimestamp,
+        uint256 accruedToTreasury,
+        uint256 unbacked
+    ) internal {
+        DataTypes.ReserveData memory data = pool.getReserveData(address(collateralAsset));
+
+        assertEq(data.liquidityIndex,            liquidityIndex,            "liquidityIndex");
+        assertEq(data.currentLiquidityRate,      currentLiquidityRate,      "currentLiquidityRate");
+        assertEq(data.variableBorrowIndex,       variableBorrowIndex,       "variableBorrowIndex");
+        assertEq(data.currentVariableBorrowRate, currentVariableBorrowRate, "variableBorrowRate");
+        assertEq(data.currentStableBorrowRate,   currentStableBorrowRate,   "stableBorrowRate");
+        assertEq(data.lastUpdateTimestamp,       lastUpdateTimestamp,       "lastUpdateTimestamp");
+        assertEq(data.accruedToTreasury,         accruedToTreasury,         "accruedToTreasury");
+        assertEq(data.unbacked,                  unbacked,                  "unbacked");
+
+        // NOTE: Intentionally left out the following as they do not change on user actions
+        // - ReserveConfigurationMap configuration;
+        // - uint16 id;
+        // - address aTokenAddress;
+        // - address stableDebtTokenAddress;
+        // - address variableDebtTokenAddress;
+        // - address interestRateStrategyAddress;
+        // - uint128 isolationModeTotalDebt;
+    }
+
+    struct AssertAssetStateParams {
+        address user;
+        uint256 allowance;
+        uint256 userBalance;
+        uint256 aTokenBalance;
+    }
+
+    function _assertAssetState(
+        AssertAssetStateParams memory params
+    )
+        internal
+    {
+        _assertAssetState(
+            params.user,
+            params.allowance,
+            params.userBalance,
+            params.aTokenBalance
+        );
+    }
+
+    function _assertAssetState(
+        address user,
+        uint256 allowance,
+        uint256 userBalance,
+        uint256 aTokenBalance
+    )
+        internal
+    {
+        address aToken = pool.getReserveData(address(collateralAsset)).aTokenAddress;
+
+        assertEq(collateralAsset.allowance(user, address(pool)), allowance,     "allowance");
+        assertEq(collateralAsset.balanceOf(user),                userBalance,   "userBalance");
+        assertEq(collateralAsset.balanceOf(aToken),              aTokenBalance, "aTokenBalance");
+    }
+
+    struct AssertATokenStateParams {
+        address user;
+        address aToken;
+        uint256 userBalance;
+        uint256 totalSupply;
+    }
+
+    function _assertATokenState(
+        AssertATokenStateParams memory params
+    )
+        internal
+    {
+        _assertATokenState(
+            params.user,
+            params.aToken,
+            params.userBalance,
+            params.totalSupply
+        );
+    }
+
+    function _assertATokenState(
+        address user,
+        address aToken,
+        uint256 userBalance,
+        uint256 totalSupply
+    )
+        internal
+    {
+        assertEq(IERC20(aToken).balanceOf(user), userBalance, "userBalance");
+        assertEq(IERC20(aToken).totalSupply(),   totalSupply, "totalSupply");
     }
 
     /**********************************************************************************************/
