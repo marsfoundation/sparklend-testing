@@ -13,17 +13,17 @@ pool.withdraw()
    └── it should revert
 └── given no time has passed after supply
     └── given there is no active borrow
-        └── it should succeed and update no reserve state [12]
+        └── it should succeed and update no reserve state [01]
     └── given there is an active borrow
         └── given no time has passed after borrow
-            └── it should succeed and update rates only [13]
+            └── it should succeed and update rates only [02]
         └── given some time has passed after borrow
-            └── it should succeed and update the lastUpdated timestamp, indexes, and rates [14]
+            └── it should succeed and update the lastUpdated timestamp, indexes, and rates [03]
 └── given time has passed after supply
     └── given there is no active borrow
-        └── it should succeed and update lastUpdated timestamp [15]
+        └── it should succeed and update lastUpdated timestamp [04]
     └── given there is an active borrow
         └── given no time has passed since the last borrow
-            └── it should succeed and update the rates only [16]
+            └── it should succeed and update the rates only [05]
         └── given some time has passed since the last borrow
-            └── it should succeed and update the rates only [17]
+            └── it should succeed and update the rates only [06]

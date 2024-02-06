@@ -251,6 +251,281 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         });
     }
 
+    function test_withdraw_03()
+        givenNoTimeHasPassedAfterSupply
+        givenActiveBorrow
+        givenSomeTimeHasPassedAfterBorrow
+        public
+    {
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
+
+        assertEq(borrowRate,    0.0525e27);   // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
+
+        _assertPoolReserveState({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        uint256 supplierYield = 0.00525e27 * 1000 ether / 100 / 1e27;  // 1% of APR
+
+        uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
+
+        uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 100 ether / 1e27;
+
+        // Borrower owes slightly more than lender has earned because of compounded interest
+        assertEq(supplierYield,                0.0525 ether);
+        assertEq(compoundedNormalizedInterest, 1.00052513783297156325067096e27);
+        assertEq(borrowerDebt,                 0.052513783297156325 ether);
+
+        _assertATokenStateWithdraw({
+            userBalance: 1000 ether + supplierYield,
+            totalSupply: 1000 ether + supplierYield
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   0,
+            aTokenBalance: 900 ether  // 100 borrowed
+        });
+
+        vm.prank(user);
+        pool.withdraw(address(collateralAsset), 800 ether, user);
+
+        // Update indexes using old rates info
+        uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
+        uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
+
+        assertEq(expectedLiquidityIndex,      1.0000525e27);
+        assertEq(expectedVariableBorrowIndex, 1.000525137832971563250670960e27);
+
+        ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether + borrowerDebt, 200 ether + borrowerDebt);
+
+        // Slightly higher now because utilization is higher (last test was 5% + 50%/80% of 2% = 6.25%)
+        assertEq(borrowRate,    0.062503281249901840824889794e27);
+        assertEq(liquidityRate, 0.031259844180369559207886302e27);
+
+        _assertPoolReserveState({
+            liquidityIndex:            expectedLiquidityIndex,
+            currentLiquidityRate:      liquidityRate + 1,  // Rounding
+            variableBorrowIndex:       expectedVariableBorrowIndex,
+            currentVariableBorrowRate: borrowRate + 1, // Rounding
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       WARP_TIME + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateWithdraw({
+            userBalance: 200 ether + supplierYield,
+            totalSupply: 200 ether + supplierYield
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   800 ether,
+            aTokenBalance: 100 ether
+        });
+    }
+
+    function test_withdraw_04()
+        givenSomeTimeHasPassedAfterSupply
+        givenNoActiveBorrow
+        public
+    {
+        _assertPoolReserveState({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateWithdraw({
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        vm.prank(user);
+        pool.withdraw(address(collateralAsset), 1000 ether, user);
+
+        _assertPoolReserveState({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       WARP_TIME + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateWithdraw({
+            userBalance: 0,
+            totalSupply: 0
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   1000 ether,
+            aTokenBalance: 0
+        });
+    }
+
+    function test_withdraw_05()
+        givenSomeTimeHasPassedAfterSupply
+        givenActiveBorrow
+        givenNoTimeHasPassedAfterBorrow
+        public
+    {
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
+
+        assertEq(borrowRate,    0.0525e27);   // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
+
+        _assertPoolReserveState({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       WARP_TIME + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateWithdraw({
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   0,
+            aTokenBalance: 900 ether  // 100 borrowed
+        });
+
+        vm.prank(user);
+        pool.withdraw(address(collateralAsset), 800 ether, user);
+
+        ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether, 200 ether);
+
+        assertEq(borrowRate,    0.0625e27);   // 5% + 50%/80% of 2% = 6.25%
+        assertEq(liquidityRate, 0.03125e27);  // 50% of 6.25% = 3.125%
+
+        _assertPoolReserveState({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       WARP_TIME + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateWithdraw({
+            userBalance: 200 ether,
+            totalSupply: 200 ether
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   800 ether,
+            aTokenBalance: 100 ether
+        });
+    }
+
+    function test_withdraw_06()
+        givenSomeTimeHasPassedAfterSupply
+        givenActiveBorrow
+        givenSomeTimeHasPassedAfterBorrow
+        public
+    {
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
+
+        assertEq(borrowRate,    0.0525e27);   // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
+
+        _assertPoolReserveState({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      liquidityRate,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: borrowRate,
+            currentStableBorrowRate:   0,  // TODO: Remove?
+            lastUpdateTimestamp:       WARP_TIME + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        uint256 supplierYield = 0.00525e27 * 1000 ether / 100 / 1e27;  // 1% of APR
+
+        uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
+
+        uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 100 ether / 1e27;
+
+        // Borrower owes slightly more than lender has earned because of compounded interest
+        assertEq(supplierYield,                0.0525 ether);
+        assertEq(compoundedNormalizedInterest, 1.00052513783297156325067096e27);
+        assertEq(borrowerDebt,                 0.052513783297156325 ether);
+
+        _assertATokenStateWithdraw({
+            userBalance: 1000 ether + supplierYield,
+            totalSupply: 1000 ether + supplierYield
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   0,
+            aTokenBalance: 900 ether  // 100 borrowed
+        });
+
+        vm.prank(user);
+        pool.withdraw(address(collateralAsset), 800 ether, user);
+
+        // Update indexes using old rates info
+        uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
+        uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
+
+        assertEq(expectedLiquidityIndex,      1.0000525e27);
+        assertEq(expectedVariableBorrowIndex, 1.000525137832971563250670960e27);
+
+        ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether + borrowerDebt, 200 ether + borrowerDebt);
+
+        // Slightly higher now because utilization is higher (last test was 5% + 50%/80% of 2% = 6.25%)
+        assertEq(borrowRate,    0.062503281249901840824889794e27);
+        assertEq(liquidityRate, 0.031259844180369559207886302e27);
+
+        _assertPoolReserveState({
+            liquidityIndex:            expectedLiquidityIndex,
+            currentLiquidityRate:      liquidityRate + 1,  // Rounding
+            variableBorrowIndex:       expectedVariableBorrowIndex,
+            currentVariableBorrowRate: borrowRate + 1, // Rounding
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       WARP_TIME * 2 + 1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        _assertATokenStateWithdraw({
+            userBalance: 200 ether + supplierYield,
+            totalSupply: 200 ether + supplierYield
+        });
+
+        _assertAssetStateWithdraw({
+            userBalance:   800 ether,
+            aTokenBalance: 100 ether
+        });
+    }
+
     /**********************************************************************************************/
     /*** Assertion helper functions                                                             ***/
     /**********************************************************************************************/
