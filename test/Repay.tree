@@ -29,7 +29,7 @@ pool.repay()
             └── when user is paying with uint256 max
                 └── it should repay some of the debt, user is still borrowing [05]
     ├── given reserve is in isolation mode (same tree as above, updating isolation debt)
-        └├── when user is repaying with aToken
+        ├── when user is repaying with aToken
             └── when user is paying with uint256 max
                 └── when the aToken balance less than the debt
                     └── it should repay the debt corresponding to the aToken balance, user is still borrowing [06]
@@ -58,7 +58,7 @@ pool.repay()
             └── when user is paying with uint256 max
                 └── it should repay some of the debt, user is still borrowing [16]
     ├── given reserve is in isolation mode (same tree as above, updating isolation debt)
-        └├── when user is repaying with aToken
+        ├── when user is repaying with aToken
             └── when user is paying with uint256 max
                 └── when the aToken balance less than the debt
                     └── it should repay the debt corresponding to the aToken balance, user is still borrowing [17]
