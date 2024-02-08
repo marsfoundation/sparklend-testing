@@ -363,18 +363,19 @@ contract SparkLendTestBase is Test {
 
     struct AssertAssetStateParams {
         address user;
+        address asset;
         uint256 allowance;
         uint256 userBalance;
         uint256 aTokenBalance;
     }
 
     function _assertAssetState(AssertAssetStateParams memory params) internal {
-        address aToken = pool.getReserveData(address(collateralAsset)).aTokenAddress;
+        address aToken = pool.getReserveData(address(params.asset)).aTokenAddress;
 
-        assertEq(collateralAsset.allowance(params.user, address(pool)), params.allowance, "allowance");
+        assertEq(IERC20(params.asset).allowance(params.user, address(pool)), params.allowance, "allowance");
 
-        assertEq(collateralAsset.balanceOf(params.user), params.userBalance,   "userBalance");
-        assertEq(collateralAsset.balanceOf(aToken),      params.aTokenBalance, "aTokenBalance");
+        assertEq(IERC20(params.asset).balanceOf(params.user), params.userBalance,   "userBalance");
+        assertEq(IERC20(params.asset).balanceOf(aToken),      params.aTokenBalance, "aTokenBalance");
     }
 
     struct AssertATokenStateParams {

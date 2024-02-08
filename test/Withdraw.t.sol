@@ -163,6 +163,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          user,
+            asset:         address(collateralAsset),
             allowance:     0,
             userBalance:   0,
             aTokenBalance: 1000 ether
@@ -217,6 +218,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          user,
+            asset:         address(collateralAsset),
             allowance:     0,
             userBalance:   0,
             aTokenBalance: 900 ether  // 100 borrowed
@@ -290,6 +292,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          user,
+            asset:         address(collateralAsset),
             allowance:     0,
             userBalance:   0,
             aTokenBalance: 900 ether  // 100 borrowed
@@ -357,6 +360,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          user,
+            asset:         address(collateralAsset),
             allowance:     0,
             userBalance:   0,
             aTokenBalance: 1000 ether
@@ -413,6 +417,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          user,
+            asset:         address(collateralAsset),
             allowance:     0,
             userBalance:   0,
             aTokenBalance: 900 ether  // 100 borrowed
@@ -486,6 +491,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          user,
+            asset:         address(collateralAsset),
             allowance:     0,
             userBalance:   0,
             aTokenBalance: 900 ether  // 100 borrowed
