@@ -17,14 +17,14 @@ pool.repay()
             └── it should repay all debt, user is no longer borrowing [01]
         └── when user is paying equal to the debt
             └── it should repay all debt, user is no longer borrowing [02]
-        └── when user is paying with uint256 max
+        └── when user is paying with less than debt
             └── it should repay some of the debt, user is still borrowing [03]
     ├── given reserve is in isolation mode (same tree as above, updating isolation debt)
         └── when user is paying greater than debt
             └── it should repay all debt, user is no longer borrowing [04]
         └── when user is paying equal to the debt
             └── it should repay all debt, user is no longer borrowing [05]
-        └── when user is paying with uint256 max
+        └── when user is paying with less than debt
             └── it should repay some of the debt, user is still borrowing [06]
 ├── given some time has passed since borrow (same tree as above, updating indexes)
     ├── given reserve is NOT in isolation mode
@@ -32,14 +32,14 @@ pool.repay()
             └── it should repay all debt, user is no longer borrowing [07]
         └── when user is paying equal to the debt
             └── it should repay all debt, user is no longer borrowing [08]
-        └── when user is paying with uint256 max
+        └── when user is paying with less than debt
             └── it should repay some of the debt, user is still borrowing [09]
     ├── given reserve is in isolation mode (same tree as above, updating isolation debt)
         └── when user is paying greater than debt
             └── it should repay all debt, user is no longer borrowing [10]
         └── when user is paying equal to the debt
             └── it should repay all debt, user is no longer borrowing [11]
-        └── when user is paying with uint256 max
+        └── when user is paying with less than debt
             └── it should repay some of the debt, user is still borrowing [12]
 
 

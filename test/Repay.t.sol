@@ -99,3 +99,85 @@ contract RepayFailureTests is RepayTestBase {
     }
 
 }
+
+contract RepaySuccessTests is RepayTestBase {
+
+    address debtToken;
+
+    function setUp() public virtual override {
+        super.setUp();
+        debtToken = pool.getReserveData(address(borrowAsset)).variableDebtTokenAddress;
+    }
+
+    modifier givenNoTimeHasPassedSinceBorrow { _; }
+
+    modifier givenSomeTimeHasPassedSinceBorrow() {
+        skip(WARP_TIME);
+        _;
+    }
+
+    modifier givenNotInIsolationMode { _; }
+
+    modifier givenInIsolationMode {
+        vm.prank(admin);
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+        _;
+    }
+
+    modifier whenUserIsPayingGreaterThanDebt {
+        // Code to set up the scenario where the user pays more than the debt
+        _;
+    }
+
+    modifier whenUserIsPayingEqualToDebt {
+        // Code to set up the scenario where the user pays exactly the debt amount
+        _;
+    }
+
+    modifier whenUserIsPayingWithUint256Max {
+        // Code to set up the scenario where the user pays with uint256 max value
+        _;
+    }
+
+    function test_repay_01()
+        givenNoTimeHasPassedSinceBorrow
+        givenNotInIsolationMode
+        public
+    {
+        vm.startPrank(borrower);
+        borrowAsset.approve(address(pool), 500 ether + 1);
+
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        AssertDebtTokenStateParams memory debtTokenParams = AssertDebtTokenStateParams({
+            user:        borrower,
+            debtToken:   debtToken,
+            userBalance: 500 ether,
+            totalSupply: 500 ether
+        });
+
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          borrower,
+            allowance:     500 ether + 1,
+            userBalance:   500 ether,
+            aTokenBalance: 500 ether
+        });
+
+        _assertPoolReserveState(poolParams);
+        _assertDebtTokenState(debtTokenParams);
+        _assertAssetState(assetParams);
+
+        pool.repay(address(borrowAsset), 500 ether + 1, 2, borrower);
+    }
+
+
+}

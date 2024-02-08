@@ -389,6 +389,18 @@ contract SparkLendTestBase is Test {
         assertEq(IERC20(params.aToken).totalSupply(),          params.totalSupply, "totalSupply");
     }
 
+    struct AssertDebtTokenStateParams {
+        address user;
+        address debtToken;
+        uint256 userBalance;
+        uint256 totalSupply;
+    }
+
+    function _assertDebtTokenState(AssertDebtTokenStateParams memory params) internal {
+        assertEq(IERC20(params.debtToken).balanceOf(params.user), params.userBalance, "userBalance");
+        assertEq(IERC20(params.debtToken).totalSupply(),          params.totalSupply, "totalSupply");
+    }
+
     /**********************************************************************************************/
     /*** State diff functions and modifiers                                                     ***/
     /**********************************************************************************************/
