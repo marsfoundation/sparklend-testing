@@ -235,6 +235,7 @@ contract RepaySuccessTests is RepayTestBase {
         borrowAsset.approve(address(pool), 500 ether + 1);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -283,6 +284,7 @@ contract RepaySuccessTests is RepayTestBase {
         borrowAsset.approve(address(pool), 500 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -331,6 +333,7 @@ contract RepaySuccessTests is RepayTestBase {
         borrowAsset.approve(address(pool), 500 ether - 1);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,

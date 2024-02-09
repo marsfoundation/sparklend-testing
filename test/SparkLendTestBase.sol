@@ -237,43 +237,39 @@ contract SparkLendTestBase is Test {
         pool.setUserUseReserveAsCollateral(newCollateralAsset, true);
     }
 
-    // TODO: Use `asset` for all params for user actions
-    function _borrow(address user, address borrowAsset_, uint256 amount) internal {
-        vm.startPrank(user);
-        pool.borrow(borrowAsset_, amount, 2, 0, user);
-        vm.stopPrank();
-    }
-
-    function _repay(address user, address borrowAsset_, uint256 amount) internal {
-        vm.startPrank(user);
-        IERC20(borrowAsset_).approve(address(pool), amount);
-        pool.repay(borrowAsset_, amount, 2, user);
-        vm.stopPrank();
-    }
-
-    function _supply(address user, address collateralAsset_, uint256 amount) internal {
-        vm.startPrank(user);
-        MockERC20(collateralAsset_).mint(user, amount);
-        MockERC20(collateralAsset_).approve(address(pool), amount);
-        pool.supply(collateralAsset_, amount, user, 0);
-        vm.stopPrank();
-    }
-
-    function _withdraw(address user, address collateralAsset_, uint256 amount) internal {
+    function _borrow(address user, address asset, uint256 amount) internal {
         vm.prank(user);
-        pool.withdraw(collateralAsset_, amount, user);
+        pool.borrow(asset, amount, 2, 0, user);
     }
 
-    function _supplyAndUseAsCollateral(address user, address collateralAsset_, uint256 amount)
-        internal
-    {
-        _supply(user, collateralAsset_, amount);
-        _useAsCollateral(user, collateralAsset_);
+    function _supply(address user, address asset, uint256 amount) internal {
+        vm.startPrank(user);
+        MockERC20(asset).mint(user, amount);
+        MockERC20(asset).approve(address(pool), amount);
+        pool.supply(asset, amount, user, 0);
+        vm.stopPrank();
     }
 
-    function _setCollateralDebtCeiling(address collateralAsset_, uint256 ceiling) internal {
+    function _repay(address user, address asset, uint256 amount) internal {
+        vm.startPrank(user);
+        IERC20(asset).approve(address(pool), amount);
+        pool.repay(asset, amount, 2, user);
+        vm.stopPrank();
+    }
+
+    function _withdraw(address user, address asset, uint256 amount) internal {
+        vm.prank(user);
+        pool.withdraw(asset, amount, user);
+    }
+
+    function _supplyAndUseAsCollateral(address user, address asset, uint256 amount) internal {
+        _supply(user, asset, amount);
+        _useAsCollateral(user, asset);
+    }
+
+    function _setCollateralDebtCeiling(address asset, uint256 ceiling) internal {
         vm.prank(admin);
-        poolConfigurator.setDebtCeiling(collateralAsset_, ceiling);
+        poolConfigurator.setDebtCeiling(asset, ceiling);
     }
 
     /**********************************************************************************************/
@@ -341,6 +337,7 @@ contract SparkLendTestBase is Test {
     /**********************************************************************************************/
 
     struct AssertPoolReserveStateParams {
+        address asset;
         uint256 liquidityIndex;
         uint256 currentLiquidityRate;
         uint256 variableBorrowIndex;
@@ -353,7 +350,7 @@ contract SparkLendTestBase is Test {
 
     function _assertPoolReserveState(AssertPoolReserveStateParams memory params) internal {
 
-        DataTypes.ReserveData memory data = pool.getReserveData(address(collateralAsset));
+        DataTypes.ReserveData memory data = pool.getReserveData(params.asset);
 
         assertEq(data.liquidityIndex,            params.liquidityIndex,            "liquidityIndex");
         assertEq(data.currentLiquidityRate,      params.currentLiquidityRate,      "currentLiquidityRate");
