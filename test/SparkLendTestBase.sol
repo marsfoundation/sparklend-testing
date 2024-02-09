@@ -237,9 +237,17 @@ contract SparkLendTestBase is Test {
         pool.setUserUseReserveAsCollateral(newCollateralAsset, true);
     }
 
+    // TODO: Use `asset` for all params for user actions
     function _borrow(address user, address borrowAsset_, uint256 amount) internal {
         vm.startPrank(user);
         pool.borrow(borrowAsset_, amount, 2, 0, user);
+        vm.stopPrank();
+    }
+
+    function _repay(address user, address borrowAsset_, uint256 amount) internal {
+        vm.startPrank(user);
+        IERC20(borrowAsset_).approve(address(pool), amount);
+        pool.repay(borrowAsset_, amount, 2, user);
         vm.stopPrank();
     }
 
@@ -249,6 +257,11 @@ contract SparkLendTestBase is Test {
         MockERC20(collateralAsset_).approve(address(pool), amount);
         pool.supply(collateralAsset_, amount, user, 0);
         vm.stopPrank();
+    }
+
+    function _withdraw(address user, address collateralAsset_, uint256 amount) internal {
+        vm.prank(user);
+        pool.withdraw(collateralAsset_, amount, user);
     }
 
     function _supplyAndUseAsCollateral(address user, address collateralAsset_, uint256 amount)
@@ -363,18 +376,19 @@ contract SparkLendTestBase is Test {
 
     struct AssertAssetStateParams {
         address user;
+        address asset;
         uint256 allowance;
         uint256 userBalance;
         uint256 aTokenBalance;
     }
 
     function _assertAssetState(AssertAssetStateParams memory params) internal {
-        address aToken = pool.getReserveData(address(collateralAsset)).aTokenAddress;
+        address aToken = pool.getReserveData(address(params.asset)).aTokenAddress;
 
-        assertEq(collateralAsset.allowance(params.user, address(pool)), params.allowance, "allowance");
+        assertEq(IERC20(params.asset).allowance(params.user, address(pool)), params.allowance, "allowance");
 
-        assertEq(collateralAsset.balanceOf(params.user), params.userBalance,   "userBalance");
-        assertEq(collateralAsset.balanceOf(aToken),      params.aTokenBalance, "aTokenBalance");
+        assertEq(IERC20(params.asset).balanceOf(params.user), params.userBalance,   "userBalance");
+        assertEq(IERC20(params.asset).balanceOf(aToken),      params.aTokenBalance, "aTokenBalance");
     }
 
     struct AssertATokenStateParams {

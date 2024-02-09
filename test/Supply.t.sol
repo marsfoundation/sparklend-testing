@@ -404,6 +404,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
+            asset:         address(collateralAsset),
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 500 ether
@@ -474,6 +475,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
+            asset:         address(collateralAsset),
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
@@ -565,6 +567,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
+            asset:         address(collateralAsset),
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
@@ -652,6 +655,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
+            asset:         address(collateralAsset),
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 500 ether
@@ -724,6 +728,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
+            asset:         address(collateralAsset),
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
@@ -815,6 +820,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
+            asset:         address(collateralAsset),
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
@@ -901,6 +907,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
+            asset:         address(collateralAsset),
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 0
@@ -963,6 +970,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
+            asset:         address(collateralAsset),
             allowance:     1000 ether,
             userBalance:   1000 ether,
             aTokenBalance: 0
