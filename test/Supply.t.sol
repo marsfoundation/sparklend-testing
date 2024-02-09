@@ -385,6 +385,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenNoActiveBorrow
     {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -456,6 +457,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(liquidityRate, 0.011e27);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -548,6 +550,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowerDebt,                 0.055015127565607543 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -636,6 +639,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenNoActiveBorrow
     {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -709,6 +713,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(liquidityRate, 0.011e27);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -801,6 +806,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         assertEq(borrowerDebt,                 0.055015127565607543 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -888,6 +894,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function _noAutomaticCollateralSupplyTest() internal {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -951,6 +958,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function _automaticCollateralSupplyTest() internal {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
