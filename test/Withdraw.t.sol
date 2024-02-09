@@ -144,6 +144,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         public
     {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -199,6 +200,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -273,6 +275,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         assertEq(borrowerDebt,                 0.052513783297156325 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -341,6 +344,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         public
     {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
@@ -398,6 +402,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
@@ -472,6 +477,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         assertEq(borrowerDebt,                 0.052513783297156325 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
