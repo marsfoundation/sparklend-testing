@@ -311,12 +311,21 @@ contract SparkLendTestBase is Test {
         uint256 totalValue,
         uint256 baseRate,
         uint256 slope1,
-        uint256 optimizedUtilization
+        uint256 slope2,
+        uint256 optimalRatio
     )
-        internal pure returns (uint256, uint256)
+        internal view returns (uint256, uint256)
     {
-        uint256 borrowRatio   = borrowed * 1e27 / totalValue;
-        uint256 borrowRate    = baseRate + slope1 * borrowRatio / optimizedUtilization;
+        uint256 borrowRatio = borrowed * 1e27 / totalValue;
+
+        bool excess = borrowRatio > optimalRatio;
+
+        uint256 slope1Ratio = excess ? 1e27 : borrowRatio * 1e27 / optimalRatio;
+        uint256 slope2Ratio = excess ? (borrowRatio - optimalRatio) * 1e27 / (1e27 - optimalRatio) : 0;
+
+        uint256 borrowRate
+            = baseRate + (slope1 * slope1Ratio / 1e27) + (slope2 * slope2Ratio / 1e27);
+
         uint256 liquidityRate = borrowRate * borrowRatio / 1e27;
 
         return (borrowRate, liquidityRate);
@@ -327,9 +336,16 @@ contract SparkLendTestBase is Test {
     /**********************************************************************************************/
 
     function _getUpdatedRates(uint256 borrowed, uint256 supplied)
-        internal pure returns (uint256, uint256)
+        internal view returns (uint256, uint256)
     {
-        return _getUpdatedRates(borrowed, supplied, 0.05e27, 0.02e27, 0.8e27);
+        return _getUpdatedRates({
+            borrowed:     borrowed,
+            totalValue:   supplied,
+            baseRate:     0.05e27,
+            slope1:       0.02e27,
+            slope2:       0.30e27,
+            optimalRatio: 0.8e27
+        });
     }
 
     /**********************************************************************************************/
