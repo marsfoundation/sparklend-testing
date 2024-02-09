@@ -41,9 +41,3 @@ pool.repay()
             └── it should repay all debt, user is no longer borrowing [11]
         └── when user is paying with less than debt
             └── it should repay some of the debt, user is still borrowing [12]
-
-
-
-
-
-

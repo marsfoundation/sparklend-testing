@@ -3,9 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { DataTypes } from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
-import { Errors }    from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
-
+import { Errors } from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
 
 import {
     IERC20,
@@ -90,7 +88,7 @@ contract RepayFailureTests is RepayTestBase {
         pool.repay(address(borrowAsset), 500 ether, 2, lender);
     }
 
-    function test_repay_notEnoughApprovalOfUnderlyingBoundary() public {
+    function test_repay_notEnoughApprovalBoundary() public {
         vm.startPrank(borrower);
         borrowAsset.approve(address(pool), 500 ether - 1);
         vm.expectRevert(stdError.arithmeticError);
@@ -100,8 +98,18 @@ contract RepayFailureTests is RepayTestBase {
         pool.repay(address(borrowAsset), 500 ether, 2, borrower);
     }
 
-    // TODO: Figure out failure from lack of balance
-    //       This can be done by specifying an amount that is less than or equal to the current debt but is greater than the user balance.
+    function test_repay_notEnoughBalanceBoundary() public {
+        borrowAsset.burn(borrower, 1);
+
+        vm.startPrank(borrower);
+        borrowAsset.approve(address(pool), 500 ether);
+        vm.expectRevert(stdError.arithmeticError);
+        pool.repay(address(borrowAsset), 500 ether, 2, borrower);
+
+        borrowAsset.mint(borrower, 1);
+
+        pool.repay(address(borrowAsset), 500 ether, 2, borrower);
+    }
 
 }
 
@@ -516,9 +524,6 @@ contract RepaySuccessTests is RepayTestBase {
         _assertDebtTokenState(debtTokenParams);
         _assertAssetState(assetParams);
 
-        // console.log("bal      ", borrowAsset.balanceOf(borrower));
-        // console.log("allowance", borrowAsset.allowance(borrower, address(pool)));
-
         pool.repay(address(borrowAsset), 500 ether + borrowerDebt + 1, 2, borrower);
 
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
@@ -595,6 +600,7 @@ contract RepaySuccessTests is RepayTestBase {
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
+        _assertAssetState(assetParams);
 
         pool.repay(address(borrowAsset), 500 ether + borrowerDebt, 2, borrower);
 
@@ -672,6 +678,7 @@ contract RepaySuccessTests is RepayTestBase {
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
+        _assertAssetState(assetParams);
 
         pool.repay(address(borrowAsset), 500 ether + borrowerDebt - 1, 2, borrower);
 
