@@ -237,9 +237,9 @@ contract RepaySuccessTests is RepayTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
+            currentLiquidityRate:      0.37e27,  // Fully utilized
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
+            currentVariableBorrowRate: 0.37e27,  // Fully utilized: 5% + 2% + 30%
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -267,6 +267,9 @@ contract RepaySuccessTests is RepayTestBase {
 
         pool.repay(address(borrowAsset), 500 ether + 1, 2, borrower);
 
+        poolParams.currentLiquidityRate      = 0;
+        poolParams.currentVariableBorrowRate = 0.05e27;
+
         debtTokenParams.userBalance = 0;
         debtTokenParams.totalSupply = 0;
 
@@ -286,9 +289,9 @@ contract RepaySuccessTests is RepayTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
+            currentLiquidityRate:      0.37e27,  // Fully utilized
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
+            currentVariableBorrowRate: 0.37e27,  // Fully utilized: 5% + 2% + 30%
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -316,6 +319,9 @@ contract RepaySuccessTests is RepayTestBase {
 
         pool.repay(address(borrowAsset), 500 ether, 2, borrower);
 
+        poolParams.currentLiquidityRate      = 0;
+        poolParams.currentVariableBorrowRate = 0.05e27;
+
         debtTokenParams.userBalance = 0;
         debtTokenParams.totalSupply = 0;
 
@@ -335,9 +341,9 @@ contract RepaySuccessTests is RepayTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
+            currentLiquidityRate:      0.37e27,  // Fully utilized
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
+            currentVariableBorrowRate: 0.37e27,  // Fully utilized: 5% + 2% + 30%
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -364,6 +370,9 @@ contract RepaySuccessTests is RepayTestBase {
         _assertAssetState(assetParams);
 
         pool.repay(address(borrowAsset), 500 ether - 1, 2, borrower);
+
+        poolParams.currentLiquidityRate      = 1e5;            // 1/500e18 = 2e-21 => 2e-21 * (0.05e27 + 5e4) = 1e5 in ray
+        poolParams.currentVariableBorrowRate = 0.05e27 + 5e4;  // 1/500e18 = 2e-21 => 2e-21/0.8 * 0.02 = 5e-23 = 5e4 in ray
 
         debtTokenParams.userBalance = 1;
         debtTokenParams.totalSupply = 1;
