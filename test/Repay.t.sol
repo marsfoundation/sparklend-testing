@@ -22,7 +22,6 @@ contract RepayTestBase is SparkLendTestBase {
 
         vm.label(borrower, "borrower");
 
-        // Allow borrowAsset to be collateral to demo collateralAsset accruing interest
         _initCollateral({
             asset:                address(collateralAsset),
             ltv:                  5000,
@@ -53,7 +52,7 @@ contract RepayFailureTests is RepayTestBase {
     }
 
     // TODO: Believe this code is unreachable because can't be set to inactive when there is active
-    //       borrows.
+    //       supplies.
     // function test_repay_whenNotActive() public {
     //     vm.prank(admin);
     //     poolConfigurator.setReserveActive(address(borrowAsset), false);
@@ -113,7 +112,7 @@ contract RepayFailureTests is RepayTestBase {
 
 }
 
-contract RepaySuccessTests is RepayTestBase {
+contract RepayConcreteTests is RepayTestBase {
 
     address debtToken;
 
