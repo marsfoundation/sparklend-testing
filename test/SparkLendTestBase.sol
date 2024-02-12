@@ -314,7 +314,7 @@ contract SparkLendTestBase is Test {
         uint256 slope2,
         uint256 optimalRatio
     )
-        internal view returns (uint256, uint256)
+        internal pure returns (uint256, uint256)
     {
         uint256 borrowRatio = borrowed * 1e27 / totalValue;
 
@@ -336,7 +336,7 @@ contract SparkLendTestBase is Test {
     /**********************************************************************************************/
 
     function _getUpdatedRates(uint256 borrowed, uint256 supplied)
-        internal view returns (uint256, uint256)
+        internal pure returns (uint256, uint256)
     {
         return _getUpdatedRates({
             borrowed:     borrowed,
