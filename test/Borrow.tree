@@ -1,0 +1,75 @@
+pool.borrow()
+├── when amount is zero
+   └── it should revert (boundary)
+├── given not active
+   └── it should revert
+├── given paused
+   └── it should revert
+├── given frozen
+   └── it should revert
+├── given borrowing not enabled
+   └── it should revert
+├── given price oracle sentinel is not zero and borrow is not allowed
+   └── it should revert
+├── when interest rate mode is not stable or variable
+   └── it should revert
+├── when borrowed amount surpasses the borrow cap
+    └── it should revert
+├── when user is in isolation mode and asset is not borrowable in isolation mode
+    └── it should revert
+├── when user is in isolation mode and the isolation mode debt cieling is surpassed
+    └── it should revert
+├── when the user's emode category doesn't match the borrow asset's emode category
+    └── it should revert
+├── when the user has no collateral
+    └── it should revert
+├── when the user has no LTV
+    └── it should revert
+├── when existing health factor is below 1
+    └── it should revert
+├── when resulting LTV is below the minimum LTV
+    └── it should revert
+├── when user chooses stable borrow and it's not enabled (always for spark)
+    └── it should revert
+├── when user is using siloed borrowing and the asset doesn't match the silo
+    └── it should revert
+├── when user is NOT using siloed borrowing and the asset is siloed
+    └── it should revert
+├── when no time has passed since the last borrow
+    ├── when it's the user's first borrow
+        ├── when the user doing a regular borrow
+            └── it should succeed
+        ├── when the user doing a siloed borrow
+            └── it should succeed
+        ├── when the user doing an e-mode borrow
+            └── it should succeed
+        └──  when the user is borrowing in isolation mode
+            └── it should succeed
+    └──  when it's not the user's first borrow (same tree as above, updating isBorrowing)
+        ├── when the user doing a regular borrow
+            └── it should succeed
+        ├── when the user doing a siloed borrow
+            └── it should succeed
+        ├── when the user doing an e-mode borrow
+            └── it should succeed
+        └──  when the user is borrowing in isolation mode
+            └── it should succeed
+├── when some time has passed since the last borrow (same tree as above, updating indexes)
+    ├── when it's the user's first borrow
+        ├── when the user doing a regular borrow
+            └── it should succeed
+        ├── when the user doing a siloed borrow
+            └── it should succeed
+        ├── when the user doing an e-mode borrow
+            └── it should succeed
+        └──  when the user is borrowing in isolation mode
+            └── it should succeed
+    └──  when it's not the user's first borrow (same tree as above, updating isBorrowing)
+        ├── when the user doing a regular borrow
+            └── it should succeed
+        ├── when the user doing a siloed borrow
+            └── it should succeed
+        ├── when the user doing an e-mode borrow
+            └── it should succeed
+        └──  when the user is borrowing in isolation mode
+            └── it should succeed
