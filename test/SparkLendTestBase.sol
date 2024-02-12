@@ -250,6 +250,18 @@ contract SparkLendTestBase is Test {
         vm.stopPrank();
     }
 
+    function _repay(address user, address asset, uint256 amount) internal {
+        vm.startPrank(user);
+        IERC20(asset).approve(address(pool), amount);
+        pool.repay(asset, amount, 2, user);
+        vm.stopPrank();
+    }
+
+    function _withdraw(address user, address asset, uint256 amount) internal {
+        vm.prank(user);
+        pool.withdraw(asset, amount, user);
+    }
+
     function _supplyAndUseAsCollateral(address user, address asset, uint256 amount) internal {
         _supply(user, asset, amount);
         _useAsCollateral(user, asset);
@@ -302,7 +314,7 @@ contract SparkLendTestBase is Test {
         uint256 slope2,
         uint256 optimalRatio
     )
-        internal view returns (uint256, uint256)
+        internal pure returns (uint256, uint256)
     {
         uint256 borrowRatio = borrowed * 1e27 / totalValue;
 
@@ -324,7 +336,7 @@ contract SparkLendTestBase is Test {
     /**********************************************************************************************/
 
     function _getUpdatedRates(uint256 borrowed, uint256 supplied)
-        internal view returns (uint256, uint256)
+        internal pure returns (uint256, uint256)
     {
         return _getUpdatedRates({
             borrowed:     borrowed,
@@ -402,6 +414,18 @@ contract SparkLendTestBase is Test {
     function _assertATokenState(AssertATokenStateParams memory params) internal {
         assertEq(IERC20(params.aToken).balanceOf(params.user), params.userBalance, "userBalance");
         assertEq(IERC20(params.aToken).totalSupply(),          params.totalSupply, "totalSupply");
+    }
+
+    struct AssertDebtTokenStateParams {
+        address user;
+        address debtToken;
+        uint256 userBalance;
+        uint256 totalSupply;
+    }
+
+    function _assertDebtTokenState(AssertDebtTokenStateParams memory params) internal {
+        assertEq(IERC20(params.debtToken).balanceOf(params.user), params.userBalance, "userBalance");
+        assertEq(IERC20(params.debtToken).totalSupply(),          params.totalSupply, "totalSupply");
     }
 
     /**********************************************************************************************/
