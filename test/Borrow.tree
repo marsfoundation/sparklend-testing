@@ -14,7 +14,7 @@ pool.borrow()
 ├── when interest rate mode is not stable or variable
    └── it should revert
 ├── when borrowed amount surpasses the borrow cap
-    └── it should revert
+    └── it should revert (boundary)
 ├── when user is in isolation mode and asset is not borrowable in isolation mode
     └── it should revert
 ├── when user is in isolation mode and the isolation mode debt cieling is surpassed

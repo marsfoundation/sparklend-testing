@@ -14,6 +14,8 @@ import {
     SparkLendTestBase
 } from "./SparkLendTestBase.sol";
 
+import { MockOracleSentinel } from "test/mocks/MockOracleSentinel.sol";
+
 contract BorrowTestBase is SparkLendTestBase {
 
     address borrower = makeAddr("borrower");
@@ -70,6 +72,52 @@ contract BorrowFailureTests is BorrowTestBase {
         poolConfigurator.setReserveFreeze(address(borrowAsset), true);
 
         vm.expectRevert(bytes(Errors.RESERVE_FROZEN));
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+    }
+
+    function test_borrow_whenBorrowNotEnabled() public {
+        vm.prank(admin);
+        poolConfigurator.setReserveBorrowing(address(borrowAsset), false);
+
+        vm.expectRevert(bytes(Errors.BORROWING_NOT_ENABLED));
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+    }
+
+    function test_borrow_whenOracleSentinelNotBorrowAllowed() public {
+        vm.startPrank(admin);
+        poolAddressesProvider.setPriceOracleSentinel(address(new MockOracleSentinel()));
+        vm.stopPrank();
+
+        vm.expectRevert(bytes(Errors.PRICE_ORACLE_SENTINEL_CHECK_FAILED));
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+    }
+
+    function test_borrow_invalidBorrowType() public {
+        vm.expectRevert(bytes(Errors.INVALID_INTEREST_RATE_MODE_SELECTED));
+        pool.borrow(address(borrowAsset), 500 ether, 0, 0, borrower);
+    }
+
+    function test_borrow_borrowCapExceededBoundary() public {
+        vm.prank(admin);
+        poolConfigurator.setBorrowCap(address(borrowAsset), 500);
+
+        vm.startPrank(borrower);
+
+        vm.expectRevert(bytes(Errors.BORROW_CAP_EXCEEDED));
+        pool.borrow(address(borrowAsset), 500 ether + 1, 2, 0, borrower);
+
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+    }
+
+    function test_borrow_userInIsolationModeAssetIsNot() external {
+        // // Remove liquidity so initial DC can be set
+        // _repay(borrower, address(borrowAsset), 500 ether);
+        // _withdraw(borrower, address(collateralAsset), 1000 ether);
+
+        vm.prank(admin);
+        poolConfigurator.setDebtCeiling(address(collateralAsset), 500);  // Activate isolation mode
+
+        vm.expectRevert(bytes(Errors.ASSET_NOT_BORROWABLE_IN_ISOLATION));
         pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
     }
 
