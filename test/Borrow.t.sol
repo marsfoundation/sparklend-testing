@@ -37,7 +37,7 @@ contract BorrowTestBase is SparkLendTestBase {
         poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
 
         _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
-        _supply(lender, address(borrowAsset), 500 ether);
+        _supply(lender, address(borrowAsset), 1000 ether);
     }
 
 }
@@ -110,14 +110,67 @@ contract BorrowFailureTests is BorrowTestBase {
     }
 
     function test_borrow_userInIsolationModeAssetIsNot() external {
-        // // Remove liquidity so initial DC can be set
-        // _repay(borrower, address(borrowAsset), 500 ether);
-        // _withdraw(borrower, address(collateralAsset), 1000 ether);
+        // Remove liquidity so initial DC can be set
+        _withdraw(borrower, address(collateralAsset), 1000 ether);
 
         vm.prank(admin);
         poolConfigurator.setDebtCeiling(address(collateralAsset), 500);  // Activate isolation mode
 
+        _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
+
         vm.expectRevert(bytes(Errors.ASSET_NOT_BORROWABLE_IN_ISOLATION));
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+    }
+
+    function test_borrow_isolationModeDebtCeilingSurpassedBoundary() external {
+        // Remove liquidity so initial DC can be set
+        _withdraw(borrower, address(collateralAsset), 1000 ether);
+
+        vm.startPrank(admin);
+        poolConfigurator.setDebtCeiling(address(collateralAsset), 400_00);  // Activate isolation mode
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+        vm.stopPrank();
+
+        _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
+
+        vm.startPrank(borrower);
+
+        // NOTE: Setting DC to 400 so LTV isn't exceeded on boundary
+        vm.expectRevert(bytes(Errors.DEBT_CEILING_EXCEEDED));
+        pool.borrow(address(borrowAsset), 400.01 ether, 2, 0, borrower);
+
+        // Rounds down to 400.00 here so boundary is 400.01 ether - 1
+        pool.borrow(address(borrowAsset), 400.01 ether - 1, 2, 0, borrower);
+    }
+
+    function test_borrow_emodeCategoryMismatch() external {
+        vm.startPrank(admin);
+        poolConfigurator.setEModeCategory({
+            categoryId:           1,
+            ltv:                  50_00,
+            liquidationThreshold: 60_00,
+            liquidationBonus:     101_00,
+            oracle:               address(0),
+            label:                "emode1"
+        });
+
+        poolConfigurator.setAssetEModeCategory(address(collateralAsset), 1);
+
+        vm.stopPrank();
+        vm.startPrank(borrower);
+
+        pool.setUserEMode(1);
+
+        vm.expectRevert(bytes(Errors.INCONSISTENT_EMODE_CATEGORY));
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+    }
+
+    function test_borrow_userHasZeroCollateral() public {
+        _withdraw(borrower, address(collateralAsset), 1000 ether);
+
+        vm.prank(borrower);
+
+        vm.expectRevert(bytes(Errors.COLLATERAL_BALANCE_IS_ZERO));
         pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
     }
 

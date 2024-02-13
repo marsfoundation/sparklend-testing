@@ -18,7 +18,7 @@ pool.borrow()
 ├── when user is in isolation mode and asset is not borrowable in isolation mode
     └── it should revert
 ├── when user is in isolation mode and the isolation mode debt cieling is surpassed
-    └── it should revert
+    └── it should revert (boundary)
 ├── when the user's emode category doesn't match the borrow asset's emode category
     └── it should revert
 ├── when the user has no collateral
