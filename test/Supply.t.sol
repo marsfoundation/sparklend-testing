@@ -389,7 +389,7 @@ contract SupplyConcreteTests is SupplyTestBase {
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
+            currentVariableBorrowRate: BASE_RATE,
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -643,7 +643,7 @@ contract SupplyConcreteTests is SupplyTestBase {
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
+            currentVariableBorrowRate: BASE_RATE,
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -935,7 +935,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        poolParams.currentVariableBorrowRate = 0.05e27;
+        poolParams.currentVariableBorrowRate = BASE_RATE;
         poolParams.lastUpdateTimestamp       = 1;
 
         aTokenParams.userBalance = 1000 ether;
@@ -999,7 +999,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        poolParams.currentVariableBorrowRate = 0.05e27;
+        poolParams.currentVariableBorrowRate = BASE_RATE;
         poolParams.lastUpdateTimestamp       = 1;
 
         aTokenParams.userBalance = 1000 ether;

@@ -63,6 +63,12 @@ contract SparkLendTestBase is Test {
     AToken aBorrowAsset;
     AToken aCollateralAsset;
 
+    // Default values for interest rate strategies
+    uint256 constant BASE_RATE     = 0.05e27;
+    uint256 constant OPTIMAL_RATIO = 0.8e27;
+    uint256 constant SLOPE1        = 0.02e27;
+    uint256 constant SLOPE2        = 0.30e27;
+
     function setUp() public virtual {
         address deployer = address(this);
 
@@ -140,7 +146,6 @@ contract SparkLendTestBase is Test {
 
         aclManager.addEmergencyAdmin(admin);
         aclManager.addPoolAdmin(admin);
-        aclManager.removePoolAdmin(deployer);
         aclManager.grantRole(aclManager.DEFAULT_ADMIN_ROLE(), admin);
         aclManager.revokeRole(aclManager.DEFAULT_ADMIN_ROLE(), deployer);
 
@@ -152,10 +157,10 @@ contract SparkLendTestBase is Test {
         IReserveInterestRateStrategy strategy
             = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
                 provider:               poolAddressesProvider,
-                optimalUsageRatio:      0.80e27,
-                baseVariableBorrowRate: 0.05e27,
-                variableRateSlope1:     0.02e27,
-                variableRateSlope2:     0.3e27
+                optimalUsageRatio:      OPTIMAL_RATIO,
+                baseVariableBorrowRate: BASE_RATE,
+                variableRateSlope1:     SLOPE1,
+                variableRateSlope2:     SLOPE2
             }));
 
         collateralAsset = new MockERC20("Collateral Asset", "COLL", 18);
@@ -246,10 +251,10 @@ contract SparkLendTestBase is Test {
         IReserveInterestRateStrategy strategy
             = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
                 provider:               poolAddressesProvider,
-                optimalUsageRatio:      0.80e27,
-                baseVariableBorrowRate: 0.05e27,
-                variableRateSlope1:     0.02e27,
-                variableRateSlope2:     0.30e27
+                optimalUsageRatio:      OPTIMAL_RATIO,
+                baseVariableBorrowRate: BASE_RATE,
+                variableRateSlope1:     SLOPE1,
+                variableRateSlope2:     SLOPE2
             }));
 
         newCollateralAsset = address(new MockERC20("Collateral Asset", "COLL", 18));
@@ -260,6 +265,11 @@ contract SparkLendTestBase is Test {
         // Set LTV to 1%
         vm.prank(admin);
         poolConfigurator.configureReserveAsCollateral(newCollateralAsset, 100, 100, 100_01);
+    }
+
+    function _setCollateralDebtCeiling(address asset, uint256 ceiling) internal {
+        vm.prank(admin);
+        poolConfigurator.setDebtCeiling(asset, ceiling);
     }
 
     /**********************************************************************************************/
@@ -299,11 +309,6 @@ contract SparkLendTestBase is Test {
     function _supplyAndUseAsCollateral(address user, address asset, uint256 amount) internal {
         _supply(user, asset, amount);
         _useAsCollateral(user, asset);
-    }
-
-    function _setCollateralDebtCeiling(address asset, uint256 ceiling) internal {
-        vm.prank(admin);
-        poolConfigurator.setDebtCeiling(asset, ceiling);
     }
 
     /**********************************************************************************************/
@@ -375,10 +380,10 @@ contract SparkLendTestBase is Test {
         return _getUpdatedRates({
             borrowed:     borrowed,
             totalValue:   supplied,
-            baseRate:     0.05e27,
-            slope1:       0.02e27,
-            slope2:       0.30e27,
-            optimalRatio: 0.8e27
+            baseRate:     BASE_RATE,
+            slope1:       SLOPE1,
+            slope2:       SLOPE2,
+            optimalRatio: OPTIMAL_RATIO
         });
     }
 
