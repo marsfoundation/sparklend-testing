@@ -169,9 +169,27 @@ contract BorrowFailureTests is BorrowTestBase {
         _withdraw(borrower, address(collateralAsset), 1000 ether);
 
         vm.prank(borrower);
-
         vm.expectRevert(bytes(Errors.COLLATERAL_BALANCE_IS_ZERO));
         pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+    }
+
+    function test_borrow_userHasZeroLtv() public {
+        vm.prank(admin);
+        poolConfigurator.configureReserveAsCollateral(address(collateralAsset), 0, 50_00, 101_00);
+
+        vm.prank(borrower);
+        vm.expectRevert(bytes(Errors.LTV_VALIDATION_FAILED));
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+    }
+
+    function test_borrow_userHasHealthFactorBelowZero() public {
+        vm.startPrank(borrower);
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+
+        vm.warp(365 days);
+
+        vm.expectRevert(bytes(Errors.HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD));
+        pool.borrow(address(borrowAsset), 1, 2, 0, borrower);
     }
 
 }
