@@ -197,13 +197,13 @@ contract SupplyConcreteTests is SupplyTestBase {
         _;
     }
 
-    modifier givenOneOtherCollateralHasDebtCeilingGtZero {
+    modifier givenOneOtherCollateralIsInIsolationMode {
         vm.prank(admin);
         poolConfigurator.setDebtCeiling(otherCollateral1, 1000);
         _;
     }
 
-    modifier givenOneOtherCollateralHasZeroDebtCeiling {
+    modifier givenOneOtherCollateralIsNotInIsolationMode {
         vm.prank(admin);
         poolConfigurator.setDebtCeiling(otherCollateral1, 0);
         _;
@@ -294,7 +294,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
         whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasDebtCeilingGtZero
+        givenOneOtherCollateralIsInIsolationMode
     {
         _noAutomaticCollateralSupplyTest();
     }
@@ -307,7 +307,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
         whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasZeroDebtCeiling
+        givenOneOtherCollateralIsNotInIsolationMode
     {
         _noAutomaticCollateralSupplyTest();
     }
@@ -350,7 +350,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
         whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasDebtCeilingGtZero
+        givenOneOtherCollateralIsInIsolationMode
     {
         _noAutomaticCollateralSupplyTest();
     }
@@ -362,7 +362,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
         whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasZeroDebtCeiling
+        givenOneOtherCollateralIsNotInIsolationMode
     {
         _automaticCollateralSupplyTest();
     }
@@ -892,7 +892,7 @@ contract SupplyConcreteTests is SupplyTestBase {
     /*** Test running functions                                                                 ***/
     /**********************************************************************************************/
 
-    function _noAutomaticCollateralSupplyTest() internal {
+    function _firstSupplyTest() internal {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
@@ -926,12 +926,6 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         assertEq(block.timestamp, 1);
 
-        assertEq(
-            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
-            false,
-            "isUsingAsCollateral"
-        );
-
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
@@ -948,6 +942,16 @@ contract SupplyConcreteTests is SupplyTestBase {
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
+    }
+
+    function _noAutomaticCollateralSupplyTest() internal {
+        assertEq(
+            pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
+            false,
+            "isUsingAsCollateral"
+        );
+
+        _firstSupplyTest();
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
@@ -957,61 +961,13 @@ contract SupplyConcreteTests is SupplyTestBase {
     }
 
     function _automaticCollateralSupplyTest() internal {
-        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
-            asset:                     address(collateralAsset),
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0,
-            currentStableBorrowRate:   0,
-            lastUpdateTimestamp:       0,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
-
-        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
-            user:        supplier,
-            aToken:      address(aCollateralAsset),
-            userBalance: 0,
-            totalSupply: 0
-        });
-
-        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
-            user:          supplier,
-            asset:         address(collateralAsset),
-            allowance:     1000 ether,
-            userBalance:   1000 ether,
-            aTokenBalance: 0
-        });
-
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
-
-        assertEq(block.timestamp, 1);
-
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
             false,
             "isUsingAsCollateral"
         );
 
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
-
-        poolParams.currentVariableBorrowRate = BASE_RATE;
-        poolParams.lastUpdateTimestamp       = 1;
-
-        aTokenParams.userBalance = 1000 ether;
-        aTokenParams.totalSupply = 1000 ether;
-
-        assetParams.allowance     = 0;
-        assetParams.userBalance   = 0;
-        assetParams.aTokenBalance = 1000 ether;
-
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
+        _firstSupplyTest();
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),

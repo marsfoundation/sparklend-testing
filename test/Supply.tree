@@ -30,23 +30,23 @@ pool.supply()
                   └── it should succeed with automatic collateral supply [03]
                └── when the user IS using any other collateral
                   ├── when the user is using a single collateral type
-                     ├── given the other collateral type has a debt ceiling that is NOT zero
+                     ├── given the other collateral type is in isolation mode
                         └── it should succeed without automatic collateral supply [04]
-                     └── given the other collateral type has a debt ceiling that is zero
+                     └── given the other collateral type is NOT in isolation mode
                         └── it should succeed without automatic collateral supply [05]
                   └── when the user is using multiple collateral types
                      └── it should succeed without automatic collateral supply [06] (NOTE: DC is already NOT zero so condition on line 722 in ValidationLogic doesn't apply)
       └── given the debt ceiling is zero
          ├── given the LTV is zero
-            └── it should succeed with no automatic collateral supply [07]
+            └── it should succeed without automatic collateral supply [07]
          └── given the LTV is NOT zero
             ├── when the user IS NOT using any other collateral
                └── it should succeed with automatic collateral supply [08]
             └── when the user IS using any other collateral
                ├── when the user is using a single collateral type
-                  ├── given the collateral type has a debt ceiling that is NOT zero
+                  ├── given the collateral type is in isolation mode
                      └── it should succeed without automatic collateral supply [09]
-                  └── given the collateral type has a debt ceiling that is zero
+                  └── given the collateral type is NOT in isolation mode
                      └── it should succeed with automatic collateral supply [10]
                └── when the user is using multiple collateral types
                   └── it should succeed with automatic collateral supply [11] (NOTE: DC is already IS zero so condition on line 722 in ValidationLogic doesn't apply)
