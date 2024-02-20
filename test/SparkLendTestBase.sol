@@ -508,13 +508,17 @@ contract SparkLendTestBase is Test {
         }
     }
 
-    function isAddress(bytes32 _bytes) public pure returns (bool isAddress_) {
+    function isAddress(bytes32 _bytes) public pure returns (bool) {
         if (_bytes == 0) return false;
 
-        for (uint256 i = 20; i < 32; i++) {
-            if (_bytes[i] != 0) return false;
+        // Extract the 20 bytes Ethereum address
+        address extractedAddress;
+        assembly {
+            extractedAddress := mload(add(_bytes, 0x14))
         }
-        isAddress_ = true;
+
+        // Check if the address equals the original bytes32 value when padded back to bytes32
+        return extractedAddress != address(0) && bytes32(bytes20(extractedAddress)) == _bytes;
     }
 
     function bytes32ToAddress(bytes32 _bytes) public pure returns (address) {
