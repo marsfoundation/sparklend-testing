@@ -28,8 +28,8 @@ contract BorrowTestBase is SparkLendTestBase {
 
         _initCollateral({
             asset:                address(collateralAsset),
-            ltv:                  5000,
-            liquidationThreshold: 5000,
+            ltv:                  50_00,
+            liquidationThreshold: 50_00,
             liquidationBonus:     100_01
         });
 
@@ -191,5 +191,46 @@ contract BorrowFailureTests is BorrowTestBase {
         vm.expectRevert(bytes(Errors.HEALTH_FACTOR_LOWER_THAN_LIQUIDATION_THRESHOLD));
         pool.borrow(address(borrowAsset), 1, 2, 0, borrower);
     }
+
+    function test_borrow_userPutsPositionBelowLtvBoundary() public {
+        vm.startPrank(borrower);
+        vm.expectRevert(bytes(Errors.COLLATERAL_CANNOT_COVER_NEW_BORROW));
+        pool.borrow(address(borrowAsset), 500 ether + 1e10, 2, 0, borrower);
+
+        // Rounds down to 500e8 here so boundary is 500 ether - 1e10
+        pool.borrow(address(borrowAsset), 500 ether + 1e10 - 1, 2, 0, borrower);
+    }
+
+    function test_borrow_userChoosesStableBorrow() public {
+        vm.startPrank(borrower);
+        vm.expectRevert(bytes(Errors.STABLE_BORROWING_NOT_ENABLED));
+        pool.borrow(address(borrowAsset), 500 ether, 1, 0, borrower);
+    }
+
+    function test_borrow_assetNotUserSiloedAssetAddress() public {
+        _initCollateral({
+            asset:                address(borrowAsset),
+            ltv:                  50_00,
+            liquidationThreshold: 50_00,
+            liquidationBonus:     100_01
+        });
+
+        vm.startPrank(admin);
+        poolConfigurator.setReserveBorrowing(address(collateralAsset), true);
+        poolConfigurator.setSiloedBorrowing(address(collateralAsset), true);
+        vm.stopPrank();
+
+        // Supply and borrow with the opposite assets so user is siloed borrowing
+        // with collateralAsset
+        _supplyAndUseAsCollateral(borrower, address(borrowAsset), 1000 ether);
+        _borrow(borrower, address(collateralAsset), 500 ether);
+
+        vm.expectRevert(bytes(Errors.SILOED_BORROWING_VIOLATION));
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+    }
+
+    // TODO: Revisit - Don't think this code is reachable because the user getSiloedBorrowingState
+    //       function calls reserveConfig.getSiloedBorrowing()
+    // function test_borrow_userNotSiloedButAssetIs() public {}
 
 }

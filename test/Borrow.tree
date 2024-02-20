@@ -28,7 +28,7 @@ pool.borrow()
 ├── when existing health factor is below 1
     └── it should revert
 ├── when resulting LTV is below the minimum LTV
-    └── it should revert
+    └── it should revert (boundary)
 ├── when user chooses stable borrow and it's not enabled (always for spark)
     └── it should revert
 ├── when user is using siloed borrowing and the asset doesn't match the silo
