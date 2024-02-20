@@ -22,6 +22,7 @@ import { AToken }            from "aave-v3-core/contracts/protocol/tokenization/
 import { StableDebtToken }   from "aave-v3-core/contracts/protocol/tokenization/StableDebtToken.sol";
 import { VariableDebtToken } from "aave-v3-core/contracts/protocol/tokenization/VariableDebtToken.sol";
 
+import { IAaveIncentivesController }    from "aave-v3-core/contracts/interfaces/IAaveIncentivesController.sol";
 import { IReserveInterestRateStrategy } from "aave-v3-core/contracts/interfaces/IReserveInterestRateStrategy.sol";
 
 import { VariableBorrowInterestRateStrategy } from "sparklend-advanced/VariableBorrowInterestRateStrategy.sol";
@@ -51,6 +52,8 @@ contract SparkLendTestBase is Test {
     PoolConfigurator      poolConfigurator;
 
     AToken            aTokenImpl;
+    Pool              poolImpl;
+    PoolConfigurator  poolConfiguratorImpl;
     StableDebtToken   stableDebtTokenImpl;
     VariableDebtToken variableDebtTokenImpl;
 
@@ -65,8 +68,6 @@ contract SparkLendTestBase is Test {
 
         poolAddressesProvider = new PoolAddressesProvider("0", deployer);
 
-        PoolConfigurator poolConfiguratorImpl = new PoolConfigurator();
-
         PoolAddressesProviderRegistry registry = new PoolAddressesProviderRegistry(deployer);
 
         poolAddressesProvider.setACLAdmin(deployer);
@@ -74,7 +75,11 @@ contract SparkLendTestBase is Test {
         aclManager           = new ACLManager(poolAddressesProvider);
         protocolDataProvider = new DataProvider(poolAddressesProvider);
 
-        Pool poolImpl = new Pool(poolAddressesProvider);
+        poolConfiguratorImpl = new PoolConfigurator();
+        poolConfiguratorImpl.initialize(poolAddressesProvider);
+
+        poolImpl = new Pool(poolAddressesProvider);
+        poolImpl.initialize(poolAddressesProvider);
 
         poolAddressesProvider.setPoolImpl(address(poolImpl));
         poolAddressesProvider.setPoolConfiguratorImpl(address(poolConfiguratorImpl));
@@ -82,9 +87,39 @@ contract SparkLendTestBase is Test {
         pool             = Pool(poolAddressesProvider.getPool());
         poolConfigurator = PoolConfigurator(poolAddressesProvider.getPoolConfigurator());
 
-        aTokenImpl            = new AToken(pool);
-        stableDebtTokenImpl   = new StableDebtToken(pool);
+        aTokenImpl = new AToken(pool);
+        aTokenImpl.initialize(
+            pool,
+            address(0),
+            address(0),
+            IAaveIncentivesController(address(0)),
+            0,
+            "SPTOKEN_IMPL",
+            "SPTOKEN_IMPL",
+            ""
+        );
+
+        stableDebtTokenImpl = new StableDebtToken(pool);
+        stableDebtTokenImpl.initialize(
+            pool,
+            address(0),
+            IAaveIncentivesController(address(0)),
+            0,
+            "STABLE_DEBT_TOKEN_IMPL",
+            "STABLE_DEBT_TOKEN_IMPL",
+            ""
+        );
+
         variableDebtTokenImpl = new VariableDebtToken(pool);
+        variableDebtTokenImpl.initialize(
+            pool,
+            address(0),
+            IAaveIncentivesController(address(0)),
+            0,
+            "VARIABLE_DEBT_TOKEN_IMPL",
+            "VARIABLE_DEBT_TOKEN_IMPL",
+            ""
+        );
 
         address[] memory assets;
         address[] memory oracles;
@@ -97,7 +132,6 @@ contract SparkLendTestBase is Test {
             baseCurrencyUnit: 1e8
         });
 
-        poolAddressesProvider.setACLAdmin(deployer);
         poolAddressesProvider.setACLManager(address(aclManager));
         poolAddressesProvider.setPoolDataProvider(address(protocolDataProvider));
         poolAddressesProvider.setPriceOracle(address(aaveOracle));
@@ -160,7 +194,7 @@ contract SparkLendTestBase is Test {
             underlyingAssetDecimals:     token.decimals(),
             interestRateStrategyAddress: address(strategy),
             underlyingAsset:             address(token),
-            treasury:                    address(token),  // TODO: Change to treasury
+            treasury:                    makeAddr("treasury"),
             incentivesController:        address(0),
             aTokenName:                  string(string.concat("Spark ",               symbol)),
             aTokenSymbol:                string(string.concat("sp",                   symbol)),
