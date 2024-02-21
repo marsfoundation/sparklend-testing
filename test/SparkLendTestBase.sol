@@ -401,7 +401,6 @@ contract SparkLendTestBase is Test {
         uint256 lastUpdateTimestamp;
         uint256 accruedToTreasury;
         uint256 unbacked;
-        uint256 isolationModeTotalDebt;
     }
 
     function _assertPoolReserveState(AssertPoolReserveStateParams memory params) internal {
@@ -416,7 +415,6 @@ contract SparkLendTestBase is Test {
         assertEq(data.lastUpdateTimestamp,       params.lastUpdateTimestamp,       "lastUpdateTimestamp");
         assertEq(data.accruedToTreasury,         params.accruedToTreasury,         "accruedToTreasury");
         assertEq(data.unbacked,                  params.unbacked,                  "unbacked");
-        assertEq(data.isolationModeTotalDebt,    params.isolationModeTotalDebt,    "isolationModeTotalDebt");
 
         // NOTE: Intentionally left out the following as they do not change on user actions
         // - ReserveConfigurationMap configuration;
