@@ -15,7 +15,7 @@ pool.supply()
    └── it should revert
 ├── when `aToken._mintScaled` results in a scaled amount that's zero (aToken unit test)
    └── it should revert
-├── when this is the first supply
+├── when this is the first user supply
    ├── given the debt ceiling is not zero
       ├── when msg.sender DOES NOT have ISOLATED_COLLATERAL_SUPPLIER_ROLE
          └── it should succeed without automatic collateral supply [01]
