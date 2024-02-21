@@ -153,12 +153,10 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     modifier givenFirstSupply { _; }
 
+    // NOTE: Using this modifier to give the pool a more common starting state
+    //       for reserve state testing
     modifier givenNotFirstSupply {
-        _supply(supplier, address(collateralAsset), 500 ether);
-
-        // Reset approval to original 1000 ether
-        vm.prank(supplier);
-        collateralAsset.approve(address(pool), 1000 ether);
+        _supply(makeAddr("new-user"), address(collateralAsset), 500 ether);
         _;
     }
 
@@ -403,7 +401,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
             user:        supplier,
             aToken:      address(aCollateralAsset),
-            userBalance: 500 ether,
+            userBalance: 0,
             totalSupply: 500 ether
         });
 
@@ -430,7 +428,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         vm.prank(supplier);
         pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
 
-        aTokenParams.userBalance = 1500 ether;
+        aTokenParams.userBalance = 1000 ether;
         aTokenParams.totalSupply = 1500 ether;
 
         assetParams.allowance     = 0;
@@ -475,7 +473,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
             user:        supplier,
             aToken:      address(aCollateralAsset),
-            userBalance: 500 ether,
+            userBalance: 0,
             totalSupply: 500 ether
         });
 
@@ -512,7 +510,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         poolParams.currentLiquidityRate      = liquidityRate;
         poolParams.currentVariableBorrowRate = borrowRate;
 
-        aTokenParams.userBalance = 1250 ether;
+        aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether;
 
         assetParams.allowance     = 250 ether;   // Remaining from 1000
@@ -568,7 +566,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
             user:        supplier,
             aToken:      address(aCollateralAsset),
-            userBalance: 500 ether + supplierYield,
+            userBalance: 0,
             totalSupply: 500 ether + supplierYield
         });
 
@@ -618,7 +616,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         poolParams.currentVariableBorrowRate = borrowRate;
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
 
-        aTokenParams.userBalance = 1250 ether + supplierYield;
+        aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether + supplierYield;
 
         assetParams.allowance     = 250 ether;  // Remaining from 1000
@@ -657,7 +655,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
             user:        supplier,
             aToken:      address(aCollateralAsset),
-            userBalance: 500 ether,
+            userBalance: 0,
             totalSupply: 500 ether
         });
 
@@ -686,7 +684,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         poolParams.lastUpdateTimestamp = WARP_TIME + 1;
 
-        aTokenParams.userBalance = 1500 ether;
+        aTokenParams.userBalance = 1000 ether;
         aTokenParams.totalSupply = 1500 ether;
 
         assetParams.allowance     = 0;
@@ -731,7 +729,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
             user:        supplier,
             aToken:      address(aCollateralAsset),
-            userBalance: 500 ether,
+            userBalance: 0,
             totalSupply: 500 ether
         });
 
@@ -768,7 +766,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         poolParams.currentLiquidityRate      = liquidityRate;
         poolParams.currentVariableBorrowRate = borrowRate;
 
-        aTokenParams.userBalance = 1250 ether;
+        aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether;
 
         assetParams.allowance     = 250 ether;   // Remaining from 1000
@@ -824,7 +822,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
             user:        supplier,
             aToken:      address(aCollateralAsset),
-            userBalance: 500 ether + supplierYield,
+            userBalance: 0,
             totalSupply: 500 ether + supplierYield
         });
 
@@ -874,7 +872,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         poolParams.currentVariableBorrowRate = borrowRate;
         poolParams.lastUpdateTimestamp       = WARP_TIME * 2 + 1;
 
-        aTokenParams.userBalance = 1250 ether + supplierYield;
+        aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether + supplierYield;
 
         assetParams.allowance     = 250 ether;  // Remaining from 1000
