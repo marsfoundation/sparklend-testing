@@ -145,22 +145,25 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         vm.prank(supplier);
         collateralAsset.approve(address(pool), 1000 ether);
+
+        // NOTE: Using this to give the pool a more common starting state
+        //       for reserve state testing
+        _supply(makeAddr("new-user"), address(collateralAsset), 500 ether);
     }
 
     /**********************************************************************************************/
     /*** BTT modifiers                                                                          ***/
     /**********************************************************************************************/
 
-    modifier givenFirstSupply { _; }
-
-    modifier givenNotFirstSupply {
-        _supply(makeAddr("new-user"), address(collateralAsset), 500 ether);
-        _;
-    }
+    modifier givenFirstUserSupply { _; }
 
     modifier givenDebtCeilingGtZero {
+        _withdraw(makeAddr("new-user"), address(collateralAsset), 500 ether);  // Avoid error
+
         vm.prank(admin);
         poolConfigurator.setDebtCeiling(address(collateralAsset), 1000);
+
+        _supply(makeAddr("new-user"), address(collateralAsset), 500 ether);
         _;
     }
 
@@ -197,13 +200,13 @@ contract SupplyConcreteTests is SupplyTestBase {
         _;
     }
 
-    modifier givenOneOtherCollateralHasDebtCeilingGtZero {
+    modifier givenOneOtherCollateralIsInIsolationMode {
         vm.prank(admin);
         poolConfigurator.setDebtCeiling(otherCollateral1, 1000);
         _;
     }
 
-    modifier givenOneOtherCollateralHasZeroDebtCeiling {
+    modifier givenOneOtherCollateralIsNotInIsolationMode {
         vm.prank(admin);
         poolConfigurator.setDebtCeiling(otherCollateral1, 0);
         _;
@@ -258,7 +261,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_01()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenDebtCeilingGtZero
         givenUserHasNoIsolatedCollateralRole
     {
@@ -267,7 +270,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_02()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenDebtCeilingGtZero
         givenUserDoesHaveIsolatedCollateralRole
         givenLtvIsZero
@@ -277,7 +280,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_03()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenDebtCeilingGtZero
         givenUserDoesHaveIsolatedCollateralRole
         givenLtvIsNotZero
@@ -288,33 +291,33 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_04()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenDebtCeilingGtZero
         givenUserDoesHaveIsolatedCollateralRole
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
         whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasDebtCeilingGtZero
+        givenOneOtherCollateralIsInIsolationMode
     {
         _noAutomaticCollateralSupplyTest();
     }
 
     function test_supply_05()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenDebtCeilingGtZero
         givenUserDoesHaveIsolatedCollateralRole
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
         whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasZeroDebtCeiling
+        givenOneOtherCollateralIsNotInIsolationMode
     {
         _noAutomaticCollateralSupplyTest();
     }
 
     function test_supply_06()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenDebtCeilingGtZero
         givenUserDoesHaveIsolatedCollateralRole
         givenLtvIsNotZero
@@ -326,7 +329,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_07()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenZeroDebtCeiling
         givenLtvIsZero
     {
@@ -335,7 +338,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_08()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenZeroDebtCeiling
         givenLtvIsNotZero
         whenUserIsNotUsingOtherCollateral
@@ -345,31 +348,31 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_09()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenZeroDebtCeiling
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
         whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasDebtCeilingGtZero
+        givenOneOtherCollateralIsInIsolationMode
     {
         _noAutomaticCollateralSupplyTest();
     }
 
     function test_supply_10()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenZeroDebtCeiling
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
         whenUserIsUsingOneOtherCollateral
-        givenOneOtherCollateralHasZeroDebtCeiling
+        givenOneOtherCollateralIsNotInIsolationMode
     {
         _automaticCollateralSupplyTest();
     }
 
     function test_supply_11()
         public
-        givenFirstSupply
+        givenFirstUserSupply
         givenZeroDebtCeiling
         givenLtvIsNotZero
         whenUserIsUsingOtherCollateral
@@ -380,7 +383,6 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_12()
         public
-        givenNotFirstSupply
         givenNoTimeHasPassedAfterSupply
         givenNoActiveBorrow
     {
@@ -389,11 +391,12 @@ contract SupplyConcreteTests is SupplyTestBase {
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
+            currentVariableBorrowRate: BASE_RATE,
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
-            unbacked:                  0
+            unbacked:                  0,
+            isolationModeTotalDebt:    0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -446,7 +449,6 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_13()
         public
-        givenNotFirstSupply
         givenNoTimeHasPassedAfterSupply
         givenActiveBorrow
         givenNoTimeHasPassedAfterBorrow
@@ -465,7 +467,8 @@ contract SupplyConcreteTests is SupplyTestBase {
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
-            unbacked:                  0
+            unbacked:                  0,
+            isolationModeTotalDebt:    0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -528,7 +531,6 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_14()
         public
-        givenNotFirstSupply
         givenNoTimeHasPassedAfterSupply
         givenActiveBorrow
         givenSomeTimeHasPassedAfterBorrow
@@ -558,7 +560,8 @@ contract SupplyConcreteTests is SupplyTestBase {
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
-            unbacked:                  0
+            unbacked:                  0,
+            isolationModeTotalDebt:    0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -634,7 +637,6 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_15()
         public
-        givenNotFirstSupply
         givenSomeTimeHasPassedAfterSupply
         givenNoActiveBorrow
     {
@@ -643,11 +645,12 @@ contract SupplyConcreteTests is SupplyTestBase {
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.05e27,
+            currentVariableBorrowRate: BASE_RATE,
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
-            unbacked:                  0
+            unbacked:                  0,
+            isolationModeTotalDebt:    0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -702,7 +705,6 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_16()
         public
-        givenNotFirstSupply
         givenSomeTimeHasPassedAfterSupply
         givenActiveBorrow
         givenNoTimeHasPassedAfterBorrow
@@ -721,7 +723,8 @@ contract SupplyConcreteTests is SupplyTestBase {
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       WARP_TIME + 1,
             accruedToTreasury:         0,
-            unbacked:                  0
+            unbacked:                  0,
+            isolationModeTotalDebt:    0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -784,7 +787,6 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     function test_supply_17()
         public
-        givenNotFirstSupply
         givenSomeTimeHasPassedAfterSupply
         givenActiveBorrow
         givenSomeTimeHasPassedAfterBorrow
@@ -814,7 +816,8 @@ contract SupplyConcreteTests is SupplyTestBase {
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       WARP_TIME + 1,
             accruedToTreasury:         0,
-            unbacked:                  0
+            unbacked:                  0,
+            isolationModeTotalDebt:    0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -892,24 +895,25 @@ contract SupplyConcreteTests is SupplyTestBase {
     /*** Test running functions                                                                 ***/
     /**********************************************************************************************/
 
-    function _noAutomaticCollateralSupplyTest() internal {
+    function _firstSupplyTest() internal {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0,
+            currentVariableBorrowRate: BASE_RATE,
             currentStableBorrowRate:   0,
-            lastUpdateTimestamp:       0,
+            lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
-            unbacked:                  0
+            unbacked:                  0,
+            isolationModeTotalDebt:    0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
             user:        supplier,
             aToken:      address(aCollateralAsset),
             userBalance: 0,
-            totalSupply: 0
+            totalSupply: 500 ether
         });
 
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
@@ -917,7 +921,7 @@ contract SupplyConcreteTests is SupplyTestBase {
             asset:         address(collateralAsset),
             allowance:     1000 ether,
             userBalance:   1000 ether,
-            aTokenBalance: 0
+            aTokenBalance: 500 ether
         });
 
         _assertPoolReserveState(poolParams);
@@ -926,28 +930,32 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         assertEq(block.timestamp, 1);
 
+        vm.prank(supplier);
+        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+
+        poolParams.currentVariableBorrowRate = BASE_RATE;
+        poolParams.lastUpdateTimestamp       = 1;
+
+        aTokenParams.userBalance = 1000 ether;
+        aTokenParams.totalSupply = 1500 ether;
+
+        assetParams.allowance     = 0;
+        assetParams.userBalance   = 0;
+        assetParams.aTokenBalance = 1500 ether;
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
+    }
+
+    function _noAutomaticCollateralSupplyTest() internal {
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
             false,
             "isUsingAsCollateral"
         );
 
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
-
-        poolParams.currentVariableBorrowRate = 0.05e27;
-        poolParams.lastUpdateTimestamp       = 1;
-
-        aTokenParams.userBalance = 1000 ether;
-        aTokenParams.totalSupply = 1000 ether;
-
-        assetParams.allowance     = 0;
-        assetParams.userBalance   = 0;
-        assetParams.aTokenBalance = 1000 ether;
-
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
+        _firstSupplyTest();
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
@@ -957,61 +965,13 @@ contract SupplyConcreteTests is SupplyTestBase {
     }
 
     function _automaticCollateralSupplyTest() internal {
-        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
-            asset:                     address(collateralAsset),
-            liquidityIndex:            1e27,
-            currentLiquidityRate:      0,
-            variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0,
-            currentStableBorrowRate:   0,
-            lastUpdateTimestamp:       0,
-            accruedToTreasury:         0,
-            unbacked:                  0
-        });
-
-        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
-            user:        supplier,
-            aToken:      address(aCollateralAsset),
-            userBalance: 0,
-            totalSupply: 0
-        });
-
-        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
-            user:          supplier,
-            asset:         address(collateralAsset),
-            allowance:     1000 ether,
-            userBalance:   1000 ether,
-            aTokenBalance: 0
-        });
-
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
-
-        assertEq(block.timestamp, 1);
-
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
             false,
             "isUsingAsCollateral"
         );
 
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
-
-        poolParams.currentVariableBorrowRate = 0.05e27;
-        poolParams.lastUpdateTimestamp       = 1;
-
-        aTokenParams.userBalance = 1000 ether;
-        aTokenParams.totalSupply = 1000 ether;
-
-        assetParams.allowance     = 0;
-        assetParams.userBalance   = 0;
-        assetParams.aTokenBalance = 1000 ether;
-
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
+        _firstSupplyTest();
 
         assertEq(
             pool.getUserConfiguration(supplier).isUsingAsCollateral(reserveId),
