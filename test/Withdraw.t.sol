@@ -152,8 +152,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
-            unbacked:                  0,
-            isolationModeTotalDebt:    0
+            unbacked:                  0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -209,8 +208,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
-            unbacked:                  0,
-            isolationModeTotalDebt:    0
+            unbacked:                  0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -285,8 +283,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
-            unbacked:                  0,
-            isolationModeTotalDebt:    0
+            unbacked:                  0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -355,8 +352,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
-            unbacked:                  0,
-            isolationModeTotalDebt:    0
+            unbacked:                  0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -414,8 +410,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       WARP_TIME + 1,
             accruedToTreasury:         0,
-            unbacked:                  0,
-            isolationModeTotalDebt:    0
+            unbacked:                  0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
@@ -490,8 +485,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       WARP_TIME + 1,
             accruedToTreasury:         0,
-            unbacked:                  0,
-            isolationModeTotalDebt:    0
+            unbacked:                  0
         });
 
         AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
