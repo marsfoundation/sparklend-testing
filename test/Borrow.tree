@@ -36,24 +36,14 @@ pool.borrow()
 ├── when user is NOT using siloed borrowing and the asset is siloed
     └── it should revert
 ├── when there is no existing borrow
-    ├── when it's the user's first borrow
-        ├── when the user doing a regular borrow
-            └── it should succeed
-        ├── when the user doing a siloed borrow
-            └── it should succeed
-        ├── when the user doing an e-mode borrow
-            └── it should succeed
-        └──  when the user is borrowing in isolation mode
-            └── it should succeed
-    └──  when it's not the user's first borrow (same tree as above, updating isBorrowing)
-        ├── when the user doing a regular borrow
-            └── it should succeed
-        ├── when the user doing a siloed borrow
-            └── it should succeed
-        ├── when the user doing an e-mode borrow
-            └── it should succeed
-        └──  when the user is borrowing in isolation mode
-            └── it should succeed
+    ├── when the user doing a regular borrow
+        └── it should succeed
+    ├── when the user doing a siloed borrow
+        └── it should succeed
+    ├── when the user doing an e-mode borrow
+        └── it should succeed
+    └──  when the user is borrowing in isolation mode
+        └── it should succeed
 ├── when there is an existing borrow
     ├── when no time has passed since the last borrow
         ├── when it's the user's first borrow
