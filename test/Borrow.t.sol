@@ -237,12 +237,16 @@ contract BorrowFailureTests is BorrowTestBase {
 
 contract BorrowConcreteTests is BorrowTestBase {
 
+    using UserConfiguration for DataTypes.UserConfigurationMap;
+
     address debtToken;
 
     function setUp() public virtual override {
         super.setUp();
         debtToken = pool.getReserveData(address(borrowAsset)).variableDebtTokenAddress;
     }
+
+    modifier whenThereIsNoExistingBorrow { _; }
 
     modifier whenNoTimeHasPassedSinceLastBorrow { _; }
 
@@ -256,21 +260,216 @@ contract BorrowConcreteTests is BorrowTestBase {
     modifier whenUserIsDoingRegularBorrow { _; }
 
     modifier whenUserIsDoingSiloedBorrow {
-        // TODO
+        vm.prank(admin);
+        poolConfigurator.setSiloedBorrowing(address(borrowAsset), true);
         _;
     }
 
-    modifier whenUserIsDoingEModeBorrow{
-        // TODO
+    modifier whenUserIsDoingEModeBorrow {
+        vm.startPrank(admin);
+        poolConfigurator.setEModeCategory({
+            categoryId:           1,
+            ltv:                  50_00,
+            liquidationThreshold: 60_00,
+            liquidationBonus:     101_00,
+            oracle:               address(0),
+            label:                "emode1"
+        });
+
+        poolConfigurator.setAssetEModeCategory(address(collateralAsset), 1);
+        poolConfigurator.setAssetEModeCategory(address(borrowAsset),     1);
+
+        vm.stopPrank();
+        vm.startPrank(borrower);
+
+        pool.setUserEMode(1);
         _;
     }
 
     modifier whenUserIsDoingIsolationModeBorrow {
-        // TODO
+        // Remove liquidity so initial DC can be set
+        _withdraw(borrower, address(collateralAsset), 1000 ether);
+
+        vm.startPrank(admin);
+        poolConfigurator.setDebtCeiling(address(collateralAsset), 500_00);  // Activate isolation mode
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+        vm.stopPrank();
+
+        _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
         _;
     }
 
-    function test_borrow_01() public {
+    function test_borrow_01()
+        public
+        whenThereIsNoExistingBorrow
+        whenUserFirstBorrow
+        whenUserIsDoingRegularBorrow
+    {
+        vm.startPrank(borrower);
+
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(borrowAsset),
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        AssertDebtTokenStateParams memory debtTokenParams = AssertDebtTokenStateParams({
+            user:        borrower,
+            debtToken:   debtToken,
+            userBalance: 0,
+            totalSupply: 0
+        });
+
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          borrower,
+            asset:         address(borrowAsset),
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        _assertPoolReserveState(poolParams);
+        _assertDebtTokenState(debtTokenParams);
+        _assertAssetState(assetParams);
+
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+
+        poolParams.currentLiquidityRate      = 0.03125e27;  // Half utilized: 6.25 * 50% = 3.125%
+        poolParams.currentVariableBorrowRate = 0.0625e27;   // Half utilized: 5% + 50%/80% * 2% = 6.25%
+
+        debtTokenParams.userBalance = 500 ether;
+        debtTokenParams.totalSupply = 500 ether;
+
+        assetParams.aTokenBalance = 500 ether;
+        assetParams.userBalance   = 500 ether;
+
+        _assertPoolReserveState(poolParams);
+        _assertDebtTokenState(debtTokenParams);
+        _assertAssetState(assetParams);
+    }
+
+    function test_borrow_02()
+        public
+        whenThereIsNoExistingBorrow
+        whenUserFirstBorrow
+        whenUserIsDoingSiloedBorrow
+    {
+        vm.startPrank(borrower);
+
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(borrowAsset),
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        AssertDebtTokenStateParams memory debtTokenParams = AssertDebtTokenStateParams({
+            user:        borrower,
+            debtToken:   debtToken,
+            userBalance: 0,
+            totalSupply: 0
+        });
+
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          borrower,
+            asset:         address(borrowAsset),
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        _assertPoolReserveState(poolParams);
+        _assertDebtTokenState(debtTokenParams);
+        _assertAssetState(assetParams);
+
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+
+        poolParams.currentLiquidityRate      = 0.03125e27;  // Half utilized: 6.25 * 50% = 3.125%
+        poolParams.currentVariableBorrowRate = 0.0625e27;   // Half utilized: 5% + 50%/80% * 2% = 6.25%
+
+        debtTokenParams.userBalance = 500 ether;
+        debtTokenParams.totalSupply = 500 ether;
+
+        assetParams.aTokenBalance = 500 ether;
+        assetParams.userBalance   = 500 ether;
+
+        _assertPoolReserveState(poolParams);
+        _assertDebtTokenState(debtTokenParams);
+        _assertAssetState(assetParams);
+    }
+
+    function test_borrow_03()
+        public
+        whenThereIsNoExistingBorrow
+        whenUserFirstBorrow
+        whenUserIsDoingEModeBorrow
+    {
+        vm.startPrank(borrower);
+
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(borrowAsset),
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        AssertDebtTokenStateParams memory debtTokenParams = AssertDebtTokenStateParams({
+            user:        borrower,
+            debtToken:   debtToken,
+            userBalance: 0,
+            totalSupply: 0
+        });
+
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          borrower,
+            asset:         address(borrowAsset),
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        _assertPoolReserveState(poolParams);
+        _assertDebtTokenState(debtTokenParams);
+        _assertAssetState(assetParams);
+
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+
+        poolParams.currentLiquidityRate      = 0.03125e27;  // Half utilized: 6.25 * 50% = 3.125%
+        poolParams.currentVariableBorrowRate = 0.0625e27;   // Half utilized: 5% + 50%/80% * 2% = 6.25%
+
+        debtTokenParams.userBalance = 500 ether;
+        debtTokenParams.totalSupply = 500 ether;
+
+        assetParams.aTokenBalance = 500 ether;
+        assetParams.userBalance   = 500 ether;
+
+        _assertPoolReserveState(poolParams);
+        _assertDebtTokenState(debtTokenParams);
+        _assertAssetState(assetParams);
+    }
+
+    function test_borrow_04()
+        public
+        whenThereIsNoExistingBorrow
+        whenUserFirstBorrow
+        whenUserIsDoingIsolationModeBorrow
+    {
         vm.startPrank(borrower);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
