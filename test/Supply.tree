@@ -11,6 +11,8 @@ pool.supply()
    └── it should revert (boundary)
 ├── when approval is insufficient
    └── it should revert (boundary)
+├── when underlying balance is insufficient
+   └── it should revert (boundary)
 ├── when `aToken.mint` is not called by the Pool (aToken unit test)
    └── it should revert
 ├── when `aToken._mintScaled` results in a scaled amount that's zero (aToken unit test)
