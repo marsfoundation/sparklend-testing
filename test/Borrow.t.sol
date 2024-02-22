@@ -457,123 +457,6 @@ contract BorrowConcreteTests is BorrowTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 600_00);
     }
 
-    // function test_borrow_04()
-    //     public
-    //     whenUserIsDoingRegularBorrow
-    //     whenItIsUsersFirstBorrow
-    //     whenUserIsDoingIsolationModeBorrow
-    // {
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-
-    //     _usersFirstBorrowTest();
-
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
-    // }
-
-    // function test_borrow_05()
-    //     public
-    //     whenThereIsAnExistingBorrow
-    //     whenNoTimeHasPassedSinceLastBorrow
-    //     whenUserIsDoingRegularBorrow
-    // {
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-
-    //     _existingBorrowNoTimePassedTest();
-
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-    // }
-
-    // function test_borrow_06()
-    //     public
-    //     whenThereIsAnExistingBorrow
-    //     whenNoTimeHasPassedSinceLastBorrow
-    //     whenUserIsDoingSiloedBorrow
-    // {
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-
-    //     _existingBorrowNoTimePassedTest();
-
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-    // }
-
-    // function test_borrow_07()
-    //     public
-    //     whenThereIsAnExistingBorrow
-    //     whenNoTimeHasPassedSinceLastBorrow
-    //     whenUserIsDoingEModeBorrow
-    // {
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-
-    //     _existingBorrowNoTimePassedTest();
-
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-    // }
-
-    // function test_borrow_08()
-    //     public
-    //     whenThereIsAnExistingBorrow
-    //     whenNoTimeHasPassedSinceLastBorrow
-    //     whenUserIsDoingIsolationModeBorrow
-    // {
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
-
-    //     _existingBorrowNoTimePassedTest();
-
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 1000_00);
-    // }
-
-    // function test_borrow_09()
-    //     public
-    //     whenThereIsAnExistingBorrow
-    //     whenSomeTimeHasPassedSinceLastBorrow
-    //     whenUserIsDoingRegularBorrow
-    // {
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-
-    //     _existingBorrowSomeTimePassedTest();
-
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-    // }
-
-    // function test_borrow_10()
-    //     public
-    //     whenThereIsAnExistingBorrow
-    //     whenSomeTimeHasPassedSinceLastBorrow
-    //     whenUserIsDoingSiloedBorrow
-    // {
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-
-    //     _existingBorrowSomeTimePassedTest();
-
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-    // }
-
-    // function test_borrow_11()
-    //     public
-    //     whenThereIsAnExistingBorrow
-    //     whenSomeTimeHasPassedSinceLastBorrow
-    //     whenUserIsDoingEModeBorrow
-    // {
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-
-    //     _existingBorrowSomeTimePassedTest();
-
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-    // }
-
-    // function test_borrow_12()
-    //     public
-    //     whenThereIsAnExistingBorrow
-    //     whenSomeTimeHasPassedSinceLastBorrow
-    //     whenUserIsDoingIsolationModeBorrow
-    // {
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
-
-    //     _existingBorrowSomeTimePassedTest();
-
-    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 1000_00);
-    // }
-
     /**********************************************************************************************/
     /*** Test running functions                                                                 ***/
     /**********************************************************************************************/
@@ -615,8 +498,8 @@ contract BorrowConcreteTests is BorrowTestBase {
         vm.prank(borrower);
         pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
 
-        poolParams.currentLiquidityRate      = 0.03125e27;  // Half utilized: 6.25 * 50% = 3.125%
-        poolParams.currentVariableBorrowRate = 0.0625e27;   // Half utilized: 5% + 50%/80% * 2% = 6.25%
+        poolParams.currentLiquidityRate      = 0.03125e27;  // 50% utilized: 6.25% * 50% = 3.125%
+        poolParams.currentVariableBorrowRate = 0.0625e27;   // 50% utilized: 5% + 50%/80% * 2% = 6.25%
 
         debtTokenParams.userBalance = 500 ether;
         debtTokenParams.totalSupply = 500 ether;
@@ -635,9 +518,9 @@ contract BorrowConcreteTests is BorrowTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.00525e27,
+            currentLiquidityRate:      0.00525e27,  // 10% utilized: 5% * 10% = 0.525%
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.0525e27,
+            currentVariableBorrowRate: 0.0525e27,  // 10% utilized: 5% + 10%/80% * 2% = 5.25%
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -729,7 +612,7 @@ contract BorrowConcreteTests is BorrowTestBase {
         assertEq(borrowRate,    0.065000525110257445296653722e27);  // ~60% utilized: 5% + 60%/80% * 2% = ~6.5%
         assertEq(liquidityRate, 0.039001680363853456248262541e27);  // ~60% utilized: 60% * ~6.5% = ~3.9%
 
-        uint256 expectedLiquidityIndex      = 1e27 + (1e27 * 0.00525e27 / 100 / 1e27);      // Normalized yield accrues 1% of APR
+        uint256 expectedLiquidityIndex      = 1e27 + (1e27 * 0.00525e27 / 100 / 1e27);     // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
         assertEq(expectedLiquidityIndex,      1.0000525e27);
