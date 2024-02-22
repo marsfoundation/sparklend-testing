@@ -1,0 +1,69 @@
+pool.supply()
+├── when amount is zero
+   └── it should revert (boundary)
+├── given not active
+   └── it should revert
+├── given paused
+   └── it should revert
+├── given frozen
+   └── it should revert
+├── when not supplyCap == 0 && amount puts over supply cap
+   └── it should revert (boundary)
+├── when approval is insufficient
+   └── it should revert (boundary)
+├── when underlying balance is insufficient
+   └── it should revert (boundary)
+├── when `aToken.mint` is not called by the Pool (aToken unit test)
+   └── it should revert
+├── when `aToken._mintScaled` results in a scaled amount that's zero (aToken unit test)
+   └── it should revert
+├── when this is the first user supply
+   ├── given the asset is in isolation mode
+      ├── when msg.sender DOES NOT have ISOLATED_COLLATERAL_SUPPLIER_ROLE
+         └── it should succeed without automatic collateral supply [01]
+      └── when msg.sender DOES have ISOLATED_COLLATERAL_SUPPLIER_ROLE
+         ├── given the LTV is zero
+            └── it should succeed without automatic collateral supply [02]
+         └── given the LTV is NOT zero
+            ├── when the user IS NOT using any other collateral
+               └── it should succeed with automatic collateral supply [03]
+            └── when the user IS using any other collateral
+               ├── when the user is using a single collateral type
+                  ├── given the other collateral type is in isolation mode
+                     └── it should succeed without automatic collateral supply [04]
+                  └── given the other collateral type is NOT in isolation mode
+                     └── it should succeed without automatic collateral supply [05]
+               └── when the user is using multiple collateral types
+                  └── it should succeed without automatic collateral supply [06] (NOTE: DC is already NOT zero so condition on line 722 in ValidationLogic doesn't apply)
+   └── given the asset is NOT in isolation mode
+      ├── given the LTV is zero
+         └── it should succeed without automatic collateral supply [07]
+      └── given the LTV is NOT zero
+         ├── when the user IS NOT using any other collateral
+            └── it should succeed with automatic collateral supply [08]
+         └── when the user IS using any other collateral
+            ├── when the user is using a single collateral type
+               ├── given the other collateral type is in isolation mode
+                  └── it should succeed without automatic collateral supply [09]
+               └── given the other collateral type is NOT in isolation mode
+                  └── it should succeed with automatic collateral supply [10]
+            └── when the user is using multiple collateral types
+               └── it should succeed with automatic collateral supply [11] (NOTE: DC is already IS zero so condition on line 722 in ValidationLogic doesn't apply)
+└── given no time has passed
+   └── given there is no active borrow
+      └── it should succeed and update no reserve state [12]
+   └── given there is an active borrow
+      └── given no time has passed after borrow
+         └── it should succeed and update rates only [13]
+      └── given some time has passed after borrow
+         └── it should succeed and update the lastUpdated timestamp, indexes, and rates [14]
+└── given time has passed
+   └── given there is no active borrow
+      └── it should succeed and update lastUpdated timestamp [15]
+   └── given there is an active borrow
+      └── given no time has passed since the last borrow
+         └── it should succeed and update the rates only [16]
+      └── given some time has passed since the last borrow
+         └── it should succeed and update the lastUpdated timestamp, indexes, and rates [17]
+
+TODO: Add fuzz testing for supplying with/without automatic collateral and in different time/active borrow scenarios.
