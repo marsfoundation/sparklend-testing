@@ -246,46 +246,11 @@ contract BorrowConcreteTests is BorrowTestBase {
         debtToken = pool.getReserveData(address(borrowAsset)).variableDebtTokenAddress;
     }
 
-    modifier whenItIsUsersFirstBorrow { _; }
-
-    modifier whenThereIsAnExistingBorrow {
-        address borrower2 = makeAddr("borrower2");
-
-        _supplyAndUseAsCollateral(borrower2, address(collateralAsset), 1000 ether);
-        _borrow(borrower2, address(borrowAsset), 100 ether);
-        _;
-    }
-
-    modifier whenNoTimeHasPassedSinceLastBorrow { _; }
-
-    modifier whenSomeTimeHasPassedSinceLastBorrow {
-        skip(WARP_TIME);
-        _;
-    }
-
     modifier whenUserIsDoingRegularBorrow { _; }
 
     modifier whenUserIsDoingSiloedBorrow {
-        address borrower2 = makeAddr("borrower2");
-
-        bool secondBorrower = aCollateralAsset.balanceOf(borrower2) != 0;
-
-        uint256 existingBorrower2Balance;
-
-        if (secondBorrower) {
-            existingBorrower2Balance = IERC20(debtToken).balanceOf(address(borrower2));
-            _repay(borrower2, address(borrowAsset), existingBorrower2Balance);
-            _withdraw(borrower2, address(collateralAsset), 1000 ether);
-        }
-
         vm.prank(admin);
         poolConfigurator.setSiloedBorrowing(address(borrowAsset), true);
-
-        if (secondBorrower) {
-            _supplyAndUseAsCollateral(borrower2, address(collateralAsset), 1000 ether);
-            _borrow(borrower2, address(borrowAsset), existingBorrower2Balance);
-        }
-
         _;
     }
 
@@ -314,33 +279,36 @@ contract BorrowConcreteTests is BorrowTestBase {
         // Remove liquidity so initial DC can be set
         _withdraw(borrower, address(collateralAsset), 1000 ether);
 
-        address borrower2 = makeAddr("borrower2");
-
-        bool secondBorrower = aCollateralAsset.balanceOf(borrower2) != 0;
-
-        if (secondBorrower) {
-            _repay(borrower2, address(borrowAsset), 500 ether);
-            _withdraw(borrower2, address(collateralAsset), 1000 ether);
-        }
-
         vm.startPrank(admin);
         poolConfigurator.setDebtCeiling(address(collateralAsset), 1000_00);  // Activate isolation mode
         poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
         vm.stopPrank();
 
         _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
+        _;
+    }
 
-        if (secondBorrower) {
-            _supplyAndUseAsCollateral(borrower2, address(collateralAsset), 1000 ether);
-            _borrow(borrower2, address(borrowAsset), 500 ether);
-        }
+    modifier whenItIsUsersFirstBorrow { _; }
+
+    modifier whenThereIsAnExistingBorrow {
+        address borrower2 = makeAddr("borrower2");
+
+        _supplyAndUseAsCollateral(borrower2, address(collateralAsset), 1000 ether);
+        _borrow(borrower2, address(borrowAsset), 100 ether);
+        _;
+    }
+
+    modifier whenNoTimeHasPassedSinceLastBorrow { _; }
+
+    modifier whenSomeTimeHasPassedSinceLastBorrow {
+        skip(WARP_TIME);
         _;
     }
 
     function test_borrow_01()
         public
-        whenItIsUsersFirstBorrow
         whenUserIsDoingRegularBorrow
+        whenItIsUsersFirstBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
@@ -351,45 +319,47 @@ contract BorrowConcreteTests is BorrowTestBase {
 
     function test_borrow_02()
         public
-        whenItIsUsersFirstBorrow
-        whenUserIsDoingSiloedBorrow
+        whenUserIsDoingRegularBorrow
+        whenThereIsAnExistingBorrow
+        whenNoTimeHasPassedSinceLastBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _usersFirstBorrowTest();
+        _existingBorrowNoTimePassedTest();
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
     function test_borrow_03()
         public
-        whenItIsUsersFirstBorrow
-        whenUserIsDoingEModeBorrow
+        whenUserIsDoingRegularBorrow
+        whenThereIsAnExistingBorrow
+        whenSomeTimeHasPassedSinceLastBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _usersFirstBorrowTest();
+        _existingBorrowSomeTimePassedTest();
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
     function test_borrow_04()
         public
+        whenUserIsDoingSiloedBorrow
         whenItIsUsersFirstBorrow
-        whenUserIsDoingIsolationModeBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
         _usersFirstBorrowTest();
 
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
     function test_borrow_05()
         public
+        whenUserIsDoingSiloedBorrow
         whenThereIsAnExistingBorrow
         whenNoTimeHasPassedSinceLastBorrow
-        whenUserIsDoingRegularBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
@@ -400,48 +370,47 @@ contract BorrowConcreteTests is BorrowTestBase {
 
     function test_borrow_06()
         public
-        whenThereIsAnExistingBorrow
-        whenNoTimeHasPassedSinceLastBorrow
         whenUserIsDoingSiloedBorrow
+        whenThereIsAnExistingBorrow
+        whenSomeTimeHasPassedSinceLastBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _existingBorrowNoTimePassedTest();
+        _existingBorrowSomeTimePassedTest();
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
     function test_borrow_07()
         public
-        whenThereIsAnExistingBorrow
-        whenNoTimeHasPassedSinceLastBorrow
         whenUserIsDoingEModeBorrow
+        whenItIsUsersFirstBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _existingBorrowNoTimePassedTest();
+        _usersFirstBorrowTest();
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
     function test_borrow_08()
         public
+        whenUserIsDoingEModeBorrow
         whenThereIsAnExistingBorrow
         whenNoTimeHasPassedSinceLastBorrow
-        whenUserIsDoingIsolationModeBorrow
     {
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
         _existingBorrowNoTimePassedTest();
 
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 1000_00);
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
     function test_borrow_09()
         public
+        whenUserIsDoingEModeBorrow
         whenThereIsAnExistingBorrow
         whenSomeTimeHasPassedSinceLastBorrow
-        whenUserIsDoingRegularBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
@@ -452,42 +421,158 @@ contract BorrowConcreteTests is BorrowTestBase {
 
     function test_borrow_10()
         public
-        whenThereIsAnExistingBorrow
-        whenSomeTimeHasPassedSinceLastBorrow
-        whenUserIsDoingSiloedBorrow
+        whenUserIsDoingIsolationModeBorrow
+        whenItIsUsersFirstBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _existingBorrowSomeTimePassedTest();
+        _usersFirstBorrowTest();
 
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
     }
 
     function test_borrow_11()
         public
+        whenUserIsDoingIsolationModeBorrow
         whenThereIsAnExistingBorrow
-        whenSomeTimeHasPassedSinceLastBorrow
-        whenUserIsDoingEModeBorrow
+        whenNoTimeHasPassedSinceLastBorrow
     {
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 100_00);
 
-        _existingBorrowSomeTimePassedTest();
+        _existingBorrowNoTimePassedTest();
 
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 600_00);
     }
 
     function test_borrow_12()
         public
+        whenUserIsDoingIsolationModeBorrow
         whenThereIsAnExistingBorrow
         whenSomeTimeHasPassedSinceLastBorrow
-        whenUserIsDoingIsolationModeBorrow
     {
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 100_00);
 
         _existingBorrowSomeTimePassedTest();
 
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 1000_00);
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 600_00);
     }
+
+    // function test_borrow_04()
+    //     public
+    //     whenUserIsDoingRegularBorrow
+    //     whenItIsUsersFirstBorrow
+    //     whenUserIsDoingIsolationModeBorrow
+    // {
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+    //     _usersFirstBorrowTest();
+
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
+    // }
+
+    // function test_borrow_05()
+    //     public
+    //     whenThereIsAnExistingBorrow
+    //     whenNoTimeHasPassedSinceLastBorrow
+    //     whenUserIsDoingRegularBorrow
+    // {
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+    //     _existingBorrowNoTimePassedTest();
+
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    // }
+
+    // function test_borrow_06()
+    //     public
+    //     whenThereIsAnExistingBorrow
+    //     whenNoTimeHasPassedSinceLastBorrow
+    //     whenUserIsDoingSiloedBorrow
+    // {
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+    //     _existingBorrowNoTimePassedTest();
+
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    // }
+
+    // function test_borrow_07()
+    //     public
+    //     whenThereIsAnExistingBorrow
+    //     whenNoTimeHasPassedSinceLastBorrow
+    //     whenUserIsDoingEModeBorrow
+    // {
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+    //     _existingBorrowNoTimePassedTest();
+
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    // }
+
+    // function test_borrow_08()
+    //     public
+    //     whenThereIsAnExistingBorrow
+    //     whenNoTimeHasPassedSinceLastBorrow
+    //     whenUserIsDoingIsolationModeBorrow
+    // {
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
+
+    //     _existingBorrowNoTimePassedTest();
+
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 1000_00);
+    // }
+
+    // function test_borrow_09()
+    //     public
+    //     whenThereIsAnExistingBorrow
+    //     whenSomeTimeHasPassedSinceLastBorrow
+    //     whenUserIsDoingRegularBorrow
+    // {
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+    //     _existingBorrowSomeTimePassedTest();
+
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    // }
+
+    // function test_borrow_10()
+    //     public
+    //     whenThereIsAnExistingBorrow
+    //     whenSomeTimeHasPassedSinceLastBorrow
+    //     whenUserIsDoingSiloedBorrow
+    // {
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+    //     _existingBorrowSomeTimePassedTest();
+
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    // }
+
+    // function test_borrow_11()
+    //     public
+    //     whenThereIsAnExistingBorrow
+    //     whenSomeTimeHasPassedSinceLastBorrow
+    //     whenUserIsDoingEModeBorrow
+    // {
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+    //     _existingBorrowSomeTimePassedTest();
+
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    // }
+
+    // function test_borrow_12()
+    //     public
+    //     whenThereIsAnExistingBorrow
+    //     whenSomeTimeHasPassedSinceLastBorrow
+    //     whenUserIsDoingIsolationModeBorrow
+    // {
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
+
+    //     _existingBorrowSomeTimePassedTest();
+
+    //     assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 1000_00);
+    // }
 
     /**********************************************************************************************/
     /*** Test running functions                                                                 ***/
