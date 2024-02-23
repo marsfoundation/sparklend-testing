@@ -5,12 +5,7 @@ import "forge-std/Test.sol";
 
 import { Errors } from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
 
-import {
-    IERC20,
-    IReserveInterestRateStrategy,
-    MockERC20,
-    SparkLendTestBase
-} from "./SparkLendTestBase.sol";
+import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
 
 contract WithdrawTestBase is SparkLendTestBase {
 
@@ -71,8 +66,8 @@ contract WithdrawFailureTests is WithdrawTestBase {
     function test_withdraw_healthFactorBelowThresholdBoundary() public {
         _initCollateral({
             asset:                address(collateralAsset),
-            ltv:                  5000,
-            liquidationThreshold: 5000,
+            ltv:                  50_00,
+            liquidationThreshold: 50_00,
             liquidationBonus:     100_01
         });
 
@@ -104,6 +99,13 @@ contract WithdrawFailureTests is WithdrawTestBase {
 
 contract WithdrawConcreteTests is WithdrawTestBase {
 
+    address debtToken;
+
+    function setUp() public virtual override {
+        super.setUp();
+        debtToken = pool.getReserveData(address(collateralAsset)).variableDebtTokenAddress;
+    }
+
     modifier givenNoTimeHasPassedAfterSupply { _; }
 
     modifier givenSomeTimeHasPassedAfterSupply() {
@@ -117,7 +119,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         // Allow borrowAsset to be collateral to demo collateralAsset accruing interest
         _initCollateral({
             asset:                address(borrowAsset),
-            ltv:                  5000,
+            ltv:                  50_00,
             liquidationThreshold: 6000,
             liquidationBonus:     100_01
         });
@@ -131,9 +133,13 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         _;
     }
 
-    modifier givenNoTimeHasPassedAfterBorrow { _; }
+    modifier givenNoTimeHasPassedAfterBorrow {
+        assertGt(IERC20(debtToken).totalSupply(), 0);
+        _;
+    }
 
     modifier givenSomeTimeHasPassedAfterBorrow() {
+        assertGt(IERC20(debtToken).totalSupply(), 0);
         skip(WARP_TIME);
         _;
     }
@@ -324,7 +330,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         poolParams.liquidityIndex            = expectedLiquidityIndex;
         poolParams.currentLiquidityRate      = liquidityRate + 1;  // Rounding
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
-        poolParams.currentVariableBorrowRate = borrowRate + 1; // Rounding
+        poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
 
         aTokenParams.userBalance = 200 ether + supplierYield;

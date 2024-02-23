@@ -24,6 +24,6 @@ pool.withdraw()
         └── it should succeed and update lastUpdated timestamp [04]
     └── given there is an active borrow
         └── given no time has passed since the last borrow
-            └── it should succeed and update the rates only [05]
+            └── it should succeed and update rates only [05]
         └── given some time has passed since the last borrow
-            └── it should succeed and update the rates only [06]
+            └── it should succeed and update the lastUpdated timestamp, indexes, and rates [06]
