@@ -106,9 +106,9 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         debtToken = pool.getReserveData(address(collateralAsset)).variableDebtTokenAddress;
     }
 
-    modifier givenNoTimeHasPassedAfterSupply { _; }
+    modifier givenNoTimeHasPassed { _; }
 
-    modifier givenSomeTimeHasPassedAfterSupply() {
+    modifier givenSomeTimeHasPassed() {
         skip(WARP_TIME);
         _;
     }
@@ -145,7 +145,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     }
 
     function test_withdraw_01()
-        givenNoTimeHasPassedAfterSupply
+        givenNoTimeHasPassed
         givenNoActiveBorrow
         public
     {
@@ -195,7 +195,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     }
 
     function test_withdraw_02()
-        givenNoTimeHasPassedAfterSupply
+        givenNoTimeHasPassed
         givenActiveBorrow
         givenNoTimeHasPassedAfterBorrow
         public
@@ -259,7 +259,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     }
 
     function test_withdraw_03()
-        givenNoTimeHasPassedAfterSupply
+        givenNoTimeHasPassed
         givenActiveBorrow
         givenSomeTimeHasPassedAfterBorrow
         public
@@ -345,7 +345,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     }
 
     function test_withdraw_04()
-        givenSomeTimeHasPassedAfterSupply
+        givenSomeTimeHasPassed
         givenNoActiveBorrow
         public
     {
@@ -397,7 +397,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     }
 
     function test_withdraw_05()
-        givenSomeTimeHasPassedAfterSupply
+        givenSomeTimeHasPassed
         givenActiveBorrow
         givenNoTimeHasPassedAfterBorrow
         public
@@ -461,7 +461,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     }
 
     function test_withdraw_06()
-        givenSomeTimeHasPassedAfterSupply
+        givenSomeTimeHasPassed
         givenActiveBorrow
         givenSomeTimeHasPassedAfterBorrow
         public
