@@ -370,10 +370,6 @@ contract SparkLendTestBase is Test {
         return (borrowRate, liquidityRate);
     }
 
-    /**********************************************************************************************/
-    /*** Utility functions                                                                      ***/
-    /**********************************************************************************************/
-
     function _getUpdatedRates(uint256 borrowed, uint256 supplied)
         internal pure returns (uint256, uint256)
     {
