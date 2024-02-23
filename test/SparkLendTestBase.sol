@@ -22,6 +22,7 @@ import { AToken }            from "aave-v3-core/contracts/protocol/tokenization/
 import { StableDebtToken }   from "aave-v3-core/contracts/protocol/tokenization/StableDebtToken.sol";
 import { VariableDebtToken } from "aave-v3-core/contracts/protocol/tokenization/VariableDebtToken.sol";
 
+import { IAaveIncentivesController }    from "aave-v3-core/contracts/interfaces/IAaveIncentivesController.sol";
 import { IReserveInterestRateStrategy } from "aave-v3-core/contracts/interfaces/IReserveInterestRateStrategy.sol";
 
 import { VariableBorrowInterestRateStrategy } from "sparklend-advanced/VariableBorrowInterestRateStrategy.sol";
@@ -51,6 +52,8 @@ contract SparkLendTestBase is Test {
     PoolConfigurator      poolConfigurator;
 
     AToken            aTokenImpl;
+    Pool              poolImpl;
+    PoolConfigurator  poolConfiguratorImpl;
     StableDebtToken   stableDebtTokenImpl;
     VariableDebtToken variableDebtTokenImpl;
 
@@ -60,12 +63,16 @@ contract SparkLendTestBase is Test {
     AToken aBorrowAsset;
     AToken aCollateralAsset;
 
+    // Default values for interest rate strategies
+    uint256 constant BASE_RATE     = 0.05e27;
+    uint256 constant OPTIMAL_RATIO = 0.8e27;
+    uint256 constant SLOPE1        = 0.02e27;
+    uint256 constant SLOPE2        = 0.30e27;
+
     function setUp() public virtual {
         address deployer = address(this);
 
         poolAddressesProvider = new PoolAddressesProvider("0", deployer);
-
-        PoolConfigurator poolConfiguratorImpl = new PoolConfigurator();
 
         PoolAddressesProviderRegistry registry = new PoolAddressesProviderRegistry(deployer);
 
@@ -74,7 +81,11 @@ contract SparkLendTestBase is Test {
         aclManager           = new ACLManager(poolAddressesProvider);
         protocolDataProvider = new DataProvider(poolAddressesProvider);
 
-        Pool poolImpl = new Pool(poolAddressesProvider);
+        poolConfiguratorImpl = new PoolConfigurator();
+        poolConfiguratorImpl.initialize(poolAddressesProvider);
+
+        poolImpl = new Pool(poolAddressesProvider);
+        poolImpl.initialize(poolAddressesProvider);
 
         poolAddressesProvider.setPoolImpl(address(poolImpl));
         poolAddressesProvider.setPoolConfiguratorImpl(address(poolConfiguratorImpl));
@@ -82,9 +93,39 @@ contract SparkLendTestBase is Test {
         pool             = Pool(poolAddressesProvider.getPool());
         poolConfigurator = PoolConfigurator(poolAddressesProvider.getPoolConfigurator());
 
-        aTokenImpl            = new AToken(pool);
-        stableDebtTokenImpl   = new StableDebtToken(pool);
+        aTokenImpl = new AToken(pool);
+        aTokenImpl.initialize(
+            pool,
+            address(0),
+            address(0),
+            IAaveIncentivesController(address(0)),
+            0,
+            "SPTOKEN_IMPL",
+            "SPTOKEN_IMPL",
+            ""
+        );
+
+        stableDebtTokenImpl = new StableDebtToken(pool);
+        stableDebtTokenImpl.initialize(
+            pool,
+            address(0),
+            IAaveIncentivesController(address(0)),
+            0,
+            "STABLE_DEBT_TOKEN_IMPL",
+            "STABLE_DEBT_TOKEN_IMPL",
+            ""
+        );
+
         variableDebtTokenImpl = new VariableDebtToken(pool);
+        variableDebtTokenImpl.initialize(
+            pool,
+            address(0),
+            IAaveIncentivesController(address(0)),
+            0,
+            "VARIABLE_DEBT_TOKEN_IMPL",
+            "VARIABLE_DEBT_TOKEN_IMPL",
+            ""
+        );
 
         address[] memory assets;
         address[] memory oracles;
@@ -97,7 +138,6 @@ contract SparkLendTestBase is Test {
             baseCurrencyUnit: 1e8
         });
 
-        poolAddressesProvider.setACLAdmin(deployer);
         poolAddressesProvider.setACLManager(address(aclManager));
         poolAddressesProvider.setPoolDataProvider(address(protocolDataProvider));
         poolAddressesProvider.setPriceOracle(address(aaveOracle));
@@ -106,7 +146,6 @@ contract SparkLendTestBase is Test {
 
         aclManager.addEmergencyAdmin(admin);
         aclManager.addPoolAdmin(admin);
-        aclManager.removePoolAdmin(deployer);
         aclManager.grantRole(aclManager.DEFAULT_ADMIN_ROLE(), admin);
         aclManager.revokeRole(aclManager.DEFAULT_ADMIN_ROLE(), deployer);
 
@@ -118,10 +157,10 @@ contract SparkLendTestBase is Test {
         IReserveInterestRateStrategy strategy
             = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
                 provider:               poolAddressesProvider,
-                optimalUsageRatio:      0.80e27,
-                baseVariableBorrowRate: 0.05e27,
-                variableRateSlope1:     0.02e27,
-                variableRateSlope2:     0.3e27
+                optimalUsageRatio:      OPTIMAL_RATIO,
+                baseVariableBorrowRate: BASE_RATE,
+                variableRateSlope1:     SLOPE1,
+                variableRateSlope2:     SLOPE2
             }));
 
         collateralAsset = new MockERC20("Collateral Asset", "COLL", 18);
@@ -160,7 +199,7 @@ contract SparkLendTestBase is Test {
             underlyingAssetDecimals:     token.decimals(),
             interestRateStrategyAddress: address(strategy),
             underlyingAsset:             address(token),
-            treasury:                    address(token),  // TODO: Change to treasury
+            treasury:                    makeAddr("treasury"),
             incentivesController:        address(0),
             aTokenName:                  string(string.concat("Spark ",               symbol)),
             aTokenSymbol:                string(string.concat("sp",                   symbol)),
@@ -212,10 +251,10 @@ contract SparkLendTestBase is Test {
         IReserveInterestRateStrategy strategy
             = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
                 provider:               poolAddressesProvider,
-                optimalUsageRatio:      0.80e27,
-                baseVariableBorrowRate: 0.05e27,
-                variableRateSlope1:     0.02e27,
-                variableRateSlope2:     0.30e27
+                optimalUsageRatio:      OPTIMAL_RATIO,
+                baseVariableBorrowRate: BASE_RATE,
+                variableRateSlope1:     SLOPE1,
+                variableRateSlope2:     SLOPE2
             }));
 
         newCollateralAsset = address(new MockERC20("Collateral Asset", "COLL", 18));
@@ -226,6 +265,11 @@ contract SparkLendTestBase is Test {
         // Set LTV to 1%
         vm.prank(admin);
         poolConfigurator.configureReserveAsCollateral(newCollateralAsset, 100, 100, 100_01);
+    }
+
+    function _setCollateralDebtCeiling(address asset, uint256 ceiling) internal {
+        vm.prank(admin);
+        poolConfigurator.setDebtCeiling(asset, ceiling);
     }
 
     /**********************************************************************************************/
@@ -265,11 +309,6 @@ contract SparkLendTestBase is Test {
     function _supplyAndUseAsCollateral(address user, address asset, uint256 amount) internal {
         _supply(user, asset, amount);
         _useAsCollateral(user, asset);
-    }
-
-    function _setCollateralDebtCeiling(address asset, uint256 ceiling) internal {
-        vm.prank(admin);
-        poolConfigurator.setDebtCeiling(asset, ceiling);
     }
 
     /**********************************************************************************************/
@@ -331,20 +370,16 @@ contract SparkLendTestBase is Test {
         return (borrowRate, liquidityRate);
     }
 
-    /**********************************************************************************************/
-    /*** Utility functions                                                                      ***/
-    /**********************************************************************************************/
-
     function _getUpdatedRates(uint256 borrowed, uint256 supplied)
         internal pure returns (uint256, uint256)
     {
         return _getUpdatedRates({
             borrowed:     borrowed,
             totalValue:   supplied,
-            baseRate:     0.05e27,
-            slope1:       0.02e27,
-            slope2:       0.30e27,
-            optimalRatio: 0.8e27
+            baseRate:     BASE_RATE,
+            slope1:       SLOPE1,
+            slope2:       SLOPE2,
+            optimalRatio: OPTIMAL_RATIO
         });
     }
 
@@ -469,13 +504,17 @@ contract SparkLendTestBase is Test {
         }
     }
 
-    function isAddress(bytes32 _bytes) public pure returns (bool isAddress_) {
+    function isAddress(bytes32 _bytes) public pure returns (bool) {
         if (_bytes == 0) return false;
 
-        for (uint256 i = 20; i < 32; i++) {
-            if (_bytes[i] != 0) return false;
+        // Extract the 20 bytes Ethereum address
+        address extractedAddress;
+        assembly {
+            extractedAddress := mload(add(_bytes, 0x14))
         }
-        isAddress_ = true;
+
+        // Check if the address equals the original bytes32 value when padded back to bytes32
+        return extractedAddress != address(0) && bytes32(bytes20(extractedAddress)) == _bytes;
     }
 
     function bytes32ToAddress(bytes32 _bytes) public pure returns (address) {
