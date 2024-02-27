@@ -1,12 +1,16 @@
 pool.liquidationCall()
-├── when collateral reserve is not active
+├── when collateralAsset is not active
    └── it should revert
-├── when debt reserve is not active
+├── when borrowAsset is not active
    └── it should revert
-├── when collateral reserve is paused
+├── when collateralAsset is paused
    └── it should revert
-├── when debt reserve is paused
+├── when borrowAsset is paused
    └── it should revert
+├── when collateralAsset is frozen
+   └── it should succeed
+├── when borrowAsset is frozen
+   └── it should succeed
 ├── when price oracle sentinel is active and health factor is above min threshold and liquidations not allowed
    └── it should revert
 ├── when health factor is above one
