@@ -1,0 +1,68 @@
+pool.liquidationCall()
+├── when collateral reserve is not active
+   └── it should revert
+├── when debt reserve is not active
+   └── it should revert
+├── when collateral reserve is paused
+   └── it should revert
+├── when debt reserve is paused
+   └── it should revert
+├── when price oracle sentinel is active and health factor is above min threshold and liquidations not allowed
+   └── it should revert
+├── when health factor is above one
+    └── it should revert (boundary)
+├── when the LT is zero
+   └── it should revert
+├── when the user isn't using as collateral
+   └── it should revert
+├── when the total debt is zero
+   └── it should revert
+├── when the user does an insufficient approve on the debtAsset
+   └── it should revert (boundary)
+├── when the user has an insufficient balance on the debtAsset
+   └── it should revert (boundary)
+
+├── when the users health factor is less than CLOSE_FACTOR_HF_THRESHOLD
+   └── it should succeed using a closeFactor of MAX_LIQUIDATION_CLOSE_FACTOR
+├── when the users health factor is equal to CLOSE_FACTOR_HF_THRESHOLD
+   └── it should succeed using a closeFactor of MAX_LIQUIDATION_CLOSE_FACTOR
+├── when the users health factor is above CLOSE_FACTOR_HF_THRESHOLD
+   └── it should succeed using a closeFactor of DEFAULT_LIQUIDATION_CLOSE_FACTOR
+
+├── when the user is in emode
+    ├── when the price source is overridden
+        └── it should succeed using the overridden price for both assets and overridden liquidation bonus
+    ├── when the price source is not overridden
+        └── it should succeed using the NORMAL price for both assets and overridden liquidation bonus
+    └── it should succeed using a closeFactor of DEFAULT_LIQUIDATION_CLOSE_FACTOR
+
+├── when the max amount to liquidate is less than the collateral balance
+    ├── when the protocol fee is greater than zero
+        └── it should succeed and transfer the protocol fee to the treasury
+    └── when the protocol fee is zero
+        └── it should succeed and not transfer to treasury
+├── when the max amount to liquidate is greater than or equal to the collateral balance
+
+├── when the amount of debt liquidated is greater than the user's debt
+    └── it should succeed and liquidate all the user's debt
+├── when the amount of debt liquidated is less than or equal to the user's debt
+    └── it should succeed and liquidate all the user's debt
+
+├── when the user selects recieveAToken
+    └── when the liquidators previous balance is zero
+        └── it TODO: Determine if there is a case for doing the validateAutomaticUseAsCollateral tree here
+    └── when the liquidators previous balance is zero
+        └── it should succeed and transfer the collateralAToken to the liquidator
+├── when the user does NOT select recieveAToken
+    └── it should succeed burn the collateralAToken
+
+├── when the amount of debt liquidated is equal to the user's debt
+   └── it should succeed set isBorrowing to false
+├── when the collateral liquidated plus the protocol fee is equal to the users balance
+    └── it should succeed set isUsingAsCollateral to false
+├── given the collateralAsset is in isolation mode
+    └── it should succeed set isUsingAsCollateral to false
+├── given the collateralAsset is in isolation mode
+    └── it should succeed and update the debt cieling of the collateralAsset
+
+TODO: Figure out what the deal is with handleRepayment
