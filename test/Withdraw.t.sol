@@ -3,6 +3,11 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
+import { DataTypes } from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
+
+import { ReserveConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
+import { UserConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
+
 import { Errors } from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
 
 import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
@@ -89,7 +94,18 @@ contract WithdrawFailureTests is WithdrawTestBase {
         pool.withdraw(address(collateralAsset), 500 ether + 1e10, user);
     }
 
-    // TODO: Add liquidity failure boundary
+    function test_withdraw_amountGtLiquidityBoundary() public {
+        vm.startPrank(user);
+
+        collateralAsset.burn(address(aCollateralAsset), 1);
+
+        vm.expectRevert(stdError.arithmeticError);
+        pool.withdraw(address(collateralAsset), 1000 ether, user);
+
+        collateralAsset.mint(address(aCollateralAsset), 1);
+
+        pool.withdraw(address(collateralAsset), 1000 ether, user);
+    }
 
     // TODO: Believe that this code is unreachable because the LTV is checked in two places
     //       and this only fails if one is zero and the other is not.
@@ -98,6 +114,9 @@ contract WithdrawFailureTests is WithdrawTestBase {
 }
 
 contract WithdrawConcreteTests is WithdrawTestBase {
+
+    using UserConfiguration for DataTypes.UserConfigurationMap;
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
 
     address debtToken;
 
@@ -138,9 +157,22 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         _;
     }
 
-    modifier givenSomeTimeHasPassedAfterBorrow() {
+    modifier givenSomeTimeHasPassedAfterBorrow {
         assertGt(IERC20(debtToken).totalSupply(), 0);
         skip(WARP_TIME);
+        _;
+    }
+
+    modifier givenUserHasActiveCollateral {
+        _initCollateral({
+            asset:                address(collateralAsset),
+            ltv:                  50_00,
+            liquidationThreshold: 60_00,
+            liquidationBonus:     100_01
+        });
+
+        vm.prank(user);
+        pool.setUserUseReserveAsCollateral(address(collateralAsset), true);
         _;
     }
 
@@ -540,6 +572,165 @@ contract WithdrawConcreteTests is WithdrawTestBase {
 
         assetParams.userBalance   = 800 ether;
         assetParams.aTokenBalance = 100 ether;
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
+    }
+
+    function test_withdraw_07()
+        public
+        givenUserHasActiveCollateral
+    {
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        user,
+            aToken:      address(aCollateralAsset),
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          user,
+            asset:         address(collateralAsset),
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
+
+        assertEq(pool.getUserConfiguration(user).isUsingAsCollateral(0), true);
+
+        vm.prank(user);
+        pool.withdraw(address(collateralAsset), type(uint256).max, user);
+
+        aTokenParams.userBalance = 0;
+        aTokenParams.totalSupply = 0;
+
+        assetParams.userBalance   = 1000 ether;
+        assetParams.aTokenBalance = 0;
+
+        assertEq(pool.getUserConfiguration(user).isUsingAsCollateral(0), false);
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
+    }
+
+    function test_withdraw_08()
+        public
+        givenUserHasActiveCollateral
+    {
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        user,
+            aToken:      address(aCollateralAsset),
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          user,
+            asset:         address(collateralAsset),
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
+
+        assertEq(pool.getUserConfiguration(user).isUsingAsCollateral(0), true);
+
+        vm.prank(user);
+        pool.withdraw(address(collateralAsset), 1000 ether, user);
+
+        aTokenParams.userBalance = 0;
+        aTokenParams.totalSupply = 0;
+
+        assetParams.userBalance   = 1000 ether;
+        assetParams.aTokenBalance = 0;
+
+        assertEq(pool.getUserConfiguration(user).isUsingAsCollateral(0), false);
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
+    }
+
+    function test_withdraw_09()
+        public
+        givenUserHasActiveCollateral
+    {
+        AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
+            asset:                     address(collateralAsset),
+            liquidityIndex:            1e27,
+            currentLiquidityRate:      0,
+            variableBorrowIndex:       1e27,
+            currentVariableBorrowRate: 0.05e27,
+            currentStableBorrowRate:   0,
+            lastUpdateTimestamp:       1,
+            accruedToTreasury:         0,
+            unbacked:                  0
+        });
+
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        user,
+            aToken:      address(aCollateralAsset),
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
+        });
+
+        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
+            user:          user,
+            asset:         address(collateralAsset),
+            allowance:     0,
+            userBalance:   0,
+            aTokenBalance: 1000 ether
+        });
+
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
+
+        assertEq(pool.getUserConfiguration(user).isUsingAsCollateral(0), true);
+
+        vm.prank(user);
+        pool.withdraw(address(collateralAsset), 1000 ether - 1, user);
+
+        aTokenParams.userBalance = 1;
+        aTokenParams.totalSupply = 1;
+
+        assetParams.userBalance   = 1000 ether - 1;
+        assetParams.aTokenBalance = 1;
+
+        assertEq(pool.getUserConfiguration(user).isUsingAsCollateral(0), true);
 
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);

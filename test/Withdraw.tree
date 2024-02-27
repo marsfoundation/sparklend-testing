@@ -11,6 +11,8 @@ pool.withdraw()
    └── it should revert (boundary)
 ├── when resulting LTV of collateral is not zero but the LTV of the reserve config is zero
    └── it should revert
+├── when there is not enough liquidity
+   └── it should revert (boundary)
 └── given no time has passed
     └── given there is no active borrow
         └── it should succeed and update no reserve state [01]
@@ -27,3 +29,10 @@ pool.withdraw()
             └── it should succeed and update rates only [05]
         └── given some time has passed after borrow
             └── it should succeed and update the lastUpdated timestamp, indexes, and rates [06]
+├── when the user has active collateral
+    ├── when the user passes in uint256 max and has active collateral
+        └── it should withdraw the maximum balance that the user has and deactivates collateral
+    ├── when the user passes in the full balance and has active collateral
+        └── it should withdraw the maximum balance that the user has and deactivates collateral
+    └── when the user passes less than the full balance
+        └── it should withdraw the amount and keep collateral activated
