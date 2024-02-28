@@ -253,66 +253,6 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         borrowAsset.mint(liquidator, 400 ether);
         borrowAsset.approve(address(pool), 400 ether);
 
-        // AssertPoolReserveStateParams memory collateralReserveParams = AssertPoolReserveStateParams({
-        //     asset:                     address(collateralAsset),
-        //     liquidityIndex:            1e27,
-        //     currentLiquidityRate:      0,
-        //     variableBorrowIndex:       1e27,
-        //     currentVariableBorrowRate: BASE_RATE,
-        //     currentStableBorrowRate:   0,
-        //     lastUpdateTimestamp:       1,
-        //     accruedToTreasury:         0,
-        //     unbacked:                  0
-        // });
-
-        // AssertPoolReserveStateParams memory borrowReserveParams = AssertPoolReserveStateParams({
-        //     asset:                     address(borrowAsset),
-        //     liquidityIndex:            1e27,
-        //     currentLiquidityRate:      0.37e27,
-        //     variableBorrowIndex:       1e27,
-        //     currentVariableBorrowRate: 0.37e27,
-        //     currentStableBorrowRate:   0,
-        //     lastUpdateTimestamp:       1,
-        //     accruedToTreasury:         0,
-        //     unbacked:                  0
-        // });
-
-        // AssertATokenStateParams memory aCollateralAssetParams = AssertATokenStateParams({
-        //     user:        borrower,
-        //     aToken:      address(aCollateralAsset),
-        //     userBalance: 1000 ether,
-        //     totalSupply: 1000 ether
-        // });
-
-        // uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(0.37e27, 365 days);
-
-        // uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27;
-
-        // assertEq(borrowerDebt, 223.445957199470228858 ether);
-
-        // AssertDebtTokenStateParams memory borrowAssetDebtTokenParams = AssertDebtTokenStateParams({
-        //     user:        borrower,
-        //     debtToken:   debtToken,
-        //     userBalance: 500 ether + borrowerDebt,
-        //     totalSupply: 500 ether + borrowerDebt
-        // });
-
-        // AssertAssetStateParams memory collateralAssetParams = AssertAssetStateParams({
-        //     user:          liquidator,
-        //     asset:         address(collateralAsset),
-        //     allowance:     0,
-        //     userBalance:   0,
-        //     aTokenBalance: 1000 ether
-        // });
-
-        // AssertAssetStateParams memory borrowAssetParams = AssertAssetStateParams({
-        //     user:          liquidator,
-        //     asset:         address(borrowAsset),
-        //     allowance:     400 ether,
-        //     userBalance:   400 ether,
-        //     aTokenBalance: 0
-        // });
-
         (
             AssertPoolReserveStateParams memory collateralReserveParams,
             AssertPoolReserveStateParams memory borrowReserveParams,
@@ -322,16 +262,14 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
             AssertAssetStateParams       memory borrowAssetParams,
             uint256 borrowerDebt,
             uint256 compoundedNormalizedInterest
-        ) = _loadStartingParams(365 days);
+        ) = _loadStartingParamsAndAssertState({
+            timeSinceLastUpdate:         365 days,
+            borrowerCollateral:          1000 ether,
+            borrowerInitialBorrow:       500 ether,
+            liquidatorLiquidationAmount: 400 ether
+        });
 
-        _assertPoolReserveState(collateralReserveParams);
-        _assertPoolReserveState(borrowReserveParams);
-
-        _assertATokenState(aCollateralAssetParams);
-        _assertDebtTokenState(borrowAssetDebtTokenParams);
-
-        _assertAssetState(collateralAssetParams);
-        _assertAssetState(borrowAssetParams);
+        assertEq(borrowerDebt, 223.445957199470228858 ether);
 
         pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 400 ether, false);
 
@@ -384,7 +322,12 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _assertAssetState(borrowAssetParams);
     }
 
-    function _loadStartingParams(uint256 timeSinceLastUpdate)
+    function _loadStartingParamsAndAssertState(
+        uint256 timeSinceLastUpdate,
+        uint256 borrowerCollateral,
+        uint256 borrowerInitialBorrow,
+        uint256 liquidatorLiquidationAmount
+    )
         internal returns (
             AssertPoolReserveStateParams memory collateralReserveParams,
             AssertPoolReserveStateParams memory borrowReserveParams,
@@ -396,7 +339,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
             uint256 compoundedNormalizedInterest
         )
     {
-        AssertPoolReserveStateParams memory collateralReserveParams = AssertPoolReserveStateParams({
+        collateralReserveParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0,
@@ -408,7 +351,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
             unbacked:                  0
         });
 
-        AssertPoolReserveStateParams memory borrowReserveParams = AssertPoolReserveStateParams({
+        borrowReserveParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
             currentLiquidityRate:      0.37e27,
@@ -420,41 +363,48 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
             unbacked:                  0
         });
 
-        AssertATokenStateParams memory aCollateralAssetParams = AssertATokenStateParams({
+        aCollateralAssetParams = AssertATokenStateParams({
             user:        borrower,
             aToken:      address(aCollateralAsset),
-            userBalance: 1000 ether,
-            totalSupply: 1000 ether
+            userBalance: borrowerCollateral,
+            totalSupply: borrowerCollateral
         });
 
-        uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(0.37e27, 365 days);
+        compoundedNormalizedInterest = _getCompoundedNormalizedInterest(0.37e27, timeSinceLastUpdate);
 
-        uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27;
+        borrowerDebt = (compoundedNormalizedInterest - 1e27) * borrowerInitialBorrow / 1e27;
 
-        assertEq(borrowerDebt, 223.445957199470228858 ether);
-
-        AssertDebtTokenStateParams memory borrowAssetDebtTokenParams = AssertDebtTokenStateParams({
+        borrowAssetDebtTokenParams = AssertDebtTokenStateParams({
             user:        borrower,
             debtToken:   debtToken,
-            userBalance: 500 ether + borrowerDebt,
-            totalSupply: 500 ether + borrowerDebt
+            userBalance: borrowerInitialBorrow + borrowerDebt,
+            totalSupply: borrowerInitialBorrow + borrowerDebt
         });
 
-        AssertAssetStateParams memory collateralAssetParams = AssertAssetStateParams({
+        collateralAssetParams = AssertAssetStateParams({
             user:          liquidator,
             asset:         address(collateralAsset),
             allowance:     0,
             userBalance:   0,
-            aTokenBalance: 1000 ether
+            aTokenBalance: borrowerCollateral
         });
 
-        AssertAssetStateParams memory borrowAssetParams = AssertAssetStateParams({
+        borrowAssetParams = AssertAssetStateParams({
             user:          liquidator,
             asset:         address(borrowAsset),
-            allowance:     400 ether,
-            userBalance:   400 ether,
+            allowance:     liquidatorLiquidationAmount,
+            userBalance:   liquidatorLiquidationAmount,
             aTokenBalance: 0
         });
+
+        _assertPoolReserveState(collateralReserveParams);
+        _assertPoolReserveState(borrowReserveParams);
+
+        _assertATokenState(aCollateralAssetParams);
+        _assertDebtTokenState(borrowAssetDebtTokenParams);
+
+        _assertAssetState(collateralAssetParams);
+        _assertAssetState(borrowAssetParams);
     }
 
 }
