@@ -400,17 +400,20 @@ contract SparkLendTestBase is Test {
     }
 
     function _assertPoolReserveState(AssertPoolReserveStateParams memory params) internal {
+        _assertPoolReserveState(params, 0);
+    }
 
+    function _assertPoolReserveState(AssertPoolReserveStateParams memory params, uint256 tolerance) internal {
         DataTypes.ReserveData memory data = pool.getReserveData(params.asset);
 
-        assertEq(data.liquidityIndex,            params.liquidityIndex,            "liquidityIndex");
-        assertEq(data.currentLiquidityRate,      params.currentLiquidityRate,      "currentLiquidityRate");
-        assertEq(data.variableBorrowIndex,       params.variableBorrowIndex,       "variableBorrowIndex");
-        assertEq(data.currentVariableBorrowRate, params.currentVariableBorrowRate, "variableBorrowRate");
-        assertEq(data.currentStableBorrowRate,   params.currentStableBorrowRate,   "stableBorrowRate");
-        assertEq(data.lastUpdateTimestamp,       params.lastUpdateTimestamp,       "lastUpdateTimestamp");
-        assertEq(data.accruedToTreasury,         params.accruedToTreasury,         "accruedToTreasury");
-        assertEq(data.unbacked,                  params.unbacked,                  "unbacked");
+        assertApproxEqAbs(data.liquidityIndex,            params.liquidityIndex,            tolerance, "liquidityIndex");
+        assertApproxEqAbs(data.currentLiquidityRate,      params.currentLiquidityRate,      tolerance, "currentLiquidityRate");
+        assertApproxEqAbs(data.variableBorrowIndex,       params.variableBorrowIndex,       tolerance, "variableBorrowIndex");
+        assertApproxEqAbs(data.currentVariableBorrowRate, params.currentVariableBorrowRate, tolerance, "variableBorrowRate");
+        assertApproxEqAbs(data.currentStableBorrowRate,   params.currentStableBorrowRate,   tolerance, "stableBorrowRate");
+        assertApproxEqAbs(data.lastUpdateTimestamp,       params.lastUpdateTimestamp,       tolerance, "lastUpdateTimestamp");
+        assertApproxEqAbs(data.accruedToTreasury,         params.accruedToTreasury,         tolerance, "accruedToTreasury");
+        assertApproxEqAbs(data.unbacked,                  params.unbacked,                  tolerance, "unbacked");
 
         // NOTE: Intentionally left out the following as they do not change on user actions
         // - ReserveConfigurationMap configuration;
@@ -431,12 +434,16 @@ contract SparkLendTestBase is Test {
     }
 
     function _assertAssetState(AssertAssetStateParams memory params) internal {
-        address aToken = pool.getReserveData(address(params.asset)).aTokenAddress;
+        _assertAssetState(params, 0);
+    }
 
-        assertEq(IERC20(params.asset).allowance(params.user, address(pool)), params.allowance, "allowance");
+    function _assertAssetState(AssertAssetStateParams memory params, uint256 tolerance) internal {
+        address aToken = pool.getReserveData(params.asset).aTokenAddress;
 
-        assertEq(IERC20(params.asset).balanceOf(params.user), params.userBalance,   "userBalance");
-        assertEq(IERC20(params.asset).balanceOf(aToken),      params.aTokenBalance, "aTokenBalance");
+        assertApproxEqAbs(IERC20(params.asset).allowance(params.user, address(pool)), params.allowance, tolerance, "allowance");
+
+        assertApproxEqAbs(IERC20(params.asset).balanceOf(params.user), params.userBalance,   tolerance, "userBalance");
+        assertApproxEqAbs(IERC20(params.asset).balanceOf(aToken),      params.aTokenBalance, tolerance, "aTokenBalance");
     }
 
     struct AssertATokenStateParams {
@@ -447,8 +454,12 @@ contract SparkLendTestBase is Test {
     }
 
     function _assertATokenState(AssertATokenStateParams memory params) internal {
-        assertEq(IERC20(params.aToken).balanceOf(params.user), params.userBalance, "userBalance");
-        assertEq(IERC20(params.aToken).totalSupply(),          params.totalSupply, "totalSupply");
+        _assertATokenState(params, 0);
+    }
+
+    function _assertATokenState(AssertATokenStateParams memory params, uint256 tolerance) internal {
+        assertApproxEqAbs(IERC20(params.aToken).balanceOf(params.user), params.userBalance, tolerance, "userBalance");
+        assertApproxEqAbs(IERC20(params.aToken).totalSupply(),          params.totalSupply, tolerance, "totalSupply");
     }
 
     struct AssertDebtTokenStateParams {
@@ -459,8 +470,12 @@ contract SparkLendTestBase is Test {
     }
 
     function _assertDebtTokenState(AssertDebtTokenStateParams memory params) internal {
-        assertEq(IERC20(params.debtToken).balanceOf(params.user), params.userBalance, "userBalance");
-        assertEq(IERC20(params.debtToken).totalSupply(),          params.totalSupply, "totalSupply");
+        _assertDebtTokenState(params, 0);
+    }
+
+    function _assertDebtTokenState(AssertDebtTokenStateParams memory params, uint256 tolerance) internal {
+        assertApproxEqAbs(IERC20(params.debtToken).balanceOf(params.user), params.userBalance, tolerance, "userBalance");
+        assertApproxEqAbs(IERC20(params.debtToken).totalSupply(),          params.totalSupply, tolerance, "totalSupply");
     }
 
     /**********************************************************************************************/
