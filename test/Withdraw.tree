@@ -31,8 +31,8 @@ pool.withdraw()
             └── it should succeed and update the lastUpdated timestamp, indexes, and rates [06]
 ├── when the user has active collateral
     ├── when the user passes in uint256 max and has active collateral
-        └── it should withdraw the maximum balance that the user has and deactivates collateral
+        └── it should withdraw the maximum balance that the user has and deactivates collateral [07]
     ├── when the user passes in the full balance and has active collateral
-        └── it should withdraw the maximum balance that the user has and deactivates collateral
+        └── it should withdraw the maximum balance that the user has and deactivates collateral [08]
     └── when the user passes less than the full balance
-        └── it should withdraw the amount and keep collateral activated
+        └── it should withdraw the amount and keep collateral activated [09]
