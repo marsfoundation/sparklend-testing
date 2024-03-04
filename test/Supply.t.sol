@@ -27,14 +27,6 @@ contract SupplyTestBase is SparkLendTestBase {
 
 contract SupplyFailureTests is SupplyTestBase {
 
-    function test_supply_success_replaceThis() public {
-        vm.startPrank(supplier);
-
-        collateralAsset.mint(supplier, 1000 ether);
-        collateralAsset.approve(address(pool), 1000 ether);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
-    }
-
     function test_supply_whenAmountZero() public {
         vm.expectRevert(bytes(Errors.INVALID_AMOUNT));
         pool.supply(address(collateralAsset), 0, supplier, 0);
