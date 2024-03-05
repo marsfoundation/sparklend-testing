@@ -145,21 +145,6 @@ contract RepayConcreteTests is RepayTestBase {
         _;
     }
 
-    modifier whenUserIsPayingGreaterThanDebt {
-        // Code to set up the scenario where the user pays more than the debt
-        _;
-    }
-
-    modifier whenUserIsPayingEqualToDebt {
-        // Code to set up the scenario where the user pays exactly the debt amount
-        _;
-    }
-
-    modifier whenUserIsPayingWithUint256Max {
-        // Code to set up the scenario where the user pays with uint256 max value
-        _;
-    }
-
     function test_repay_01()
         givenNotInIsolationMode
         givenNoTimeHasPassedSinceBorrow
