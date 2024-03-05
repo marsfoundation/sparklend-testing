@@ -3,9 +3,10 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { UserConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
-import { Errors }            from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
-import { DataTypes }         from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
+import { ReserveConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
+import { UserConfiguration }    from "aave-v3-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
+import { Errors }               from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
+import { DataTypes }            from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
 
 import { MockOracleSentinel } from "test/mocks/MockOracleSentinel.sol";
 
@@ -238,17 +239,113 @@ contract LiquidationCallFailureTest is LiquidationCallTestBase {
 
 contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
+    using UserConfiguration for DataTypes.UserConfigurationMap;
+    using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
+
     address debtToken;
+
+    uint256 borrowAssetId;
 
     function setUp() public override {
         super.setUp();
 
         debtToken = pool.getReserveData(address(borrowAsset)).variableDebtTokenAddress;
+        borrowAssetId = pool.getReserveData(address(borrowAsset)).id;
     }
 
     // TODO: Add E2E tests to demonstrate protocol implications of user being underwater after liquidation
 
-    function test_liquidationCall_aboveCloseFactorHFThreshold() public {
+    function test_liquidationCall_01() public {
+        _setUpLiquidatablePosition();
+
+        vm.startPrank(liquidator);
+        borrowAsset.mint(liquidator, 1000 ether);
+        borrowAsset.approve(address(pool), 1000 ether);
+
+        (
+            AssertPoolReserveStateParams memory collateralReserveParams,
+            AssertPoolReserveStateParams memory borrowReserveParams,
+            AssertATokenStateParams      memory aCollateralAssetParams,
+            AssertDebtTokenStateParams   memory borrowAssetDebtTokenParams,
+            AssertAssetStateParams       memory collateralAssetParams,
+            AssertAssetStateParams       memory borrowAssetParams,
+            uint256 borrowerInterest,
+            uint256 compoundedNormalizedInterest,
+            uint256 expectedLiquidityIndex,
+            uint256 expectedVariableBorrowIndex
+        ) = _loadStartingParamsAndAssertState({
+            timeSinceLastUpdate:         365 days,
+            borrowerCollateral:          1000 ether,
+            borrowerInitialBorrow:       500 ether,
+            liquidatorLiquidationAmount: 1000 ether
+        });
+
+        assertEq(borrowerInterest, 223.445957199470228858 ether);
+
+        assertEq(expectedLiquidityIndex,       1.37e27);
+        assertEq(expectedVariableBorrowIndex,  1.446891914398940457716504e27);  // Significant difference because large APR and compounded over a year
+        assertEq(compoundedNormalizedInterest, 1.446891914398940457716504e27);
+
+        ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
+
+        assertEq(healthFactor, 0.691136628839690980e18);  // Less than 0.95 so full debt position is liquidatable at once
+
+        assertEq(pool.getUserConfiguration(borrower).isBorrowing(borrowAssetId), true);
+
+        pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 1000 ether, false);
+
+        // Full debt amount of borrower liquidated (1:1 price for collateral and debtAsset, TODO: Change)
+        uint256 debtLiquidated       = 500 ether + borrowerInterest;
+        uint256 collateralLiquidated = debtLiquidated * 101/100 + 1;  // Rounding
+
+        assertEq(debtLiquidated,       723.445957199470228858 ether);
+        assertEq(collateralLiquidated, 730.680416771464931147 ether);
+
+        // Remaining outstanding debt that the user owes (zero) divided by the current cash
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(0, debtLiquidated);
+
+        // Back to base rate and no supplier interest
+        assertEq(borrowRate,    0.05e27);
+        assertEq(liquidityRate, 0);
+
+        collateralReserveParams.lastUpdateTimestamp = 1 + 365 days;
+
+        borrowReserveParams.liquidityIndex            = expectedLiquidityIndex;
+        borrowReserveParams.currentLiquidityRate      = liquidityRate;
+        borrowReserveParams.variableBorrowIndex       = expectedVariableBorrowIndex;
+        borrowReserveParams.currentVariableBorrowRate = borrowRate;
+        borrowReserveParams.lastUpdateTimestamp       = 1 + 365 days;
+
+        aCollateralAssetParams.userBalance = 1000 ether - collateralLiquidated;  // 1% liquidation bonus taken from borrower (rounding)
+        aCollateralAssetParams.totalSupply = 1000 ether - collateralLiquidated;
+
+        borrowAssetDebtTokenParams.userBalance = 0;
+        borrowAssetDebtTokenParams.totalSupply = 0;
+
+        collateralAssetParams.userBalance   = collateralLiquidated;  // 1% liquidation bonus given to liquidator (rounding)
+        collateralAssetParams.aTokenBalance = 1000 ether - collateralLiquidated;
+
+        borrowAssetParams.allowance     = 1000 ether - debtLiquidated;
+        borrowAssetParams.userBalance   = 1000 ether - debtLiquidated;
+        borrowAssetParams.aTokenBalance = debtLiquidated;
+
+        _assertPoolReserveState(collateralReserveParams);
+        _assertPoolReserveState(borrowReserveParams);
+
+        _assertATokenState(aCollateralAssetParams);
+        _assertDebtTokenState(borrowAssetDebtTokenParams);
+
+        _assertAssetState(collateralAssetParams);
+        _assertAssetState(borrowAssetParams);
+
+        ( ,,,,, healthFactor ) = pool.getUserAccountData(borrower);
+
+        assertEq(healthFactor, type(uint256).max);  // User no longer has debt
+
+        assertEq(pool.getUserConfiguration(borrower).isBorrowing(borrowAssetId), false);
+    }
+
+    function test_liquidationCall_02() public {
         _setUpLiquidatablePosition();
 
         vm.startPrank(liquidator);
@@ -282,6 +379,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
 
         assertEq(healthFactor, 0.691136628839690980e18);  // Less than 0.95 so full debt position is liquidatable at once
+
+        assertEq(pool.getUserConfiguration(borrower).isBorrowing(borrowAssetId), true);
 
         pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 400 ether, false);
 
@@ -329,9 +428,11 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         ( ,,,,, healthFactor ) = pool.getUserAccountData(borrower);
 
         assertEq(healthFactor, 0.921328566258590063e18);  // User is still underwater after liquidation
+
+        assertEq(pool.getUserConfiguration(borrower).isBorrowing(borrowAssetId), true);
     }
 
-    function test_liquidationCall_belowCloseFactorHFThreshold() public {
+    function test_liquidationCall_03() public {
         _setUpPosition();
 
         skip(WARP_TIME);
@@ -421,6 +522,99 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
         assertEq(healthFactor, 1.487613673237473184e18);  // User position is healthy again after liquidation
     }
+
+    function test_liquidationCall_04() public {
+        _setUpPosition();
+
+        skip(WARP_TIME);
+
+        vm.startPrank(liquidator);
+        borrowAsset.mint(liquidator, 1000 ether);
+        borrowAsset.approve(address(pool), 1000 ether);
+
+        (
+            AssertPoolReserveStateParams memory collateralReserveParams,
+            AssertPoolReserveStateParams memory borrowReserveParams,
+            AssertATokenStateParams      memory aCollateralAssetParams,
+            AssertDebtTokenStateParams   memory borrowAssetDebtTokenParams,
+            AssertAssetStateParams       memory collateralAssetParams,
+            AssertAssetStateParams       memory borrowAssetParams,
+            uint256 borrowerInterest,
+            uint256 compoundedNormalizedInterest,
+            uint256 expectedLiquidityIndex,
+            uint256 expectedVariableBorrowIndex
+        ) = _loadStartingParamsAndAssertState({
+            timeSinceLastUpdate:         WARP_TIME,
+            borrowerCollateral:          1000 ether,
+            borrowerInitialBorrow:       500 ether,
+            liquidatorLiquidationAmount: 1000 ether
+        });
+
+        assertEq(borrowerInterest, 1.853426710065837120 ether);  // Roughly 1% of 37% APR on 500 ether
+
+        assertEq(expectedLiquidityIndex,       1.0037e27);
+        assertEq(expectedVariableBorrowIndex,  1.003706853420131674241446640e27);
+        assertEq(compoundedNormalizedInterest, 1.003706853420131674241446640e27);
+
+        ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
+
+        assertEq(healthFactor, 0.996306836595396972e18);  // Greater than 0.95 so half of debt position is liquidatable at once
+
+        pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 100 ether, false);
+
+        // Liquidate amount specified
+        uint256 amountLiquidated = 100 ether;
+
+        // Remaining debt for the user is the position minus the amount liquidated plus interest accrued
+        uint256 remainingDebt = 500 ether + borrowerInterest - amountLiquidated;
+
+        // Exactly half of total debt is liquidated so remainingDebt == amountLiquidated
+        assertEq(remainingDebt, 401.853426710065837120 ether);  // Rounding
+
+        // Remaining debt that the user owes divided by the current cash (liquidated amount) plus the outstanding debt
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(remainingDebt, amountLiquidated + remainingDebt);
+
+        assertEq(borrowRate,    0.071107949021420119560206086e27);
+        assertEq(liquidityRate, 0.056938881872158411761342514e27);
+
+        collateralReserveParams.lastUpdateTimestamp = 1 + WARP_TIME;
+
+        borrowReserveParams.liquidityIndex            = expectedLiquidityIndex;
+        borrowReserveParams.currentLiquidityRate      = liquidityRate + 1;  // Rounding
+        borrowReserveParams.variableBorrowIndex       = expectedVariableBorrowIndex;
+        borrowReserveParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
+        borrowReserveParams.lastUpdateTimestamp       = 1 + WARP_TIME;
+
+        aCollateralAssetParams.userBalance = 1000 ether - 101 ether;  // 1% liquidation bonus taken from borrower (rounding)
+        aCollateralAssetParams.totalSupply = 1000 ether - 101 ether;
+
+        borrowAssetDebtTokenParams.userBalance = remainingDebt + 1;  // Rounding
+        borrowAssetDebtTokenParams.totalSupply = remainingDebt + 1;  // Rounding
+
+        collateralAssetParams.userBalance   = 101 ether;               // 1% liquidation bonus given to liquidator (rounding)
+        collateralAssetParams.aTokenBalance = 1000 ether - 101 ether;  // 1% liquidation bonus given to liquidator (rounding)
+
+        borrowAssetParams.allowance     = 1000 ether - 100 ether;
+        borrowAssetParams.userBalance   = 1000 ether - 100 ether;
+        borrowAssetParams.aTokenBalance = 100 ether;
+
+        _assertPoolReserveState(collateralReserveParams);
+        _assertPoolReserveState(borrowReserveParams);
+
+        _assertATokenState(aCollateralAssetParams);
+        _assertDebtTokenState(borrowAssetDebtTokenParams);
+
+        _assertAssetState(collateralAssetParams);
+        _assertAssetState(borrowAssetParams);
+
+        ( ,,,,, healthFactor ) = pool.getUserAccountData(borrower);
+
+        assertEq(healthFactor, 1.118567044905117714e18);  // User position is healthy again after liquidation
+    }
+
+    /**********************************************************************************************/
+    /*** Helper Functions                                                                       ***/
+    /**********************************************************************************************/
 
     function _loadStartingParamsAndAssertState(
         uint256 timeSinceLastUpdate,
