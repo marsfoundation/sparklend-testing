@@ -550,7 +550,9 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
             liquidatorLiquidationAmount: 1000 ether
         });
 
-        assertEq(borrowerInterest, 1.853426710065837120 ether);  // Roughly 1% of 37% APR on 500 ether
+        borrowerInterest += 1;  // Rounding
+
+        assertEq(borrowerInterest, 1.853426710065837121 ether);  // Roughly 1% of 37% APR on 500 ether
 
         assertEq(expectedLiquidityIndex,       1.0037e27);
         assertEq(expectedVariableBorrowIndex,  1.003706853420131674241446640e27);
@@ -569,27 +571,27 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         uint256 remainingDebt = 500 ether + borrowerInterest - amountLiquidated;
 
         // Exactly half of total debt is liquidated so remainingDebt == amountLiquidated
-        assertEq(remainingDebt, 401.853426710065837120 ether);  // Rounding
+        assertEq(remainingDebt, 401.853426710065837121 ether);  // Rounding
 
         // Remaining debt that the user owes divided by the current cash (liquidated amount) plus the outstanding debt
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(remainingDebt, amountLiquidated + remainingDebt);
 
-        assertEq(borrowRate,    0.071107949021420119560206086e27);
-        assertEq(liquidityRate, 0.056938881872158411761342514e27);
+        assertEq(borrowRate,    0.071107949021420119560801662e27);
+        assertEq(liquidityRate, 0.056938881872158411761847649e27);
 
         collateralReserveParams.lastUpdateTimestamp = 1 + WARP_TIME;
 
         borrowReserveParams.liquidityIndex            = expectedLiquidityIndex;
-        borrowReserveParams.currentLiquidityRate      = liquidityRate + 1;  // Rounding
+        borrowReserveParams.currentLiquidityRate      = liquidityRate + 2;  // Rounding
         borrowReserveParams.variableBorrowIndex       = expectedVariableBorrowIndex;
-        borrowReserveParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
+        borrowReserveParams.currentVariableBorrowRate = borrowRate + 2;  // Rounding
         borrowReserveParams.lastUpdateTimestamp       = 1 + WARP_TIME;
 
         aCollateralAssetParams.userBalance = 1000 ether - 101 ether;  // 1% liquidation bonus taken from borrower (rounding)
         aCollateralAssetParams.totalSupply = 1000 ether - 101 ether;
 
-        borrowAssetDebtTokenParams.userBalance = remainingDebt + 1;  // Rounding
-        borrowAssetDebtTokenParams.totalSupply = remainingDebt + 1;  // Rounding
+        borrowAssetDebtTokenParams.userBalance = remainingDebt;
+        borrowAssetDebtTokenParams.totalSupply = remainingDebt;
 
         collateralAssetParams.userBalance   = 101 ether;               // 1% liquidation bonus given to liquidator (rounding)
         collateralAssetParams.aTokenBalance = 1000 ether - 101 ether;  // 1% liquidation bonus given to liquidator (rounding)
