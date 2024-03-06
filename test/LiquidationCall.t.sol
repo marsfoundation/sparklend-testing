@@ -284,16 +284,10 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _;
     }
 
-    // TODO: Add E2E tests to demonstrate protocol implications of user being underwater after liquidation
-
-    function test_liquidationCall_01()
-        public
-        whenProtocolFeeIsZero
-        whenUserHealthFactorBelowCloseFactorThreshold
-    {
+    function _runLiquidationTest(uint256 liquidationAmount) internal {
         vm.startPrank(liquidator);
-        borrowAsset.mint(liquidator, 1000 ether);
-        borrowAsset.approve(address(pool), 1000 ether);
+        borrowAsset.mint(liquidator, liquidationAmount);
+        borrowAsset.approve(address(pool), liquidationAmount);
 
         (
             AssertPoolReserveStateParams memory collateralReserveParams,
@@ -310,7 +304,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
             timeSinceLastUpdate:         365 days,
             borrowerCollateral:          1000 ether,
             borrowerInitialBorrow:       500 ether,
-            liquidatorLiquidationAmount: 1000 ether
+            liquidatorLiquidationAmount: liquidationAmount
         });
 
         assertEq(borrowerInterest, 223.445957199470228858 ether);
@@ -321,7 +315,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
         assertEq(pool.getUserConfiguration(borrower).isBorrowing(borrowAssetId), true);
 
-        pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 1000 ether, false);
+        pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, liquidationAmount, false);
 
         // Full debt amount of borrower liquidated (1:1 price for collateral and debtAsset, TODO: Change)
         uint256 debtLiquidated       = 500 ether + borrowerInterest;
@@ -354,8 +348,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         collateralAssetParams.userBalance   = collateralLiquidated;  // 1% liquidation bonus given to liquidator (rounding)
         collateralAssetParams.aTokenBalance = 1000 ether - collateralLiquidated;
 
-        borrowAssetParams.allowance     = 1000 ether - debtLiquidated;
-        borrowAssetParams.userBalance   = 1000 ether - debtLiquidated;
+        borrowAssetParams.allowance     = liquidationAmount - debtLiquidated;
+        borrowAssetParams.userBalance   = liquidationAmount - debtLiquidated;
         borrowAssetParams.aTokenBalance = debtLiquidated;
 
         _assertPoolReserveState(collateralReserveParams);
@@ -372,6 +366,105 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         assertEq(healthFactor, type(uint256).max);  // User no longer has debt
 
         assertEq(pool.getUserConfiguration(borrower).isBorrowing(borrowAssetId), false);
+    }
+
+    // TODO: Add E2E tests to demonstrate protocol implications of user being underwater after liquidation
+
+    function test_liquidationCall_01()
+        public
+        whenProtocolFeeIsZero
+        whenUserHealthFactorBelowCloseFactorThreshold
+    {
+        uint256 borrowerInterest     = 223.445957199470228858 ether;
+        uint256 debtLiquidated       = 723.445957199470228858 ether;
+        uint256 collateralLiquidated = 730.680416771464931147 ether;
+
+        uint256 liquidationAmount = 800 ether;
+
+        assertEq(collateralLiquidated, debtLiquidated * 101/100 + 1);  // Rounding
+
+        _runLiquidationTest(800 ether);
+        // vm.startPrank(liquidator);
+        // borrowAsset.mint(liquidator, 1000 ether);
+        // borrowAsset.approve(address(pool), 1000 ether);
+
+        // (
+        //     AssertPoolReserveStateParams memory collateralReserveParams,
+        //     AssertPoolReserveStateParams memory borrowReserveParams,
+        //     AssertATokenStateParams      memory aCollateralAssetParams,
+        //     AssertDebtTokenStateParams   memory borrowAssetDebtTokenParams,
+        //     AssertAssetStateParams       memory collateralAssetParams,
+        //     AssertAssetStateParams       memory borrowAssetParams,
+        //     uint256 borrowerInterest,
+        //     uint256 compoundedNormalizedInterest,
+        //     uint256 expectedLiquidityIndex,
+        //     uint256 expectedVariableBorrowIndex
+        // ) = _loadStartingParamsAndAssertState({
+        //     timeSinceLastUpdate:         365 days,
+        //     borrowerCollateral:          1000 ether,
+        //     borrowerInitialBorrow:       500 ether,
+        //     liquidatorLiquidationAmount: 1000 ether
+        // });
+
+        // assertEq(borrowerInterest, 223.445957199470228858 ether);
+
+        // assertEq(expectedLiquidityIndex,       1.37e27);
+        // assertEq(expectedVariableBorrowIndex,  1.446891914398940457716504e27);  // Significant difference because large APR and compounded over a year
+        // assertEq(compoundedNormalizedInterest, 1.446891914398940457716504e27);
+
+        // assertEq(pool.getUserConfiguration(borrower).isBorrowing(borrowAssetId), true);
+
+        // pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 1000 ether, false);
+
+        // // Full debt amount of borrower liquidated (1:1 price for collateral and debtAsset, TODO: Change)
+        // uint256 debtLiquidated       = 500 ether + borrowerInterest;
+        // uint256 collateralLiquidated = debtLiquidated * 101/100 + 1;  // Rounding
+
+        // assertEq(debtLiquidated,       723.445957199470228858 ether);
+        // assertEq(collateralLiquidated, 730.680416771464931147 ether);
+
+        // // Remaining outstanding debt that the user owes (zero) divided by the current cash
+        // ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(0, debtLiquidated);
+
+        // // Back to base rate and no supplier interest
+        // assertEq(borrowRate,    0.05e27);
+        // assertEq(liquidityRate, 0);
+
+        // collateralReserveParams.lastUpdateTimestamp = 1 + 365 days;
+
+        // borrowReserveParams.liquidityIndex            = expectedLiquidityIndex;
+        // borrowReserveParams.currentLiquidityRate      = liquidityRate;
+        // borrowReserveParams.variableBorrowIndex       = expectedVariableBorrowIndex;
+        // borrowReserveParams.currentVariableBorrowRate = borrowRate;
+        // borrowReserveParams.lastUpdateTimestamp       = 1 + 365 days;
+
+        // aCollateralAssetParams.userBalance = 1000 ether - collateralLiquidated;  // 1% liquidation bonus taken from borrower (rounding)
+        // aCollateralAssetParams.totalSupply = 1000 ether - collateralLiquidated;
+
+        // borrowAssetDebtTokenParams.userBalance = 0;
+        // borrowAssetDebtTokenParams.totalSupply = 0;
+
+        // collateralAssetParams.userBalance   = collateralLiquidated;  // 1% liquidation bonus given to liquidator (rounding)
+        // collateralAssetParams.aTokenBalance = 1000 ether - collateralLiquidated;
+
+        // borrowAssetParams.allowance     = 1000 ether - debtLiquidated;
+        // borrowAssetParams.userBalance   = 1000 ether - debtLiquidated;
+        // borrowAssetParams.aTokenBalance = debtLiquidated;
+
+        // _assertPoolReserveState(collateralReserveParams);
+        // _assertPoolReserveState(borrowReserveParams);
+
+        // _assertATokenState(aCollateralAssetParams);
+        // _assertDebtTokenState(borrowAssetDebtTokenParams);
+
+        // _assertAssetState(collateralAssetParams);
+        // _assertAssetState(borrowAssetParams);
+
+        // ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
+
+        // assertEq(healthFactor, type(uint256).max);  // User no longer has debt
+
+        // assertEq(pool.getUserConfiguration(borrower).isBorrowing(borrowAssetId), false);
     }
 
     function test_liquidationCall_02()
