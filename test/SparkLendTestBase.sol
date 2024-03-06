@@ -42,7 +42,8 @@ contract SparkLendTestBase is Test {
     // 3.65 days in seconds - gives clean numbers for testing (1% of APR)
     uint256 constant WARP_TIME = 365 days / 100;
 
-    address admin = makeAddr("admin");
+    address admin    = makeAddr("admin");
+    address treasury = makeAddr("treasury");
 
     AaveOracle            aaveOracle;
     ACLManager            aclManager;
@@ -199,7 +200,7 @@ contract SparkLendTestBase is Test {
             underlyingAssetDecimals:     token.decimals(),
             interestRateStrategyAddress: address(strategy),
             underlyingAsset:             address(token),
-            treasury:                    makeAddr("treasury"),
+            treasury:                    treasury,
             incentivesController:        address(0),
             aTokenName:                  string(string.concat("Spark ",               symbol)),
             aTokenSymbol:                string(string.concat("sp",                   symbol)),
