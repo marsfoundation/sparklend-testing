@@ -253,13 +253,44 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         debtToken         = pool.getReserveData(address(borrowAsset)).variableDebtTokenAddress;
         borrowAssetId     = pool.getReserveData(address(borrowAsset)).id;
         collateralAssetId = pool.getReserveData(address(collateralAsset)).id;
+
+        // All tests working against the same 1000 collateral / 500 initial borrow position
+        _setUpPosition();
+    }
+
+    modifier whenProtocolFeeIsZero { _; }
+
+    modifier whenProtocolFeeIsNotZero {
+        // TODO
+        _;
+    }
+
+    modifier whenUserHealthFactorBelowCloseFactorThreshold {
+        skip(365 days);
+
+        ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
+        assertEq(healthFactor, 0.691136628839690980e18);  // Less than 0.95 so full debt position is liquidatable at once
+
+        _;
+    }
+
+    modifier whenUserHealthFactorAboveCloseFactorThreshold {
+        skip(WARP_TIME);
+        _;
+    }
+
+    modifier whenUserDebtGreaterThanCollateral {
+        vm.warp(1 + 1000 days);
+        _;
     }
 
     // TODO: Add E2E tests to demonstrate protocol implications of user being underwater after liquidation
 
-    function test_liquidationCall_01() public {
-        _setUpLiquidatablePosition();
-
+    function test_liquidationCall_01()
+        public
+        whenProtocolFeeIsZero
+        whenUserHealthFactorBelowCloseFactorThreshold
+    {
         vm.startPrank(liquidator);
         borrowAsset.mint(liquidator, 1000 ether);
         borrowAsset.approve(address(pool), 1000 ether);
@@ -287,10 +318,6 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         assertEq(expectedLiquidityIndex,       1.37e27);
         assertEq(expectedVariableBorrowIndex,  1.446891914398940457716504e27);  // Significant difference because large APR and compounded over a year
         assertEq(compoundedNormalizedInterest, 1.446891914398940457716504e27);
-
-        ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
-
-        assertEq(healthFactor, 0.691136628839690980e18);  // Less than 0.95 so full debt position is liquidatable at once
 
         assertEq(pool.getUserConfiguration(borrower).isBorrowing(borrowAssetId), true);
 
@@ -340,16 +367,18 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _assertAssetState(collateralAssetParams);
         _assertAssetState(borrowAssetParams);
 
-        ( ,,,,, healthFactor ) = pool.getUserAccountData(borrower);
+        ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
 
         assertEq(healthFactor, type(uint256).max);  // User no longer has debt
 
         assertEq(pool.getUserConfiguration(borrower).isBorrowing(borrowAssetId), false);
     }
 
-    function test_liquidationCall_02() public {
-        _setUpLiquidatablePosition();
-
+    function test_liquidationCall_02()
+        public
+        whenProtocolFeeIsZero
+        whenUserHealthFactorBelowCloseFactorThreshold
+    {
         vm.startPrank(liquidator);
         borrowAsset.mint(liquidator, 400 ether);
         borrowAsset.approve(address(pool), 400 ether);
@@ -435,8 +464,6 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     }
 
     function test_liquidationCall_03() public {
-        _setUpPosition();
-
         skip(WARP_TIME);
 
         vm.startPrank(liquidator);
@@ -526,8 +553,6 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     }
 
     function test_liquidationCall_04() public {
-        _setUpPosition();
-
         skip(WARP_TIME);
 
         vm.startPrank(liquidator);
@@ -617,8 +642,6 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     }
 
     function test_liquidationCall_09() public {
-        _setUpPosition();
-
         skip(1000 days);
 
         vm.startPrank(liquidator);
@@ -713,8 +736,6 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     }
 
     function test_liquidationCall_10() public {
-        _setUpPosition();
-
         skip(1000 days);
 
         vm.startPrank(liquidator);
