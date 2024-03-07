@@ -62,19 +62,17 @@ pool.liquidationCall()
    └── when the price source is not overridden
       └── it should succeed using the NORMAL price for both assets and overridden liquidation bonus [12]
 
-├── when the user selects receiveAToken
+├── when the liquidator selects receiveAToken
    ├── when the liquidators previous balance is zero
       ├── when validateAutomaticUseOfCollateral is false
-         └── it should succeed and transfer the collateralAToken to the liquidator without them using as collateral [17]
+         └── it should succeed and transfer the collateralAToken to the liquidator without them using as collateral [13]
       └── when validateAutomaticUseOfCollateral is true
-         └── it should succeed and transfer the collateralAToken to the liquidator and add collateral automatically [18]
+         └── it should succeed and transfer the collateralAToken to the liquidator and add collateral automatically [14]
    └── when the liquidators previous balance is NOT zero
-      └── it should succeed and transfer the collateralAToken to the liquidator [19]
-├── when the user does NOT select receiveAToken
-   └── it should succeed and burn the collateralAToken [20]
+      └── it should succeed and transfer the collateralAToken to the liquidator [15]
 
 └── given the collateralAsset is in isolation mode
-   └── it should succeed and update the debt ceiling of the collateralAsset [21]
+   └── it should succeed and update the debt ceiling of the collateralAsset [16]
 
 TODO: Figure out what the deal is with handleRepayment
 TODO: Think more about _calculateAvailableCollateralToLiquidate and how HF plays into it with LT
