@@ -9,6 +9,7 @@ import { Errors }               from "aave-v3-core/contracts/protocol/libraries/
 import { DataTypes }            from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
 
 import { MockOracleSentinel } from "test/mocks/MockOracleSentinel.sol";
+import { MockOracle }         from "test/mocks/MockOracle.sol";
 
 import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
 
@@ -322,6 +323,51 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _;
     }
 
+    modifier whenUserIsInEmode {
+        vm.startPrank(admin);
+        poolConfigurator.setEModeCategory({
+            categoryId:           1,
+            ltv:                  60_00,
+            liquidationThreshold: 60_00,
+            liquidationBonus:     105_00,
+            oracle:               address(0),
+            label:                "emode1"
+        });
+
+        poolConfigurator.setAssetEModeCategory(address(collateralAsset), 1);
+        poolConfigurator.setAssetEModeCategory(address(borrowAsset),     1);
+
+        vm.stopPrank();
+
+        vm.prank(borrower);
+        pool.setUserEMode(1);
+
+        _;
+    }
+
+    modifier whenEmodePriceSourceIsOverridden {
+        address emodePriceSourceAsset = makeAddr("emodePriceSourceAsset");
+
+        // Price is $2
+        _setUpMockOracle(emodePriceSourceAsset, 2e8);
+
+        // Update to change the price source only
+        // NOTE: This is not an oracle directly, but an asset that the AAVE oracle uses
+        vm.startPrank(admin);
+        poolConfigurator.setEModeCategory({
+            categoryId:           1,
+            ltv:                  60_00,
+            liquidationThreshold: 60_00,
+            liquidationBonus:     105_00,
+            oracle:               emodePriceSourceAsset,
+            label:                "emode1"
+        });
+
+        _;
+    }
+
+    modifier whenEmodePriceSourceIsNotOverridden { _; }
+
     struct Params {
         uint256 liquidationAmount;
         uint256 startingCollateral;
@@ -467,7 +513,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.isBorrowing         = false;
         params.isUsingAsCollateral = true;
 
-        // 10% liquidation bonus goes to the liquidator (rounding)
+        // 1% liquidation bonus goes to the liquidator (rounding)
         assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 101/100, 1);
 
         _runLiquidationTest(params);
@@ -487,7 +533,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
         params.liquidationAmount    = 1200 ether;
         params.borrowerDebt         = 1350.548092145123279590 ether; // Total debt > collateral (1350 > 1000)
-        params.debtLiquidated       = 990.099009900990099010 ether;  // 10% liquidation bonus has to be reduced from debt side when liquidating all collateral
+        params.debtLiquidated       = 990.099009900990099010 ether;  // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
         params.healthFactor         = 0;  // HF goes to zero when there is no collateral backing debt
@@ -501,7 +547,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.isBorrowing         = true;   // User is technically still borrowing but have no incentive to repay
         params.isUsingAsCollateral = false;  // User has no collateral after liquidation
 
-        // 10% liquidation bonus goes to the liquidator (rounding)
+        // 1% liquidation bonus goes to the liquidator (rounding)
         assertApproxEqAbs(params.debtLiquidated, uint256(params.collateralLiquidated * 100)/101, 1);
 
         assertApproxEqAbs(params.remainingDebt, params.borrowerDebt - params.debtLiquidated, 1);
@@ -524,7 +570,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount    = 400 ether;
         params.borrowerDebt         = 723.445957199470228858 ether; // 500 ether + 37% APR over 365 days
         params.debtLiquidated       = 400 ether;
-        params.collateralLiquidated = 404 ether;  // 10% liquidation bonus
+        params.collateralLiquidated = 404 ether;  // 1% liquidation bonus
         params.remainingDebt        = 323.445957199470228858 ether;
         params.healthFactor         = 0.921328566258590063e18;  // User position is still unhealthy
 
@@ -537,7 +583,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.isBorrowing         = true;
         params.isUsingAsCollateral = true;
 
-        // 10% liquidation bonus goes to the liquidator (rounding)
+        // 1% liquidation bonus goes to the liquidator (rounding)
         assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 101/100, 1);
 
         assertEq(params.remainingDebt, params.borrowerDebt - 400 ether);
@@ -572,7 +618,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.isBorrowing         = true;
         params.isUsingAsCollateral = true;
 
-        // 10% liquidation bonus goes to the liquidator (rounding)
+        // 1% liquidation bonus goes to the liquidator (rounding)
         assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 101/100, 1);
 
         // Half of debt is liquidated when HF is above close factor threshold (0.95)
@@ -608,7 +654,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.isBorrowing         = true;
         params.isUsingAsCollateral = true;
 
-        // 10% liquidation bonus goes to the liquidator (rounding)
+        // 1% liquidation bonus goes to the liquidator (rounding)
         assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 101/100, 1);
 
         // Specified debt is liquidated
@@ -645,7 +691,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.isBorrowing         = false;
         params.isUsingAsCollateral = true;
 
-        // 10% liquidation bonus goes to the liquidator (rounding)
+        // 1% liquidation bonus goes to the liquidator (rounding)
         assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 101/100, 1);
 
         // Protocol fee is 20% of the bonus collateral amount (below calc uses 1:1 pricing)
@@ -668,7 +714,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
         params.liquidationAmount    = 1200 ether;
         params.borrowerDebt         = 1350.548092145123279590 ether; // Total debt > collateral (1350 > 1000)
-        params.debtLiquidated       = 990.099009900990099010 ether;  // 10% liquidation bonus has to be reduced from debt side when liquidating all collateral
+        params.debtLiquidated       = 990.099009900990099010 ether;  // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.protocolFee          = 1.980198019801980198 ether;
         params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
@@ -683,7 +729,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.isBorrowing         = true;   // User is technically still borrowing but have no incentive to repay
         params.isUsingAsCollateral = false;  // User has no collateral after liquidation
 
-        // 10% liquidation bonus goes to the liquidator (rounding)
+        // 1% liquidation bonus goes to the liquidator (rounding)
         assertApproxEqAbs(params.debtLiquidated, uint256(params.collateralLiquidated * 100)/101, 1);
 
         // Protocol fee is 20% of the bonus collateral amount (below calc uses 1:1 pricing)
@@ -709,7 +755,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount    = 400 ether;
         params.borrowerDebt         = 723.445957199470228858 ether; // 500 ether + 37% APR over 365 days
         params.debtLiquidated       = 400 ether;
-        params.collateralLiquidated = 404 ether;  // 10% liquidation bonus
+        params.collateralLiquidated = 404 ether;  // 1% liquidation bonus
         params.protocolFee          = 0.8 ether;
         params.remainingDebt        = 323.445957199470228858 ether;
         params.healthFactor         = 0.921328566258590063e18;  // User position is still unhealthy
@@ -723,7 +769,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.isBorrowing         = true;
         params.isUsingAsCollateral = true;
 
-        // 10% liquidation bonus goes to the liquidator (rounding)
+        // 1% liquidation bonus goes to the liquidator (rounding)
         assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 101/100, 1);
 
         // Protocol fee is 20% of the bonus collateral amount (below calc uses 1:1 pricing)
@@ -762,7 +808,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.isBorrowing         = true;
         params.isUsingAsCollateral = true;
 
-        // 10% liquidation bonus goes to the liquidator (rounding)
+        // 1% liquidation bonus goes to the liquidator (rounding)
         assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 101/100, 1);
 
         // Protocol fee is 20% of the bonus collateral amount (below calc uses 1:1 pricing)
@@ -802,7 +848,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.isBorrowing         = true;
         params.isUsingAsCollateral = true;
 
-        // 10% liquidation bonus goes to the liquidator (rounding)
+        // 1% liquidation bonus goes to the liquidator (rounding)
         assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 101/100, 1);
 
         // Protocol fee is 20% of the bonus collateral amount (below calc uses 1:1 pricing)
@@ -810,6 +856,86 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
         // Specified debt is liquidated
         assertApproxEqAbs(params.remainingDebt, params.borrowerDebt - 200 ether, 1);
+
+        _runLiquidationTest(params);
+    }
+
+    // NOTE: Using the whenProtocolFeeIsNotZero to give a better test even though not in tree
+    function test_liquidationCall_11()
+        public
+        whenProtocolFeeIsNotZero
+        whenUserIsInEmode
+        whenEmodePriceSourceIsOverridden
+    {
+        skip(365 days);
+
+        Params memory params;
+
+        params.startingCollateral = 1000 ether;
+        params.startingBorrow     = 500 ether;
+
+        params.liquidationAmount    = 800 ether;
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.debtLiquidated       = 723.445957199470228858 ether;
+        params.collateralLiquidated = 759.618255059443740301 ether;  // Now a 5% liquidation bonus
+        params.protocolFee          = 7.234459571994702289 ether;    // 20% of 5% = 1% to protocol
+        params.remainingDebt        = 0;
+        params.healthFactor         = type(uint256).max;  // User has no more debt
+
+        params.liquidityIndex         = 1.37e27;  // Full utilization for a full year
+        params.borrowIndex            = 1.446891914398940457716504e27;  // Significant difference because large APR and compounded over a year
+        params.resultingBorrowRate    = 0.05e27;  // All debt removed so back to base rate
+        params.resultingLiquidityRate = 0;
+        params.updateTimestamp        = 1 + 365 days;
+
+        params.isBorrowing         = false;
+        params.isUsingAsCollateral = true;
+
+        // 1% liquidation bonus goes to the liquidator (rounding)
+        assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 105/100, 1);
+
+        // Protocol fee is 20% of the bonus collateral amount (below calc uses 1:1 pricing)
+        assertApproxEqAbs(params.protocolFee, (params.collateralLiquidated - params.debtLiquidated) * 20/100, 1);
+
+        _runLiquidationTest(params);
+    }
+
+    // TODO: This will be different when price oracles change
+    function test_liquidationCall_12()
+        public
+        whenProtocolFeeIsNotZero
+        whenUserIsInEmode
+        whenEmodePriceSourceIsNotOverridden
+    {
+        skip(365 days);
+
+        Params memory params;
+
+        params.startingCollateral = 1000 ether;
+        params.startingBorrow     = 500 ether;
+
+        params.liquidationAmount    = 800 ether;
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.debtLiquidated       = 723.445957199470228858 ether;
+        params.collateralLiquidated = 759.618255059443740301 ether;  // Now a 5% liquidation bonus
+        params.protocolFee          = 7.234459571994702289 ether;    // 20% of 5% = 1% to protocol
+        params.remainingDebt        = 0;
+        params.healthFactor         = type(uint256).max;  // User has no more debt
+
+        params.liquidityIndex         = 1.37e27;  // Full utilization for a full year
+        params.borrowIndex            = 1.446891914398940457716504e27;  // Significant difference because large APR and compounded over a year
+        params.resultingBorrowRate    = 0.05e27;  // All debt removed so back to base rate
+        params.resultingLiquidityRate = 0;
+        params.updateTimestamp        = 1 + 365 days;
+
+        params.isBorrowing         = false;
+        params.isUsingAsCollateral = true;
+
+        // 1% liquidation bonus goes to the liquidator (rounding)
+        assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 105/100, 1);
+
+        // Protocol fee is 20% of the bonus collateral amount (below calc uses 1:1 pricing)
+        assertApproxEqAbs(params.protocolFee, (params.collateralLiquidated - params.debtLiquidated) * 20/100, 1);
 
         _runLiquidationTest(params);
     }

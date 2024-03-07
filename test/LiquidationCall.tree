@@ -58,9 +58,9 @@ pool.liquidationCall()
 
 ├── when the user is in emode
    ├── when the price source is overridden
-      └── it should succeed using the overridden price for both assets and overridden liquidation bonus [15]
+      └── it should succeed using the overridden price for both assets and overridden liquidation bonus [11]
    └── when the price source is not overridden
-      └── it should succeed using the NORMAL price for both assets and NORMAL liquidation bonus [16]
+      └── it should succeed using the NORMAL price for both assets and overridden liquidation bonus [12]
 
 ├── when the user selects receiveAToken
    ├── when the liquidators previous balance is zero
