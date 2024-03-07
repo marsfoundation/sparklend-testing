@@ -9,7 +9,6 @@ import { Errors }               from "aave-v3-core/contracts/protocol/libraries/
 import { DataTypes }            from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
 
 import { MockOracleSentinel } from "test/mocks/MockOracleSentinel.sol";
-import { MockOracle }         from "test/mocks/MockOracle.sol";
 
 import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
 
@@ -305,7 +304,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
     modifier whenAmountGtAvailableDebt { _; }
 
-    modifier whenAmountLteAvailableDebt { _; }
+    modifier whenAmountLtAvailableDebt { _; }
 
     modifier whenUserDebtGtCollateral {
         vm.warp(1 + 1000 days);
@@ -442,9 +441,9 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.remainingDebt        = 0;
         params.healthFactor         = type(uint256).max;  // User has no more debt
 
-        params.liquidityIndex         = 1.37e27;  // Full utilization for a full year
+        params.liquidityIndex         = 1.37e27;                        // Full utilization for a full year
         params.borrowIndex            = 1.446891914398940457716504e27;  // Significant difference because large APR and compounded over a year
-        params.resultingBorrowRate    = 0.05e27;  // All debt removed so back to base rate
+        params.resultingBorrowRate    = 0.05e27;                        // All debt removed so back to base rate
         params.resultingLiquidityRate = 0;
         params.updateTimestamp        = 1 + 365 days;
 
@@ -461,7 +460,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         public
         whenProtocolFeeIsZero
         whenUserHealthFactorBelowCloseFactorThreshold
-        whenAmountLteAvailableDebt
+        whenAmountLtAvailableDebt
         whenUserDebtGtCollateral
     {
         Params memory params;
@@ -499,7 +498,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         public
         whenProtocolFeeIsZero
         whenUserHealthFactorBelowCloseFactorThreshold
-        whenAmountLteAvailableDebt
+        whenAmountLtAvailableDebt
         whenUserDebtLtCollateral
     {
         Params memory params;
@@ -575,7 +574,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         public
         whenProtocolFeeIsZero
         whenUserHFAboveCloseFactorThreshold
-        whenAmountLteAvailableDebt
+        whenAmountLtAvailableDebt
     {
         Params memory params;
 
@@ -630,9 +629,9 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.remainingDebt        = 0;
         params.healthFactor         = type(uint256).max;  // User has no more debt
 
-        params.liquidityIndex         = 1.37e27;  // Full utilization for a full year
+        params.liquidityIndex         = 1.37e27;                        // Full utilization for a full year
         params.borrowIndex            = 1.446891914398940457716504e27;  // Significant difference because large APR and compounded over a year
-        params.resultingBorrowRate    = 0.05e27;  // All debt removed so back to base rate
+        params.resultingBorrowRate    = 0.05e27;                        // All debt removed so back to base rate
         params.resultingLiquidityRate = 0;
         params.updateTimestamp        = 1 + 365 days;
 
@@ -652,7 +651,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         public
         whenProtocolFeeIsNotZero
         whenUserHealthFactorBelowCloseFactorThreshold
-        whenAmountLteAvailableDebt
+        whenAmountLtAvailableDebt
         whenUserDebtGtCollateral
     {
         Params memory params;
@@ -694,7 +693,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         public
         whenProtocolFeeIsNotZero
         whenUserHealthFactorBelowCloseFactorThreshold
-        whenAmountLteAvailableDebt
+        whenAmountLtAvailableDebt
         whenUserDebtLtCollateral
     {
         Params memory params;
@@ -778,7 +777,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         public
         whenProtocolFeeIsNotZero
         whenUserHFAboveCloseFactorThreshold
-        whenAmountLteAvailableDebt
+        whenAmountLtAvailableDebt
     {
         Params memory params;
 
@@ -840,9 +839,9 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.remainingDebt        = 0;
         params.healthFactor         = type(uint256).max;  // User has no more debt
 
-        params.liquidityIndex         = 1.37e27;  // Full utilization for a full year
+        params.liquidityIndex         = 1.37e27;                        // Full utilization for a full year
         params.borrowIndex            = 1.446891914398940457716504e27;  // Significant difference because large APR and compounded over a year
-        params.resultingBorrowRate    = 0.05e27;  // All debt removed so back to base rate
+        params.resultingBorrowRate    = 0.05e27;                        // All debt removed so back to base rate
         params.resultingLiquidityRate = 0;
         params.updateTimestamp        = 1 + 365 days;
 
@@ -882,9 +881,9 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.remainingDebt        = 0;
         params.healthFactor         = type(uint256).max;  // User has no more debt
 
-        params.liquidityIndex         = 1.37e27;  // Full utilization for a full year
+        params.liquidityIndex         = 1.37e27;                        // Full utilization for a full year
         params.borrowIndex            = 1.446891914398940457716504e27;  // Significant difference because large APR and compounded over a year
-        params.resultingBorrowRate    = 0.05e27;  // All debt removed so back to base rate
+        params.resultingBorrowRate    = 0.05e27;                        // All debt removed so back to base rate
         params.resultingLiquidityRate = 0;
         params.updateTimestamp        = 1 + 365 days;
 
@@ -923,7 +922,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.collateralLiquidated = 606 ether;  // 1% liquidation bonus
         params.protocolFee          = 1.2 ether;
         params.remainingDebt        = 123.445957199470228859 ether;
-        params.healthFactor         = 1.595840029793688540e18;  // User has no more debt
+        params.healthFactor         = 1.595840029793688540e18;
 
         params.liquidityIndex         = 1.37e27;  // Full utilization for a full year
         params.borrowIndex            = 1.446891914398940457716504e27;  // Significant difference because large APR and compounded over a year
@@ -971,7 +970,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.collateralLiquidated = 606 ether;  // 1% liquidation bonus
         params.protocolFee          = 1.2 ether;
         params.remainingDebt        = 123.445957199470228859 ether;
-        params.healthFactor         = 1.595840029793688540e18;  // User has no more debt
+        params.healthFactor         = 1.595840029793688540e18;
 
         params.liquidityIndex         = 1.37e27;  // Full utilization for a full year
         params.borrowIndex            = 1.446891914398940457716504e27;  // Significant difference because large APR and compounded over a year
@@ -1050,7 +1049,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.collateralLiquidated = 606 ether;  // 1% liquidation bonus
         params.protocolFee          = 1.2 ether;
         params.remainingDebt        = 123.445957199470228859 ether;
-        params.healthFactor         = 1.595840029793688540e18;  // User has no more debt
+        params.healthFactor         = 1.595840029793688540e18;
 
         params.liquidityIndex         = 1.37e27;  // Full utilization for a full year
         params.borrowIndex            = 1.446891914398940457716504e27;     // Significant difference because large APR and compounded over a year
