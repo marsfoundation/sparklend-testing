@@ -26,35 +26,34 @@ pool.liquidationCall()
 ├── when the user has an insufficient balance on the debtAsset
    └── it should revert (boundary)
 
-├── when the max amount to liquidate is less than the collateral balance
-   ├── when the protocol fee is zero
-      ├── when the users health factor is less than CLOSE_FACTOR_HF_THRESHOLD
-         ├── when the amount of debt specificied is greater than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
-            └── it should succeed and liquidate all the user's debt, and set isBorrowing to false [01]
-         └── when the amount of debt specificied is less than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
-            └── when the amount of debt is greater than the amount of collateral available (bad debt)
-               └── it should succeed and liquidate all the user's collateral and remove the corresponding debt and isUsingAsCollateral to false, keeping isBorrowing as true [02]
-            └── when the amount of debt is less than the amount of collateral available
-               └── it should succeed and liquidate the amount specified [03]
-      └── when the users health factor is greater than CLOSE_FACTOR_HF_THRESHOLD
-         ├── when the amount of debt specificied is greater than the user's liquidateable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
-            └── it should succeed and liquidate all the user's liquidateable debt [04]
-         └── when the amount of debt specificied is less than the user's liquidateable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
-            └── it should succeed and liquidate the amount specified [05]
-   └── when the protocol fee is greater than zero (same as above with treasury transfers)
-      ├── when the users health factor is less than CLOSE_FACTOR_HF_THRESHOLD
-         ├── when the amount of debt specificied is greater than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
-            └── it should succeed and liquidate all the user's debt, and set isBorrowing to false [06]
-         └── when the amount of debt specificied is less than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
-            └── when the amount of debt is greater than the amount of collateral available
-               └── it should succeed and liquidate all the user's collateral and remove the corresponding debt and isUsingAsCollateral to false, keeping isBorrowing as true [07]
-            └── when the amount of debt is less than the amount of collateral available
-               └── it should succeed and liquidate the amount specified [08]
-      └── when the users health factor is greater than CLOSE_FACTOR_HF_THRESHOLD
-         ├── when the amount of debt specificied is greater than the user's liquidateable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
-            └── it should succeed and liquidate all the user's liquidateable debt [09]
-         └── when the amount of debt specificied is less than the user's liquidateable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
-            └── it should succeed and liquidate the amount specified [10]
+├── when the protocol fee is zero
+   ├── when the users health factor is less than CLOSE_FACTOR_HF_THRESHOLD
+      ├── when the amount of debt specificied is greater than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
+         └── it should succeed and liquidate all the user's debt, and set isBorrowing to false [01]
+      └── when the amount of debt specificied is less than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
+         └── when the amount of debt is greater than the amount of collateral available (bad debt)
+            └── it should succeed and liquidate all the user's collateral and remove the corresponding debt and isUsingAsCollateral to false, keeping isBorrowing as true [02]
+         └── when the amount of debt is less than the amount of collateral available
+            └── it should succeed and liquidate the amount specified [03]
+   └── when the users health factor is greater than CLOSE_FACTOR_HF_THRESHOLD
+      ├── when the amount of debt specificied is greater than the user's liquidateable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
+         └── it should succeed and liquidate all the user's liquidateable debt [04]
+      └── when the amount of debt specificied is less than the user's liquidateable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
+         └── it should succeed and liquidate the amount specified [05]
+└── when the protocol fee is greater than zero (same as above with treasury transfers)
+   ├── when the users health factor is less than CLOSE_FACTOR_HF_THRESHOLD
+      ├── when the amount of debt specificied is greater than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
+         └── it should succeed and liquidate all the user's debt, and set isBorrowing to false [06]
+      └── when the amount of debt specificied is less than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
+         └── when the amount of debt is greater than the amount of collateral available
+            └── it should succeed and liquidate all the user's collateral and remove the corresponding debt and isUsingAsCollateral to false, keeping isBorrowing as true [07]
+         └── when the amount of debt is less than the amount of collateral available
+            └── it should succeed and liquidate the amount specified [08]
+   └── when the users health factor is greater than CLOSE_FACTOR_HF_THRESHOLD
+      ├── when the amount of debt specificied is greater than the user's liquidateable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
+         └── it should succeed and liquidate all the user's liquidateable debt [09]
+      └── when the amount of debt specificied is less than the user's liquidateable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
+         └── it should succeed and liquidate the amount specified [10]
 
 ├── when the user is in emode
    ├── when the price source is overridden
