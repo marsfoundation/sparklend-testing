@@ -1249,12 +1249,12 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         state.borrowAssetParams.aTokenBalance = params.debtLiquidated;
 
         // The borrower's aToken balance is always reduced by the collateralLiquidated amount, and treasury gets protocolFee aTokens
-        // When receiveAToken is true, collateralLiquidated aTokens are transferred to the liquidator and protocolFee aTokens are transferred to the protocol
+        // When receiveAToken is true, (collateralLiquidated - protocolFee) aTokens are transferred to the liquidator and protocolFee aTokens are transferred to the protocol
         // When receiveAToken is false:
         //   - collateralLiquidated aTokens are burned for the underlying
         //   - protocolFee collateralAsset are transferred to aCollateralAsset and the corresponding amount of aCollateral tokens are minted to the treasury
         //   - The collateral reserve state is updated to reflect the new aToken balance
-        //   - collateralLiquidated collateralAsset is transferred to the liquidator
+        //   - (collateralLiquidated - protocolFee) collateralAsset is transferred to the liquidator
 
         state.aCollateralAssetParams.userBalance = params.startingCollateral - params.collateralLiquidated;
 
@@ -1269,6 +1269,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
             state.collateralAssetParams.aTokenBalance = params.startingCollateral - params.collateralLiquidated + params.protocolFee;
 
             state.collateralReserveParams.lastUpdateTimestamp = params.updateTimestamp;
+
+            // NOTE: If there were active borrows in the collateral reserve the rates and indexes would update here too
         }
 
         _assertPoolReserveState(state.collateralReserveParams);
