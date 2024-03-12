@@ -15,15 +15,31 @@ pool.flashloanSimple()
     └── it should revert
 ├── given reciever contract has insufficient balance
     └── it should revert
-├── given amount is zero
-    ├── it should succeed with a no-op
-├── given totalPremium is zero
-    ├── given flashloanPremiumToProtocol is zero
-        └── it should succeed with no fees [01]
-    └── given flashloanPremiumToProtocol is not zero
-        └── it should succeed with no fees [02]
-├── given totalPremium is not zero
-    ├── given flashloanPremiumToProtocol is zero
-        └── it should succeed with fees going to LPs [03]
-    └── given flashloanPremiumToProtocol is not zero
-        └── it should succeed with fees going to LPs and protocol [04]
+├── when no time has passed
+    ├── given amount is zero
+        └── it should succeed with a no-op [DONE - 01]
+    └── given amount is not zero
+        ├── given totalPremium is zero
+            ├── given flashloanPremiumToProtocol is zero
+                └── it should succeed with no fees [DONE - 02]
+            └── given flashloanPremiumToProtocol is not zero
+                └── it should succeed with no fees [DONE - 03]
+        └── given totalPremium is not zero
+            ├── given flashloanPremiumToProtocol is zero
+                └── it should succeed with fees going to LPs [DONE - 04]
+            └── given flashloanPremiumToProtocol is not zero
+                └── it should succeed with fees going to LPs and protocol [DONE - 05]
+└── when some time has passed
+    ├── given amount is zero
+        └── it should succeed with a no-op [06]
+    └── given amount is not zero
+        ├── given totalPremium is zero
+            ├── given flashloanPremiumToProtocol is zero
+                └── it should succeed with no fees [07]
+            └── given flashloanPremiumToProtocol is not zero
+                └── it should succeed with no fees [08]
+        └── given totalPremium is not zero
+            ├── given flashloanPremiumToProtocol is zero
+                └── it should succeed with fees going to LPs [09]
+            └── given flashloanPremiumToProtocol is not zero
+                └── it should succeed with fees going to LPs and protocol [10]
