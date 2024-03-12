@@ -129,8 +129,6 @@ contract MockReceiverMintPremium is MockReceiverBase {
     )
         external override returns (bool)
     {
-        console.log("amount ", amount);
-        console.log("premium", premium);
         MockERC20(asset).mint(address(this), premium);
         IERC20(asset).approve(address(POOL), amount + premium);
 
