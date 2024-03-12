@@ -1,0 +1,29 @@
+pool.flashloanSimple()
+├── given paused
+   └── it should revert
+├── given not active
+   └── it should revert
+├── given frozen
+   └── it should succeed
+├── given flashloan not enabled
+    └── it should revert
+├── given insufficient liquidity in pool
+    └── it should revert (boundary)
+├── given reciever contract returns false on executeOperation
+    └── it should revert
+├── given reciever contract has insufficient approval
+    └── it should revert
+├── given reciever contract has insufficient balance
+    └── it should revert
+├── given amount is zero
+    ├── it should succeed with a no-op
+├── given totalPremium is zero
+    ├── given flashloanPremiumToProtocol is zero
+        └── it should succeed with no fees [01]
+    └── given flashloanPremiumToProtocol is not zero
+        └── it should succeed with no fees [02]
+├── given totalPremium is not zero
+    ├── given flashloanPremiumToProtocol is zero
+        └── it should succeed with fees going to LPs [03]
+    └── given flashloanPremiumToProtocol is not zero
+        └── it should succeed with fees going to LPs and protocol [04]
