@@ -17,18 +17,18 @@ pool.flashloanSimple()
     └── it should revert
 ├── when no time has passed
     ├── given amount is zero
-        └── it should succeed with a no-op [DONE - 01]
+        └── it should succeed with a no-op [01]
     └── given amount is not zero
         ├── given totalPremium is zero
             ├── given flashloanPremiumToProtocol is zero
-                └── it should succeed with no fees [DONE - 02]
+                └── it should succeed with no fees [02]
             └── given flashloanPremiumToProtocol is not zero
-                └── it should succeed with no fees [DONE - 03]
+                └── it should succeed with no fees [03]
         └── given totalPremium is not zero
             ├── given flashloanPremiumToProtocol is zero
-                └── it should succeed with fees going to LPs [DONE - 04]
+                └── it should succeed with fees going to LPs [04]
             └── given flashloanPremiumToProtocol is not zero
-                └── it should succeed with fees going to LPs and protocol [DONE - 05]
+                └── it should succeed with fees going to LPs and protocol [05]
 └── when some time has passed
     ├── given amount is zero
         └── it should succeed with a no-op [06]

@@ -3,9 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { UserConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
-import { Errors }            from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
-import { DataTypes }         from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
+import { Errors } from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
 
 import {
     MockReceiverBasic,
@@ -173,7 +171,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
 
     modifier givenFlashLoanPremiumToProtocolIsNotZero {
         vm.prank(admin);
-        poolConfigurator.updateFlashloanPremiumToProtocol(5_00);  // 10%
+        poolConfigurator.updateFlashloanPremiumToProtocol(5_00);  // 5%
         _;
     }
 
@@ -283,7 +281,6 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         // Also note that the borrowIndex does not update because they do not owe any more interest
         poolParams.liquidityIndex = 1.01e27;
 
-        // No state changes - no premium to protocol when total premium is still zero
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
@@ -321,14 +318,14 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         poolParams.currentLiquidityRate      = liquidityRate;
         poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
 
-        // 1e27 + 9.5% of 100 borrow = 1.0095e27 - Note that this was updated WITHOUT time passing
-        // Also note that the borrowIndex does not update because they do not owe any more interest
-        // Also note that this index is 1.0095 and not 1.01 because it takes into account the accruedToTreasury
-        // The amount earned by the LPs only is accrued to the index, and the protocol accrued is factored into the calculation
-        // These amounts are calculated based on the state of the pool BEFORE the premium is sent in
+        // 1e27 + 9.5% of 100 borrow = 1.0095e27 - Note that this was updated WITHOUT time passing.
+        // Also note that the borrowIndex does not update because they do not owe any more interest.
+        // Also note that this index is 1.0095 and not 1.01 because it takes into account the accruedToTreasury.
+        // The amount earned by the LPs is accrued to the index, and the accruedToTreasury amount is used in the calculation.
+        // These amounts are calculated based on the state of the pool BEFORE the premium is sent in.
         // So the calculation is:
-        // newIndex = oldIndex * [1 + (premiumToLP / (aToken.totalSupply + aToken.accruedToTreasury * oldIndex))]
-        // newIndex = 1 * [1 + (9.5 / (1000 + 0 * 1))]
+        // newIndex = oldIndex + (premiumToLP / (aToken.totalSupply + aToken.accruedToTreasury * oldIndex))
+        // newIndex = 1 + (9.5 / (1000 + 0 * 1))
         // newIndex = 1.0095
         poolParams.liquidityIndex = 1.0095e27;
 
@@ -338,8 +335,6 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         assertEq(accruedToTreasury, 0.495294700346706290 ether);
 
         poolParams.accruedToTreasury = accruedToTreasury;
-
-        // No state changes - no premium to protocol when total premium is still zero
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
@@ -396,7 +391,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
 
         assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.000052500000000000000000000e27);  // 0.525% yield for 1% of a year = 0.00525%
+        assertEq(expectedYieldLiquidityIndex, 1.0000525e27);  // 0.525% yield for 1% of a year = 0.00525%
         assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
 
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
@@ -405,13 +400,12 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         assertEq(borrowRate,    0.052501181498079251917470876e27);
         assertEq(liquidityRate, 0.005252599351611862669474738e27);
 
-        poolParams.liquidityIndex             = expectedYieldLiquidityIndex;
-        poolParams.variableBorrowIndex        = expectedBorrowIndex;
-        poolParams.currentLiquidityRate       = liquidityRate;
-        poolParams.currentVariableBorrowRate  = borrowRate;
-        poolParams.lastUpdateTimestamp        = 1 + WARP_TIME;
+        poolParams.liquidityIndex            = expectedYieldLiquidityIndex;
+        poolParams.variableBorrowIndex       = expectedBorrowIndex;
+        poolParams.currentLiquidityRate      = liquidityRate;
+        poolParams.currentVariableBorrowRate = borrowRate;
+        poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
 
-        // // No state changes
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
@@ -436,7 +430,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
 
         assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.000052500000000000000000000e27);  // 0.525% yield for 1% of a year = 0.00525%
+        assertEq(expectedYieldLiquidityIndex, 1.0000525e27);  // 0.525% yield for 1% of a year = 0.00525%
         assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
 
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
@@ -445,13 +439,12 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         assertEq(borrowRate,    0.052501181498079251917470876e27);
         assertEq(liquidityRate, 0.005252599351611862669474738e27);
 
-        poolParams.liquidityIndex             = expectedYieldLiquidityIndex;
-        poolParams.variableBorrowIndex        = expectedBorrowIndex;
-        poolParams.currentLiquidityRate       = liquidityRate;
-        poolParams.currentVariableBorrowRate  = borrowRate;
-        poolParams.lastUpdateTimestamp        = 1 + WARP_TIME;
+        poolParams.liquidityIndex            = expectedYieldLiquidityIndex;
+        poolParams.variableBorrowIndex       = expectedBorrowIndex;
+        poolParams.currentLiquidityRate      = liquidityRate;
+        poolParams.currentVariableBorrowRate = borrowRate;
+        poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
 
-        // No state changes
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
@@ -476,7 +469,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
 
         assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.000052500000000000000000000e27);  // 0.525% yield for 1% of a year = 0.00525%
+        assertEq(expectedYieldLiquidityIndex, 1.0000525e27);  // 0.525% yield for 1% of a year = 0.00525%
         assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
 
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
@@ -485,11 +478,11 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         assertEq(borrowRate,    0.052501181498079251917470876e27);
         assertEq(liquidityRate, 0.005252599351611862669474738e27);
 
-        poolParams.liquidityIndex             = expectedYieldLiquidityIndex;
-        poolParams.variableBorrowIndex        = expectedBorrowIndex;
-        poolParams.currentLiquidityRate       = liquidityRate;
-        poolParams.currentVariableBorrowRate  = borrowRate;
-        poolParams.lastUpdateTimestamp        = 1 + WARP_TIME;
+        poolParams.liquidityIndex            = expectedYieldLiquidityIndex;
+        poolParams.variableBorrowIndex       = expectedBorrowIndex;
+        poolParams.currentLiquidityRate      = liquidityRate;
+        poolParams.currentVariableBorrowRate = borrowRate;
+        poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
 
         // No state changes - no premium to protocol when total premium is still zero
         _assertPoolReserveState(poolParams);
@@ -516,7 +509,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
 
         assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.000052500000000000000000000e27);  // 0.525% yield for 1% of a year = 0.00525%
+        assertEq(expectedYieldLiquidityIndex, 1.0000525e27);  // 0.525% yield for 1% of a year = 0.00525%
         assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
 
         aTokenParams.userBalance = 1010.0525 ether;  // 100 flashborrow * 10% premium + supplier yield
@@ -525,23 +518,23 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         assetParams.aTokenBalance = 910 ether;  // 100 flashborrow * 10% premium
 
         // Premium is only added to cash side
-        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest + 10 ether);
+        ( uint256 borrowRate, uint256 liquidityRate )
+            = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest + 10 ether);
 
         // Utilization rate has decreased because of premium being added to the pool
         assertEq(borrowRate,    0.052476418612348581178374884e27);
         assertEq(liquidityRate, 0.005198143190440621251948266e27);
 
-        poolParams.variableBorrowIndex        = expectedBorrowIndex;
-        poolParams.currentLiquidityRate       = liquidityRate + 1;  // Rounding
-        poolParams.currentVariableBorrowRate  = borrowRate + 1;  // Rounding
-        poolParams.lastUpdateTimestamp        = 1 + WARP_TIME;
+        poolParams.variableBorrowIndex       = expectedBorrowIndex;
+        poolParams.currentLiquidityRate      = liquidityRate + 1;  // Rounding
+        poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
+        poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
 
         // 1e27 + 10% of 100 borrow = 1.01e27 - Note that this was updated WITHOUT time passing
         // Also note that the borrowIndex does not update because they do not owe any more interest
         // This value is accrued against the liquidityIndex that was already updated to reflect the borrower interest
         poolParams.liquidityIndex = expectedYieldLiquidityIndex + 0.01e27;
 
-        // No state changes - no premium to protocol when total premium is still zero
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
@@ -566,7 +559,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
 
         assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.000052500000000000000000000e27);  // 0.525% yield for 1% of a year = 0.00525%
+        assertEq(expectedYieldLiquidityIndex, 1.0000525e27);  // 0.525% yield for 1% of a year = 0.00525%
         assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
 
         aTokenParams.userBalance = 1009.5525 ether;  // 100 + 9.5% premium (5% of 10% to protocol) + supplier yield
@@ -575,26 +568,27 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         // 100 + full 10% premium (0.5% protocol fee accounted with accruedToTreasury)
         assetParams.aTokenBalance = 910 ether;
 
-        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest + 10 ether);
+        ( uint256 borrowRate, uint256 liquidityRate )
+            = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest + 10 ether);
 
         // Utilization rate has decreased because of premium being added to the pool
         assertEq(borrowRate,    0.052476418612348581178374884e27);
         assertEq(liquidityRate, 0.005198143190440621251948266e27);
 
-        poolParams.variableBorrowIndex        = expectedBorrowIndex;
-        poolParams.currentLiquidityRate       = liquidityRate + 1;  // Rounding
-        poolParams.currentVariableBorrowRate  = borrowRate + 1;  // Rounding
-        poolParams.lastUpdateTimestamp        = 1 + WARP_TIME;
+        poolParams.variableBorrowIndex       = expectedBorrowIndex;
+        poolParams.currentLiquidityRate      = liquidityRate + 1;  // Rounding
+        poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
+        poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
 
-        // 1e27 + 9.5% of 100 borrow = 1.0095e27 - Note that this was updated WITHOUT time passing
-        // This value is accrued against the liquidityIndex that was already updated to reflect the borrower interest
-        // Also note that the borrowIndex does not update because they do not owe any more interest
-        // Also note that this index is 1.0095 and not 1.01 because it takes into account the accruedToTreasury
-        // The amount earned by the LPs only is accrued to the index, and the protocol accrued is factored into the calculation
-        // These amounts are calculated based on the state of the pool BEFORE the premium is sent in
+        // 1e27 + 9.5% of 100 borrow = 1.0095e27 - Note that this was updated WITHOUT time passing.
+        // This value is accrued against the liquidityIndex that was already updated to reflect the borrower interest.
+        // Also note that the borrowIndex does not update because they do not owe any more interest.
+        // Also note that this index is 1.0095 and not 1.01 because it takes into account the accruedToTreasury.
+        // The amount earned by the LPs is accrued to the index, and the accruedToTreasury amount is used in the calculation.
+        // These amounts are calculated based on the state of the pool BEFORE the premium is sent in.
         // So the calculation is:
-        // newIndex = oldIndex * [1 + (premiumToLP / (aToken.totalSupply + aToken.accruedToTreasury * oldIndex))]
-        // newIndex = 1 * [1 + (9.5 / (1000 + 0 * 1))]
+        // newIndex = oldIndex + (premiumToLP / (aToken.totalSupply + aToken.accruedToTreasury * oldIndex))
+        // newIndex = 1 + (9.5 / (1000 + 0 * 1))
         // newIndex = 1.0095
         poolParams.liquidityIndex = expectedYieldLiquidityIndex + 0.0095e27;
 
