@@ -49,15 +49,15 @@ contract BorrowFailureTests is BorrowTestBase {
         pool.borrow(address(borrowAsset), 0, 2, 0, borrower);
     }
 
-    // TODO: Believe this code is unreachable because can't be set to inactive when there is active
-    //       supplies.
-    // function test_borrow_whenNotActive() public {
-    //     vm.prank(admin);
-    //     poolConfigurator.setReserveActive(address(borrowAsset), false);
+    function test_borrow_whenNotActive() public {
+        _withdraw(lender, address(borrowAsset), 1000 ether);
 
-    //     vm.expectRevert(bytes(Errors.RESERVE_INACTIVE));
-    //     pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
-    // }
+        vm.prank(admin);
+        poolConfigurator.setReserveActive(address(borrowAsset), false);
+
+        vm.expectRevert(bytes(Errors.RESERVE_INACTIVE));
+        pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
+    }
 
     function test_borrow_whenPaused() public {
         vm.prank(admin);

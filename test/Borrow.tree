@@ -17,7 +17,7 @@ pool.borrow()
     └── it should revert (boundary)
 ├── when user is in isolation mode and asset is not borrowable in isolation mode
     └── it should revert
-├── when user is in isolation mode and the isolation mode debt cieling is surpassed
+├── when user is in isolation mode and the isolation mode debt ceiling is surpassed
     └── it should revert (boundary)
 ├── when the user's emode category doesn't match the borrow asset's emode category
     └── it should revert
@@ -37,33 +37,33 @@ pool.borrow()
     └── it should revert
 ├── when the user doing a regular borrow
     ├── when it's the user's first borrow
-        └── it should succeed, updating rates and isBorrowing for user
+        └── it should succeed, updating rates and isBorrowing for user [01]
     └── when there is an existing borrow
         ├── when no time has passed since the last borrow
-            └── it should succeed, updating rates
+            └── it should succeed, updating rates [02]
         └── when some time has passed since the last borrow
-            └── it should succeed, updating rates, indexes, and lastUpdated timestamp
+            └── it should succeed, updating rates, indexes, and lastUpdated timestamp [03]
 ├── when the user doing a siloed borrow
     ├── when it's the user's first borrow
-        └── it should succeed, updating rates and isBorrowing for user
+        └── it should succeed, updating rates and isBorrowing for user [04]
     └── when there is an existing borrow
         ├── when no time has passed since the last borrow
-            └── it should succeed, updating rates
+            └── it should succeed, updating rates [05]
         └── when some time has passed since the last borrow
-            └── it should succeed, updating rates, indexes, and lastUpdated timestamp
+            └── it should succeed, updating rates, indexes, and lastUpdated timestamp [06]
 ├── when the user doing an e-mode borrow
     ├── when it's the user's first borrow
-        └── it should succeed, updating rates and isBorrowing for user
+        └── it should succeed, updating rates and isBorrowing for user [07]
     └── when there is an existing borrow
         ├── when no time has passed since the last borrow
-            └── it should succeed, updating rates
+            └── it should succeed, updating rates [08]
         └── when some time has passed since the last borrow
-            └── it should succeed, updating rates, indexes, and lastUpdated timestamp
+            └── it should succeed, updating rates, indexes, and lastUpdated timestamp [09]
 └──  when the user is borrowing in isolation mode
     ├── when it's the user's first borrow
-        └── it should succeed, updating rates and isBorrowing for user
+        └── it should succeed, updating rates and isBorrowing for user [10]
     └── when there is an existing borrow
         ├── when no time has passed since the last borrow
-            └── it should succeed, updating rates
+            └── it should succeed, updating rates [11]
         └── when some time has passed since the last borrow
-            └── it should succeed, updating rates, indexes, and lastUpdated timestamp
+            └── it should succeed, updating rates, indexes, and lastUpdated timestamp [12]
