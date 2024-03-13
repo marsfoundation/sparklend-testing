@@ -233,6 +233,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1010 ether);
 
         // Utilization rate has decreased because of premium being added to the pool
+        assertLt(borrowRate,    0.0525e27);
+        assertLt(liquidityRate, 0.00525e27);
         assertEq(borrowRate,    0.052475247524752475247524752e27);
         assertEq(liquidityRate, 0.005195569061856680717576708e27);
 
@@ -274,6 +276,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1010 ether);
 
         // Utilization rate has decreased because of premium being added to the pool
+        assertLt(borrowRate,    0.0525e27);
+        assertLt(liquidityRate, 0.00525e27);
         assertEq(borrowRate,    0.052475247524752475247524752e27);
         assertEq(liquidityRate, 0.005195569061856680717576708e27);
 
@@ -359,6 +363,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
 
         // Utilization rate has increased slightly because of borrowerInterest accruing
+        assertGt(borrowRate,    0.0525e27);
+        assertGt(liquidityRate, 0.00525e27);
         assertEq(borrowRate,    0.052501181498079251917470876e27);
         assertEq(liquidityRate, 0.005252599351611862669474738e27);
 
@@ -398,6 +404,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
 
         // Utilization rate has increased slightly because of borrowerInterest accruing
+        assertGt(borrowRate,    0.0525e27);
+        assertGt(liquidityRate, 0.00525e27);
         assertEq(borrowRate,    0.052501181498079251917470876e27);
         assertEq(liquidityRate, 0.005252599351611862669474738e27);
 
@@ -437,6 +445,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
 
         // Utilization rate has increased slightly because of borrowerInterest accruing
+        assertGt(borrowRate,    0.0525e27);
+        assertGt(liquidityRate, 0.00525e27);
         assertEq(borrowRate,    0.052501181498079251917470876e27);
         assertEq(liquidityRate, 0.005252599351611862669474738e27);
 
@@ -483,6 +493,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
             = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest + 10 ether);
 
         // Utilization rate has decreased because of premium being added to the pool
+        assertLt(borrowRate,    0.0525e27);
+        assertLt(liquidityRate, 0.00525e27);
         assertEq(borrowRate,    0.052476418612348581178374884e27);
         assertEq(liquidityRate, 0.005198143190440621251948266e27);
 
@@ -533,6 +545,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
             = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest + 10 ether);
 
         // Utilization rate has decreased because of premium being added to the pool
+        assertLt(borrowRate,    0.0525e27);
+        assertLt(liquidityRate, 0.00525e27);
         assertEq(borrowRate,    0.052476418612348581178374884e27);
         assertEq(liquidityRate, 0.005198143190440621251948266e27);
 
