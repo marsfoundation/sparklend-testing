@@ -184,20 +184,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         whenAmountIsZero
         public
     {
-        (
-            AssertPoolReserveStateParams memory poolParams,
-            AssertATokenStateParams memory aTokenParams,
-            AssertAssetStateParams memory assetParams,
-            ,
-            ,
-        ) = _loadStartingParamsAndAssertState(0);
-
-        pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
-
-        // No state changes
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
+        _noStateChangeTest();
     }
 
     function test_flashLoanSimple_02()
@@ -207,20 +194,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         givenFlashLoanPremiumToProtocolIsZero
         public
     {
-        (
-            AssertPoolReserveStateParams memory poolParams,
-            AssertATokenStateParams memory aTokenParams,
-            AssertAssetStateParams memory assetParams,
-            ,
-            ,
-        ) = _loadStartingParamsAndAssertState(0);
-
-        pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
-
-        // No state changes
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
+        _noStateChangeTest();
     }
 
     function test_flashLoanSimple_03()
@@ -230,20 +204,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         givenFlashLoanPremiumToProtocolIsNotZero
         public
     {
-        (
-            AssertPoolReserveStateParams memory poolParams,
-            AssertATokenStateParams memory aTokenParams,
-            AssertAssetStateParams memory assetParams,
-            ,
-            ,
-        ) = _loadStartingParamsAndAssertState(0);
-
-        pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
-
-        // No state changes - no premium to protocol when total premium is still zero
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
+        // No premium to protocol when total premium is still zero
+        _noStateChangeTest();
     }
 
     function test_flashLoanSimple_04()
@@ -484,7 +446,6 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         poolParams.currentVariableBorrowRate = borrowRate;
         poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
 
-        // No state changes - no premium to protocol when total premium is still zero
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
@@ -698,6 +659,24 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
     }
+
+    function _noStateChangeTest() internal {
+        (
+            AssertPoolReserveStateParams memory poolParams,
+            AssertATokenStateParams memory aTokenParams,
+            AssertAssetStateParams memory assetParams,
+            ,
+            ,
+        ) = _loadStartingParamsAndAssertState(0);
+
+        pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
+
+        // No state changes
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
+    }
+
 }
 
 

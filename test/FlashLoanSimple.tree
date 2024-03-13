@@ -9,11 +9,11 @@ pool.flashloanSimple()
     └── it should revert
 ├── given insufficient liquidity in pool
     └── it should revert (boundary)
-├── given reciever contract returns false on executeOperation
+├── given receiver contract returns false on executeOperation
     └── it should revert
-├── given reciever contract has insufficient approval
+├── given receiver contract has insufficient approval
     └── it should revert
-├── given reciever contract has insufficient balance
+├── given receiver contract has insufficient balance
     └── it should revert
 ├── when no time has passed
     ├── given amount is zero
