@@ -433,6 +433,45 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         whenProtocolFeeIsZero
         whenUserHealthFactorBelowCloseFactorThreshold
         whenAmountGtAvailableDebt
+        whenUserDebtGtCollateral
+    {
+        Params memory params;
+
+        params.startingCollateral = 1000 ether;
+        params.startingBorrow     = 500 ether;
+
+        params.liquidationAmount = 1400 ether;
+        params.receiveAToken     = false;
+
+        params.borrowerDebt         = 1350.548092145123279590 ether; // Total debt > collateral (1350 > 1000)
+        params.debtLiquidated       = 990.099009900990099010 ether;  // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
+        params.collateralLiquidated = 1000 ether;
+        params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
+        params.healthFactor         = 0;  // HF goes to zero when there is no collateral backing debt
+
+        params.liquidityIndex         = 2.013698630136986301369863013e27;  // 1000/365 x 37%
+        params.borrowIndex            = 2.701096184290246559179463013e27;  // Significant difference because large APR and compounded over a year
+        params.resultingBorrowRate    = 0.056672274100058502185344188e27;  // Borrow rate above base
+        params.resultingLiquidityRate = 0.015125317866769464179973745e27;  // Liquidity rate above zero because of bad debt
+        params.updateTimestamp        = 1 + 1000 days;
+
+        params.isBorrowing         = true;   // User is technically still borrowing but have no incentive to repay
+        params.isUsingAsCollateral = false;  // User has no collateral after liquidation
+
+        // 1% liquidation bonus goes to the liquidator (rounding)
+        assertApproxEqAbs(params.debtLiquidated, uint256(params.collateralLiquidated * 100)/101, 1);
+
+        assertApproxEqAbs(params.remainingDebt, params.borrowerDebt - params.debtLiquidated, 1);
+
+        _runLiquidationTest(params);
+    }
+
+    function test_liquidationCall_02()
+        public
+        whenProtocolFeeIsZero
+        whenUserHealthFactorBelowCloseFactorThreshold
+        whenAmountGtAvailableDebt
+        whenUserDebtLtCollateral
     {
         Params memory params;
 
@@ -463,7 +502,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _runLiquidationTest(params);
     }
 
-    function test_liquidationCall_02()
+    function test_liquidationCall_03()
         public
         whenProtocolFeeIsZero
         whenUserHealthFactorBelowCloseFactorThreshold
@@ -501,7 +540,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _runLiquidationTest(params);
     }
 
-    function test_liquidationCall_03()
+    function test_liquidationCall_04()
         public
         whenProtocolFeeIsZero
         whenUserHealthFactorBelowCloseFactorThreshold
@@ -539,7 +578,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _runLiquidationTest(params);
     }
 
-    function test_liquidationCall_04()
+    function test_liquidationCall_05()
         public
         whenProtocolFeeIsZero
         whenUserHFAboveCloseFactorThreshold
@@ -577,7 +616,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _runLiquidationTest(params);
     }
 
-    function test_liquidationCall_05()
+    function test_liquidationCall_06()
         public
         whenProtocolFeeIsZero
         whenUserHFAboveCloseFactorThreshold
@@ -615,11 +654,54 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _runLiquidationTest(params);
     }
 
-    function test_liquidationCall_06()
+    function test_liquidationCall_07()
         public
         whenProtocolFeeIsNotZero
         whenUserHealthFactorBelowCloseFactorThreshold
         whenAmountGtAvailableDebt
+        whenUserDebtGtCollateral
+    {
+        Params memory params;
+
+        params.startingCollateral = 1000 ether;
+        params.startingBorrow     = 500 ether;
+
+        params.liquidationAmount = 1400 ether;
+        params.receiveAToken     = false;
+
+        params.borrowerDebt         = 1350.548092145123279590 ether; // Total debt > collateral (1350 > 1000)
+        params.debtLiquidated       = 990.099009900990099010 ether;  // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
+        params.collateralLiquidated = 1000 ether;
+        params.protocolFee          = 1.980198019801980198 ether;
+        params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
+        params.healthFactor         = 0;  // HF goes to zero when there is no collateral backing debt
+
+        params.liquidityIndex         = 2.013698630136986301369863013e27;  // 1000/365 x 37%
+        params.borrowIndex            = 2.701096184290246559179463013e27;  // Significant difference because large APR and compounded over a year
+        params.resultingBorrowRate    = 0.056672274100058502185344188e27;  // Borrow rate above base
+        params.resultingLiquidityRate = 0.015125317866769464179973745e27;  // Liquidity rate above zero because of bad debt
+        params.updateTimestamp        = 1 + 1000 days;
+
+        params.isBorrowing         = true;   // User is technically still borrowing but have no incentive to repay
+        params.isUsingAsCollateral = false;  // User has no collateral after liquidation
+
+        // 1% liquidation bonus goes to the liquidator (rounding)
+        assertApproxEqAbs(params.debtLiquidated, uint256(params.collateralLiquidated * 100)/101, 1);
+
+        // Protocol fee is 20% of the bonus collateral amount (below calc uses 1:1 pricing)
+        assertApproxEqAbs(params.protocolFee, (params.collateralLiquidated - params.debtLiquidated) * 20/100, 1);
+
+        assertApproxEqAbs(params.remainingDebt, params.borrowerDebt - params.debtLiquidated, 1);
+
+        _runLiquidationTest(params);
+    }
+
+    function test_liquidationCall_08()
+        public
+        whenProtocolFeeIsNotZero
+        whenUserHealthFactorBelowCloseFactorThreshold
+        whenAmountGtAvailableDebt
+        whenUserDebtLtCollateral
     {
         Params memory params;
 
@@ -654,7 +736,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _runLiquidationTest(params);
     }
 
-    function test_liquidationCall_07()
+    function test_liquidationCall_09()
         public
         whenProtocolFeeIsNotZero
         whenUserHealthFactorBelowCloseFactorThreshold
@@ -696,7 +778,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _runLiquidationTest(params);
     }
 
-    function test_liquidationCall_08()
+    function test_liquidationCall_10()
         public
         whenProtocolFeeIsNotZero
         whenUserHealthFactorBelowCloseFactorThreshold
@@ -738,7 +820,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _runLiquidationTest(params);
     }
 
-    function test_liquidationCall_09()
+    function test_liquidationCall_11()
         public
         whenProtocolFeeIsNotZero
         whenUserHFAboveCloseFactorThreshold
@@ -780,7 +862,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _runLiquidationTest(params);
     }
 
-    function test_liquidationCall_10()
+    function test_liquidationCall_12()
         public
         whenProtocolFeeIsNotZero
         whenUserHFAboveCloseFactorThreshold
@@ -823,7 +905,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     }
 
     // NOTE: Using the whenProtocolFeeIsNotZero to give a better test even though not in tree
-    function test_liquidationCall_11()
+    function test_liquidationCall_13()
         public
         whenProtocolFeeIsNotZero
         whenUserIsInEmode
@@ -864,7 +946,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _runLiquidationTest(params);
     }
 
-    function test_liquidationCall_12()
+    function test_liquidationCall_14()
         public
         whenProtocolFeeIsNotZero
         whenUserIsInEmode
@@ -906,7 +988,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     }
 
     // NOTE: Using the whenProtocolFeeIsNotZero to give a better test even though not in tree
-    function test_liquidationCall_13()
+    function test_liquidationCall_15()
         public
         whenProtocolFeeIsNotZero
         whenLiquidatorSelectsReceiveAToken
@@ -954,7 +1036,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         );
     }
 
-    function test_liquidationCall_14()
+    function test_liquidationCall_16()
         public
         whenProtocolFeeIsNotZero
         whenLiquidatorSelectsReceiveAToken
@@ -1003,7 +1085,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     }
 
     // NOTE: whenLiquidatorHasSomeAToken breaks assertion logic in helper so just focusing on isUsingAsCollateral change
-    function test_liquidationCall_15()
+    function test_liquidationCall_17()
         public
         whenProtocolFeeIsNotZero
         whenLiquidatorSelectsReceiveAToken
@@ -1035,7 +1117,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         );
     }
 
-    function test_liquidationCall_16()
+    function test_liquidationCall_18()
         public
         whenProtocolFeeIsNotZero
         whenUserIsInIsolationMode
