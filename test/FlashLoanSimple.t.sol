@@ -345,38 +345,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         whenAmountIsZero
         public
     {
-        (
-            AssertPoolReserveStateParams memory poolParams,
-            AssertATokenStateParams memory aTokenParams,
-            AssertAssetStateParams memory assetParams,
-            uint256 borrowerInterest,
-            uint256 expectedYieldLiquidityIndex,
-            uint256 expectedBorrowIndex
-        ) = _loadStartingParamsAndAssertState(WARP_TIME);
-
-        pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
-
-        assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.0000525e27);  // 0.525% yield for 1% of a year = 0.00525%
-        assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
-
-        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
-
-        // Utilization rate has increased slightly because of borrowerInterest accruing
-        assertGt(borrowRate,    0.0525e27);
-        assertGt(liquidityRate, 0.00525e27);
-        assertEq(borrowRate,    0.052501181498079251917470876e27);
-        assertEq(liquidityRate, 0.005252599351611862669474738e27);
-
-        poolParams.liquidityIndex            = expectedYieldLiquidityIndex;
-        poolParams.variableBorrowIndex       = expectedBorrowIndex;
-        poolParams.currentLiquidityRate      = liquidityRate;
-        poolParams.currentVariableBorrowRate = borrowRate;
-        poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
-
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
+        _timePassedNoFeesTest();
     }
 
     function test_flashLoanSimple_07()
@@ -386,38 +355,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         givenFlashLoanPremiumToProtocolIsZero
         public
     {
-        (
-            AssertPoolReserveStateParams memory poolParams,
-            AssertATokenStateParams memory aTokenParams,
-            AssertAssetStateParams memory assetParams,
-            uint256 borrowerInterest,
-            uint256 expectedYieldLiquidityIndex,
-            uint256 expectedBorrowIndex
-        ) = _loadStartingParamsAndAssertState(WARP_TIME);
-
-        pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
-
-        assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.0000525e27);  // 0.525% yield for 1% of a year = 0.00525%
-        assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
-
-        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
-
-        // Utilization rate has increased slightly because of borrowerInterest accruing
-        assertGt(borrowRate,    0.0525e27);
-        assertGt(liquidityRate, 0.00525e27);
-        assertEq(borrowRate,    0.052501181498079251917470876e27);
-        assertEq(liquidityRate, 0.005252599351611862669474738e27);
-
-        poolParams.liquidityIndex            = expectedYieldLiquidityIndex;
-        poolParams.variableBorrowIndex       = expectedBorrowIndex;
-        poolParams.currentLiquidityRate      = liquidityRate;
-        poolParams.currentVariableBorrowRate = borrowRate;
-        poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
-
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
+        _timePassedNoFeesTest();
     }
 
     function test_flashLoanSimple_08()
@@ -427,38 +365,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         givenFlashLoanPremiumToProtocolIsNotZero
         public
     {
-        (
-            AssertPoolReserveStateParams memory poolParams,
-            AssertATokenStateParams memory aTokenParams,
-            AssertAssetStateParams memory assetParams,
-            uint256 borrowerInterest,
-            uint256 expectedYieldLiquidityIndex,
-            uint256 expectedBorrowIndex
-        ) = _loadStartingParamsAndAssertState(WARP_TIME);
-
-        pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
-
-        assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.0000525e27);  // 0.525% yield for 1% of a year = 0.00525%
-        assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
-
-        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
-
-        // Utilization rate has increased slightly because of borrowerInterest accruing
-        assertGt(borrowRate,    0.0525e27);
-        assertGt(liquidityRate, 0.00525e27);
-        assertEq(borrowRate,    0.052501181498079251917470876e27);
-        assertEq(liquidityRate, 0.005252599351611862669474738e27);
-
-        poolParams.liquidityIndex            = expectedYieldLiquidityIndex;
-        poolParams.variableBorrowIndex       = expectedBorrowIndex;
-        poolParams.currentLiquidityRate      = liquidityRate;
-        poolParams.currentVariableBorrowRate = borrowRate;
-        poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
-
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
+        // No premium to protocol when total premium is still zero
+        _timePassedNoFeesTest();
     }
 
     function test_flashLoanSimple_09()
@@ -686,6 +594,41 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
 
         // No state changes
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
+    }
+
+    function _timePassedNoFeesTest() internal {
+        (
+            AssertPoolReserveStateParams memory poolParams,
+            AssertATokenStateParams memory aTokenParams,
+            AssertAssetStateParams memory assetParams,
+            uint256 borrowerInterest,
+            uint256 expectedYieldLiquidityIndex,
+            uint256 expectedBorrowIndex
+        ) = _loadStartingParamsAndAssertState(WARP_TIME);
+
+        pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
+
+        assertEq(borrowerInterest,            0.052513783297156325 ether);
+        assertEq(expectedYieldLiquidityIndex, 1.0000525e27);  // 0.525% yield for 1% of a year = 0.00525%
+        assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
+
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
+
+        // Utilization rate has increased slightly because of borrowerInterest accruing
+        assertGt(borrowRate,    0.0525e27);
+        assertGt(liquidityRate, 0.00525e27);
+        assertEq(borrowRate,    0.052501181498079251917470876e27);
+        assertEq(liquidityRate, 0.005252599351611862669474738e27);
+
+        poolParams.liquidityIndex            = expectedYieldLiquidityIndex;
+        poolParams.variableBorrowIndex       = expectedBorrowIndex;
+        poolParams.currentLiquidityRate      = liquidityRate;
+        poolParams.currentVariableBorrowRate = borrowRate;
+        poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
+
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
