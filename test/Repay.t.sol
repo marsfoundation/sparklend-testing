@@ -51,15 +51,16 @@ contract RepayFailureTests is RepayTestBase {
         pool.repay(address(borrowAsset), type(uint256).max, 2, borrower);
     }
 
-    // TODO: Believe this code is unreachable because can't be set to inactive when there is active
-    //       supplies.
-    // function test_repay_whenNotActive() public {
-    //     vm.prank(admin);
-    //     poolConfigurator.setReserveActive(address(borrowAsset), false);
+    function test_repay_whenNotActive() public {
+        _repay(borrower, address(borrowAsset), 500 ether);
+        _withdraw(lender, address(borrowAsset), 500 ether);
 
-    //     vm.expectRevert(bytes(Errors.RESERVE_INACTIVE));
-    //     pool.repay(address(borrowAsset), 500 ether, 2, borrower);
-    // }
+        vm.prank(admin);
+        poolConfigurator.setReserveActive(address(borrowAsset), false);
+
+        vm.expectRevert(bytes(Errors.RESERVE_INACTIVE));
+        pool.repay(address(borrowAsset), 500 ether, 2, borrower);
+    }
 
     function test_repay_whenPaused() public {
         vm.prank(admin);
