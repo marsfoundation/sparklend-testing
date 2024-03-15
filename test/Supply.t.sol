@@ -651,9 +651,9 @@ contract SupplyConcreteTests is SupplyTestBase {
         aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether + supplierYield;
 
-        assetParams.allowance     = 250 ether;  // Remaining from 1000
-        assetParams.userBalance   = 250 ether;  // Remaining from 1000
-        assetParams.aTokenBalance = 1150 ether; // 100 borrowed
+        assetParams.allowance     = 250 ether;   // Remaining from 1000
+        assetParams.userBalance   = 250 ether;   // Remaining from 1000
+        assetParams.aTokenBalance = 1150 ether;  // 100 borrowed
 
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
@@ -904,9 +904,9 @@ contract SupplyConcreteTests is SupplyTestBase {
         aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether + supplierYield;
 
-        assetParams.allowance     = 250 ether;  // Remaining from 1000
-        assetParams.userBalance   = 250 ether;  // Remaining from 1000
-        assetParams.aTokenBalance = 1150 ether; // 100 borrowed
+        assetParams.allowance     = 250 ether;   // Remaining from 1000
+        assetParams.userBalance   = 250 ether;   // Remaining from 1000
+        assetParams.aTokenBalance = 1150 ether;  // 100 borrowed
 
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);

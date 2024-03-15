@@ -564,7 +564,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         poolParams.liquidityIndex            = expectedLiquidityIndex;
         poolParams.currentLiquidityRate      = liquidityRate + 1;  // Rounding
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
-        poolParams.currentVariableBorrowRate = borrowRate + 1; // Rounding
+        poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
         poolParams.lastUpdateTimestamp       = WARP_TIME * 2 + 1;
 
         aTokenParams.userBalance = 200 ether + supplierYield;

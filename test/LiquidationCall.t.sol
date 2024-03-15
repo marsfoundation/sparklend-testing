@@ -443,8 +443,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 1400 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 1350.548092145123279590 ether; // Total debt > collateral (1350 > 1000)
-        params.debtLiquidated       = 990.099009900990099010 ether;  // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
+        params.borrowerDebt         = 1350.548092145123279590 ether;  // Total debt > collateral (1350 > 1000)
+        params.debtLiquidated       = 990.099009900990099010 ether;   // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
         params.healthFactor         = 0;  // HF goes to zero when there is no collateral backing debt
@@ -481,9 +481,9 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 800 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 723.445957199470228858 ether; // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
         params.debtLiquidated       = 723.445957199470228858 ether;
-        params.collateralLiquidated = 730.680416771464931147 ether;
+        params.collateralLiquidated = 730.680416771464931147 ether;  // 1% liquidation bonus
         params.remainingDebt        = 0;
         params.healthFactor         = type(uint256).max;  // User has no more debt
 
@@ -517,8 +517,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 1200 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 1350.548092145123279590 ether; // Total debt > collateral (1350 > 1000)
-        params.debtLiquidated       = 990.099009900990099010 ether;  // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
+        params.borrowerDebt         = 1350.548092145123279590 ether;  // Total debt > collateral (1350 > 1000)
+        params.debtLiquidated       = 990.099009900990099010 ether;   // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
         params.healthFactor         = 0;  // HF goes to zero when there is no collateral backing debt
@@ -555,7 +555,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 400 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 723.445957199470228858 ether; // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
         params.debtLiquidated       = 400 ether;
         params.collateralLiquidated = 404 ether;  // 1% liquidation bonus
         params.remainingDebt        = 323.445957199470228858 ether;
@@ -592,9 +592,9 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 300 ether;  // Just above available debt (half)
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 501.853426710065837121 ether; // 500 ether + 37% APR over 3.65 days
+        params.borrowerDebt         = 501.853426710065837121 ether;   // 500 ether + 37% APR over 3.65 days
         params.debtLiquidated       = 250.926713355032918561 ether;
-        params.collateralLiquidated = 253.435980488583247747 ether;
+        params.collateralLiquidated = 253.435980488583247747 ether;  // 1% liquidation bonus
         params.remainingDebt        = 250.926713355032918559 ether;
         params.healthFactor         = 1.487613673237473184e18;  // User has no more debt
 
@@ -630,9 +630,9 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 200 ether;  // Just below available debt (half)
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 501.853426710065837121 ether; // 500 ether + 37% APR over 3.65 days
+        params.borrowerDebt         = 501.853426710065837121 ether;  // 500 ether + 37% APR over 3.65 days
         params.debtLiquidated       = 200 ether;
-        params.collateralLiquidated = 202 ether;
+        params.collateralLiquidated = 202 ether;  // 1% liquidation bonus
         params.remainingDebt        = 301.853426710065837121 ether;
         params.healthFactor         = 1.321833594366751193e18;
 
@@ -669,8 +669,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 1400 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 1350.548092145123279590 ether; // Total debt > collateral (1350 > 1000)
-        params.debtLiquidated       = 990.099009900990099010 ether;  // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
+        params.borrowerDebt         = 1350.548092145123279590 ether;  // Total debt > collateral (1350 > 1000)
+        params.debtLiquidated       = 990.099009900990099010 ether;   // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.protocolFee          = 1.980198019801980198 ether;
         params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
@@ -711,7 +711,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 800 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 723.445957199470228858 ether; // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
         params.debtLiquidated       = 723.445957199470228858 ether;
         params.collateralLiquidated = 730.680416771464931147 ether;
         params.protocolFee          = 1.446891914398940458 ether;
@@ -751,8 +751,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 1200 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 1350.548092145123279590 ether; // Total debt > collateral (1350 > 1000)
-        params.debtLiquidated       = 990.099009900990099010 ether;  // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
+        params.borrowerDebt         = 1350.548092145123279590 ether;  // Total debt > collateral (1350 > 1000)
+        params.debtLiquidated       = 990.099009900990099010 ether;   // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.protocolFee          = 1.980198019801980198 ether;
         params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
@@ -793,7 +793,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 400 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 723.445957199470228858 ether; // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
         params.debtLiquidated       = 400 ether;
         params.collateralLiquidated = 404 ether;  // 1% liquidation bonus
         params.protocolFee          = 0.8 ether;
@@ -834,9 +834,9 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 300 ether;  // Just above available debt (half)
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 501.853426710065837121 ether; // 500 ether + 37% APR over 3.65 days
+        params.borrowerDebt         = 501.853426710065837121 ether;  // 500 ether + 37% APR over 3.65 days
         params.debtLiquidated       = 250.926713355032918561 ether;
-        params.collateralLiquidated = 253.435980488583247747 ether;
+        params.collateralLiquidated = 253.435980488583247747 ether;  // 1% liquidation bonus
         params.protocolFee          = 0.501853426710065837 ether;
         params.remainingDebt        = 250.926713355032918559 ether;
         params.healthFactor         = 1.487613673237473184e18;  // User has no more debt
@@ -876,9 +876,9 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 200 ether;  // Just below available debt (half)
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 501.853426710065837121 ether; // 500 ether + 37% APR over 3.65 days
+        params.borrowerDebt         = 501.853426710065837121 ether;  // 500 ether + 37% APR over 3.65 days
         params.debtLiquidated       = 200 ether;
-        params.collateralLiquidated = 202 ether;
+        params.collateralLiquidated = 202 ether;  // 1% liquidation bonus
         params.protocolFee          = 0.4 ether;
         params.remainingDebt        = 301.853426710065837121 ether;
         params.healthFactor         = 1.321833594366751193e18;
