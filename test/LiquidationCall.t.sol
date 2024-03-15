@@ -931,7 +931,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
         params.liquidityIndex         = 1.37e27;  // Full utilization for a full year
         params.borrowIndex            = 1.446891914398940457716504e27;  // Significant difference because large APR and compounded over a year
-        params.resultingBorrowRate    = 0.054265901135080689165798444e27;  // All debt removed so back to base rate
+        params.resultingBorrowRate    = 0.054265901135080689165798444e27;
         params.resultingLiquidityRate = 0.009259718769932686820914091e27;
         params.updateTimestamp        = 1 + 365 days;
 
