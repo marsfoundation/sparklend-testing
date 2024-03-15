@@ -427,6 +427,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     /**********************************************************************************************/
 
     // TODO: Add E2E tests to demonstrate protocol implications of user being underwater after liquidation
+    // TODO: Add E2E test to demonstrate a user supplying collateral after being put into a bad debt situation
 
     function test_liquidationCall_01()
         public
@@ -443,7 +444,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 1400 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 1350.548092145123279590 ether;  // Total debt > collateral (1350 > 1000)
+        params.borrowerDebt         = 1350.548092145123279590 ether;  // Total debt > collateral (1350 > 1000) (1000/365 x 37% = )
         params.debtLiquidated       = 990.099009900990099010 ether;   // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
@@ -481,7 +482,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 800 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR compounded over 365 days
         params.debtLiquidated       = 723.445957199470228858 ether;
         params.collateralLiquidated = 730.680416771464931147 ether;  // 1% liquidation bonus
         params.remainingDebt        = 0;
@@ -555,7 +556,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 400 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR compounded over 365 days
         params.debtLiquidated       = 400 ether;
         params.collateralLiquidated = 404 ether;  // 1% liquidation bonus
         params.remainingDebt        = 323.445957199470228858 ether;
@@ -711,7 +712,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 800 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR compounded over 365 days
         params.debtLiquidated       = 723.445957199470228858 ether;
         params.collateralLiquidated = 730.680416771464931147 ether;
         params.protocolFee          = 1.446891914398940458 ether;
@@ -793,7 +794,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 400 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR compounded over 365 days
         params.debtLiquidated       = 400 ether;
         params.collateralLiquidated = 404 ether;  // 1% liquidation bonus
         params.protocolFee          = 0.8 ether;
@@ -921,7 +922,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 600 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR compounded over 365 days
         params.debtLiquidated       = 600 ether;
         params.collateralLiquidated = 630 ether;  // 5% liquidation bonus
         params.protocolFee          = 6 ether;
@@ -962,7 +963,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 600 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR compounded over 365 days
         params.debtLiquidated       = 600 ether;
         params.collateralLiquidated = 623.762376237623762375 ether;  // 5% liquidation bonus
         params.protocolFee          = 5.940594059405940594 ether;
@@ -1005,7 +1006,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 600 ether;
         params.receiveAToken     = true;
 
-        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR compounded over 365 days
         params.debtLiquidated       = 600 ether;
         params.collateralLiquidated = 606 ether;  // 1% liquidation bonus
         params.protocolFee          = 1.2 ether;
@@ -1053,7 +1054,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 600 ether;
         params.receiveAToken     = true;
 
-        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR compounded over 365 days
         params.debtLiquidated       = 600 ether;
         params.collateralLiquidated = 606 ether;  // 1% liquidation bonus
         params.protocolFee          = 1.2 ether;
@@ -1132,7 +1133,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 600 ether;
         params.receiveAToken     = true;
 
-        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR over 365 days
+        params.borrowerDebt         = 723.445957199470228858 ether;  // 500 ether + 37% APR compounded over 365 days
         params.debtLiquidated       = 600 ether;
         params.collateralLiquidated = 606 ether;  // 1% liquidation bonus
         params.protocolFee          = 1.2 ether;
