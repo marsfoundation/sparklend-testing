@@ -457,7 +457,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 1400 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 1350.548092145123279590 ether;  // Total debt > collateral (1350 > 1000) (1000/365 x 37% = )
+        // Total debt > collateral (1350 > 1000) (A = P * e^(rt), 500 * e^(0.37 * 1000/365) ~= 1350 because of approximation)
+        params.borrowerDebt         = 1350.548092145123279590 ether;
         params.debtLiquidated       = 990.099009900990099010 ether;   // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
@@ -531,7 +532,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 1200 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 1350.548092145123279590 ether;  // Total debt > collateral (1350 > 1000)
+        // Total debt > collateral (1350 > 1000) (A = P * e^(rt), 500 * e^(0.37 * 1000/365) ~= 1350 because of approximation)
+        params.borrowerDebt         = 1350.548092145123279590 ether;
         params.debtLiquidated       = 990.099009900990099010 ether;   // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
@@ -683,7 +685,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 1400 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 1350.548092145123279590 ether;  // Total debt > collateral (1350 > 1000)
+        // Total debt > collateral (1350 > 1000) (A = P * e^(rt), 500 * e^(0.37 * 1000/365) ~= 1350 because of approximation)
+        params.borrowerDebt         = 1350.548092145123279590 ether;
         params.debtLiquidated       = 990.099009900990099010 ether;   // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.protocolFee          = 1.980198019801980198 ether;
@@ -765,7 +768,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 1200 ether;
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 1350.548092145123279590 ether;  // Total debt > collateral (1350 > 1000)
+        // Total debt > collateral (1350 > 1000) (A = P * e^(rt), 500 * e^(0.37 * 1000/365) ~= 1350 because of approximation)
+        params.borrowerDebt         = 1350.548092145123279590 ether;
         params.debtLiquidated       = 990.099009900990099010 ether;   // 1% liquidation bonus has to be reduced from debt side when liquidating all collateral
         params.collateralLiquidated = 1000 ether;
         params.protocolFee          = 1.980198019801980198 ether;
