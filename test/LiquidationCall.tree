@@ -79,5 +79,11 @@ pool.liquidationCall()
 ├── given the collateralAsset is in isolation mode
    └── it should succeed and update the debt ceiling of the collateralAsset [18]
 
+├── given the liquidationBonus is set to zero
+   ├── when the protocol fee is zero
+      └── it should succeed and liquidate the amount specified, transferring nothing to the protocol [19]
+   └── when the protocol fee is greater than zero
+      └── it should succeed and liquidate the amount specified, transferring nothing to the protocol [20]
+
 TODO: Figure out what the deal is with handleRepayment
 TODO: Think more about _calculateAvailableCollateralToLiquidate and how HF plays into it with LT
