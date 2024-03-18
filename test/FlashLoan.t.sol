@@ -65,7 +65,7 @@ contract FlashLoanTestBase is SparkLendTestBase {
 
 contract FlashLoanFailureTests is FlashLoanTestBase {
 
-    function test_flashLoan_whenNotActive() public {
+    function test_flashLoan_whenNotActive_asset0() public {
         // Avoid RESERVE_LIQUIDITY_NOT_ZERO error when deactivating
         _withdraw(supplier, asset0, 1000 ether);
 
@@ -76,7 +76,18 @@ contract FlashLoanFailureTests is FlashLoanTestBase {
         _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoan_whenPaused() public {
+    function test_flashLoan_whenNotActive_asset1() public {
+        // Avoid RESERVE_LIQUIDITY_NOT_ZERO error when deactivating
+        _withdraw(supplier, asset1, 1000 ether);
+
+        vm.prank(admin);
+        poolConfigurator.setReserveActive(asset1, false);
+
+        vm.expectRevert(bytes(Errors.RESERVE_INACTIVE));
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_whenPaused_asset0() public {
         vm.prank(admin);
         poolConfigurator.setReservePause(asset0, true);
 
@@ -84,14 +95,29 @@ contract FlashLoanFailureTests is FlashLoanTestBase {
         _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoan_whenFrozen() public {
+    function test_flashLoan_whenPaused_asset1() public {
+        vm.prank(admin);
+        poolConfigurator.setReservePause(asset1, true);
+
+        vm.expectRevert(bytes(Errors.RESERVE_PAUSED));
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_whenFrozen_asset0() public {
         vm.prank(admin);
         poolConfigurator.setReserveFreeze(asset0, true);
 
         _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoan_flashLoanNotEnabled() public {
+    function test_flashLoan_whenFrozen_asset1() public {
+        vm.prank(admin);
+        poolConfigurator.setReserveFreeze(asset1, true);
+
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_flashLoanNotEnabled_asset0() public {
         vm.prank(admin);
         poolConfigurator.setReserveFlashLoaning(asset0, false);
 
@@ -99,10 +125,32 @@ contract FlashLoanFailureTests is FlashLoanTestBase {
         _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoan_insufficientLiquidityBoundary() public {
+    function test_flashLoan_flashLoanNotEnabled_asset1() public {
+        vm.prank(admin);
+        poolConfigurator.setReserveFlashLoaning(asset1, false);
+
+        vm.expectRevert(bytes(Errors.FLASHLOAN_DISABLED));
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_insufficientLiquidityBoundary_asset0() public {
+        vm.expectRevert(stdError.arithmeticError);
+        _callFlashLoan(1000 ether + 1, 1000 ether, borrower);
+
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_insufficientLiquidityBoundary_asset1() public {
         vm.expectRevert(stdError.arithmeticError);
         _callFlashLoan(1000 ether, 1000 ether + 1, borrower);
 
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_receiverReturnsFalse_asset0() public {
+        receiver = address(new MockReceiverReturnFalse(address(poolConfigurator), address(pool)));
+
+        vm.expectRevert(bytes(Errors.INVALID_FLASHLOAN_EXECUTOR_RETURN));
         _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
@@ -113,7 +161,7 @@ contract FlashLoanFailureTests is FlashLoanTestBase {
         _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoan_receiverInsufficientApprovalBoundary() public {
+    function test_flashLoan_receiverInsufficientApprovalBoundary_asset0() public {
         receiver = address(new MockReceiverInsufficientApprove(address(poolConfigurator), address(pool), asset0));
 
         vm.expectRevert(stdError.arithmeticError);
@@ -124,8 +172,30 @@ contract FlashLoanFailureTests is FlashLoanTestBase {
         _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoan_receiverInsufficientBalanceBoundary() public {
+    function test_flashLoan_receiverInsufficientApprovalBoundary_asset1() public {
+        receiver = address(new MockReceiverInsufficientApprove(address(poolConfigurator), address(pool), asset1));
+
+        vm.expectRevert(stdError.arithmeticError);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+
+        receiver = address(new MockReceiverBasic(address(poolConfigurator), address(pool)));
+
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_receiverInsufficientBalanceBoundary_asset0() public {
         receiver = address(new MockReceiverInsufficientBalance(address(poolConfigurator), address(pool), asset0));
+
+        vm.expectRevert(stdError.arithmeticError);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+
+        receiver = address(new MockReceiverBasic(address(poolConfigurator), address(pool)));
+
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_receiverInsufficientBalanceBoundary_asset1() public {
+        receiver = address(new MockReceiverInsufficientBalance(address(poolConfigurator), address(pool), asset1));
 
         vm.expectRevert(stdError.arithmeticError);
         _callFlashLoan(1000 ether, 1000 ether, borrower);
