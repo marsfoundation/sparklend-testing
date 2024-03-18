@@ -247,8 +247,17 @@ contract SparkLendTestBase is Test {
         );
     }
 
-    // TODO: More parameters
     function _setUpNewCollateral() internal returns (address newCollateralAsset) {
+        newCollateralAsset = _setUpNewCollateral(100, 100, 100_01);  // Set up with 1% LTV
+    }
+
+    function _setUpNewCollateral(
+        uint256 ltv,
+        uint256 liquidationThreshold,
+        uint256 liquidationBonus
+    )
+        internal returns (address newCollateralAsset)
+    {
         IReserveInterestRateStrategy strategy
             = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
                 provider:               poolAddressesProvider,
@@ -263,9 +272,10 @@ contract SparkLendTestBase is Test {
         _initReserve(IERC20(newCollateralAsset), strategy);
         _setUpMockOracle(newCollateralAsset, int256(1e8));
 
-        // Set LTV to 1%
         vm.prank(admin);
-        poolConfigurator.configureReserveAsCollateral(newCollateralAsset, 100, 100, 100_01);
+        poolConfigurator.configureReserveAsCollateral(
+            newCollateralAsset, ltv, liquidationThreshold, liquidationBonus
+        );
     }
 
     function _setCollateralDebtCeiling(address asset, uint256 ceiling) internal {
