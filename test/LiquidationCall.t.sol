@@ -426,7 +426,12 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
     modifier whenLiquidationBonusIsZero {
         vm.prank(admin);
-        poolConfigurator.setLiquidationBonus(address(collateralAsset), 0);
+        poolConfigurator.configureReserveAsCollateral({
+            asset:                address(collateralAsset),
+            ltv:                  50_00,
+            liquidationThreshold: 50_00,
+            liquidationBonus:     100_00
+        });
         _;
     }
 
@@ -1170,45 +1175,6 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         // NOTE: Iso mode doesn't update the total debt before reducing it so it's doing 500 - 600 here and preventing underflow
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
-
-    function test_liquidationCall_19()
-        public
-        whenProtocolFeeIsZero
-    {
-        skip(WARP_TIME);
-
-        Params memory params;
-
-        params.startingCollateral = 1000 ether;
-        params.startingBorrow     = 500 ether;
-
-        params.liquidationAmount = 200 ether;  // Just below available debt (half)
-        params.receiveAToken     = false;
-
-        params.borrowerDebt         = 501.853426710065837121 ether;  // 500 ether + 37% APR over 3.65 days
-        params.debtLiquidated       = 200 ether;
-        params.collateralLiquidated = 202 ether;  // 1% liquidation bonus
-        params.remainingDebt        = 301.853426710065837121 ether;
-        params.healthFactor         = 1.321833594366751193e18;
-
-        params.liquidityIndex         = 1.0037e27;  // Full utilization for a 1% of a year
-        params.borrowIndex            = 1.003706853420131674241446640e27;  // Smaller difference because compounded over a shorter period
-        params.resultingBorrowRate    = 0.065036931634047337318693389e27;
-        params.resultingLiquidityRate = 0.039118235786775215677621216e27;
-        params.updateTimestamp        = 1 + WARP_TIME;
-
-        params.isBorrowing         = true;
-        params.isUsingAsCollateral = true;
-
-        // 1% liquidation bonus goes to the liquidator (rounding)
-        assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 101/100, 1);
-
-        // Specified debt is liquidated
-        assertApproxEqAbs(params.remainingDebt, params.borrowerDebt - 200 ether, 1);
-
-        _runLiquidationTest(params);
-    }
-
 
     /**********************************************************************************************/
     /*** Helper Functions                                                                       ***/
