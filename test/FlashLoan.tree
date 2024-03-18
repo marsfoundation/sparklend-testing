@@ -45,21 +45,34 @@ pool.flashloan()
             └── given flashloanPremiumToProtocol is not zero
                 └── it should succeed with no fees [03]
         └── given totalPremium is not zero
-            ├── given flashloanPremiumToProtocol is zero
-                └── it should succeed with fees going to LPs [04]
-            └── given flashloanPremiumToProtocol is not zero
-                └── it should succeed with fees going to LPs and protocol [05]
+            ├── when the user is not an authorized flash borrower
+                ├── given flashloanPremiumToProtocol is zero
+                    └── it should succeed with fees going to LPs [04]
+                └── given flashloanPremiumToProtocol is not zero
+                    └── it should succeed with fees going to LPs and protocol [05]
+            └── when the user is an authorized flash borrower
+                ├── given flashloanPremiumToProtocol is zero
+                    └── it should succeed with no fees [06]
+                └── given flashloanPremiumToProtocol is not zero
+                    └── it should succeed with no fees [07]
 └── when some time has passed
     ├── given amount is zero
-        └── it should succeed with a no-op [06]
+        └── it should succeed with a no-op [08]
     └── given amount is not zero
         ├── given totalPremium is zero
             ├── given flashloanPremiumToProtocol is zero
-                └── it should succeed with no fees [07]
+                └── it should succeed with no fees [09]
             └── given flashloanPremiumToProtocol is not zero
-                └── it should succeed with no fees [08]
+                └── it should succeed with no fees [10]
         └── given totalPremium is not zero
-            ├── given flashloanPremiumToProtocol is zero
-                └── it should succeed with fees going to LPs [09]
-            └── given flashloanPremiumToProtocol is not zero
-                └── it should succeed with fees going to LPs and protocol [10]
+            ├── when the user is not an authorized flash borrower
+                ├── given flashloanPremiumToProtocol is zero
+                    └── it should succeed with fees going to LPs [11]
+                └── given flashloanPremiumToProtocol is not zero
+                    └── it should succeed with fees going to LPs and protocol [12]
+            └── when the user is not an authorized flash borrower
+                ├── given flashloanPremiumToProtocol is zero
+                    └── it should succeed with no fees [13]
+                └── given flashloanPremiumToProtocol is not zero
+                    └── it should succeed with no fees [14]
+

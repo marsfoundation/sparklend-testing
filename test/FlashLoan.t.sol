@@ -340,6 +340,14 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         _;
     }
 
+    modifier givenUserIsNotFlashBorrower { _; }
+
+    modifier givenUserIsFlashBorrower {
+        vm.prank(admin);
+        aclManager.addFlashBorrower(borrower);
+        _;
+    }
+
     /**********************************************************************************************/
     /*** BTT tests                                                                              ***/
     /**********************************************************************************************/
@@ -377,6 +385,7 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         whenNoTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsNotZero
+        givenUserIsNotFlashBorrower
         givenFlashLoanPremiumToProtocolIsZero
         public
     {
@@ -419,30 +428,11 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         _assertAsset1StateMatchesAsset0(poolParams0, aTokenParams0, assetParams0);
     }
 
-    function _assertAsset1StateMatchesAsset0(
-        AssertPoolReserveStateParams memory poolParams0,
-        AssertATokenStateParams memory aTokenParams0,
-        AssertAssetStateParams memory assetParams0
-    )
-        internal
-    {
-        AssertPoolReserveStateParams memory poolParams1   = poolParams0;
-        AssertATokenStateParams      memory aTokenParams1 = aTokenParams0;
-        AssertAssetStateParams       memory assetParams1  = assetParams0;
-
-        poolParams1.asset    = asset1;
-        aTokenParams1.aToken = pool.getReserveData(asset1).aTokenAddress;
-        assetParams1.asset   = asset1;
-
-        _assertPoolReserveState(poolParams1);
-        _assertATokenState(aTokenParams1);
-        _assertAssetState(assetParams1);
-    }
-
     function test_flashLoan_05()
         whenNoTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsNotZero
+        givenUserIsNotFlashBorrower
         givenFlashLoanPremiumToProtocolIsNotZero
         public
     {
@@ -548,6 +538,30 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
     }
 
     function test_flashLoan_06()
+        whenNoTimeHasPassed
+        whenAmountIsNotZero
+        givenTotalPremiumIsNotZero
+        givenUserIsFlashBorrower
+        givenFlashLoanPremiumToProtocolIsZero
+        public
+    {
+        // No state changes when there are no premiums and no time has passed
+        _noStateChangeTest();
+    }
+
+    function test_flashLoan_07()
+        whenNoTimeHasPassed
+        whenAmountIsNotZero
+        givenTotalPremiumIsNotZero
+        givenUserIsFlashBorrower
+        givenFlashLoanPremiumToProtocolIsNotZero
+        public
+    {
+        // No state changes when there are no premiums and no time has passed
+        _noStateChangeTest();
+    }
+
+    function test_flashLoan_08()
         whenSomeTimeHasPassed
         whenAmountIsZero
         public
@@ -555,7 +569,7 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         _timePassedNoFeesTest();
     }
 
-    function test_flashLoan_07()
+    function test_flashLoan_09()
         whenSomeTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsZero
@@ -565,7 +579,7 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         _timePassedNoFeesTest();
     }
 
-    function test_flashLoan_08()
+    function test_flashLoan_10()
         whenSomeTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsZero
@@ -576,10 +590,11 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         _timePassedNoFeesTest();
     }
 
-    function test_flashLoan_09()
+    function test_flashLoan_11()
         whenSomeTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsNotZero
+        givenUserIsNotFlashBorrower
         givenFlashLoanPremiumToProtocolIsZero
         public
     {
@@ -632,10 +647,11 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
     }
 
-    function test_flashLoan_10()
+    function test_flashLoan_12()
         whenSomeTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsNotZero
+        givenUserIsNotFlashBorrower
         givenFlashLoanPremiumToProtocolIsNotZero
         public
     {
@@ -700,6 +716,30 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         _assertAssetState(assetParams);
 
         _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
+    }
+
+    function test_flashLoan_13()
+        whenSomeTimeHasPassed
+        whenAmountIsNotZero
+        givenTotalPremiumIsNotZero
+        givenUserIsFlashBorrower
+        givenFlashLoanPremiumToProtocolIsZero
+        public
+    {
+        // No premiums with flash borrower
+        _timePassedNoFeesTest();
+    }
+
+    function test_flashLoan_14()
+        whenSomeTimeHasPassed
+        whenAmountIsNotZero
+        givenTotalPremiumIsNotZero
+        givenUserIsFlashBorrower
+        givenFlashLoanPremiumToProtocolIsNotZero
+        public
+    {
+        // No premiums with flash borrower
+        _timePassedNoFeesTest();
     }
 
     /**********************************************************************************************/
@@ -871,7 +911,28 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         modes[0] = 0;
         modes[1] = 0;
 
+        vm.prank(borrower);
         pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+    }
+
+    function _assertAsset1StateMatchesAsset0(
+        AssertPoolReserveStateParams memory poolParams0,
+        AssertATokenStateParams memory aTokenParams0,
+        AssertAssetStateParams memory assetParams0
+    )
+        internal
+    {
+        AssertPoolReserveStateParams memory poolParams1   = poolParams0;
+        AssertATokenStateParams      memory aTokenParams1 = aTokenParams0;
+        AssertAssetStateParams       memory assetParams1  = assetParams0;
+
+        poolParams1.asset    = asset1;
+        aTokenParams1.aToken = pool.getReserveData(asset1).aTokenAddress;
+        assetParams1.asset   = asset1;
+
+        _assertPoolReserveState(poolParams1);
+        _assertATokenState(aTokenParams1);
+        _assertAssetState(assetParams1);
     }
 
 }
