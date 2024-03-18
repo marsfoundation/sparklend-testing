@@ -205,4 +205,40 @@ contract FlashLoanFailureTests is FlashLoanTestBase {
         _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
+    function test_flashLoan_userTriesToFlashLoanIntoBorrow_asset0() public {
+        address[] memory assets  = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory modes   = new uint256[](2);
+
+        assets[0] = asset0;
+        assets[1] = asset1;
+
+        amounts[0] = 1000 ether;
+        amounts[1] = 1000 ether;
+
+        modes[0] = 1;
+        modes[1] = 0;
+
+        vm.expectRevert("FLASHLOAN_INTO_BORROW_DEPRECATED");
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+    }
+
+    function test_flashLoan_userTriesToFlashLoanIntoBorrow_asset1() public {
+        address[] memory assets  = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory modes   = new uint256[](2);
+
+        assets[0] = asset0;
+        assets[1] = asset1;
+
+        amounts[0] = 1000 ether;
+        amounts[1] = 1000 ether;
+
+        modes[0] = 0;
+        modes[1] = 1;
+
+        vm.expectRevert("FLASHLOAN_INTO_BORROW_DEPRECATED");
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+    }
+
 }

@@ -31,3 +31,7 @@ pool.flashloan()
     └── it should revert
 ├── given receiver contract has insufficient balance on assets[1]
     └── it should revert
+├── when user tries to use flashloan into borrow with assets[0]
+    └── it should revert
+├── when user tries to use flashloan into borrow with assets[1]
+    └── it should revert
