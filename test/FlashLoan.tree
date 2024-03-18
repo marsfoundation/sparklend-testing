@@ -1,4 +1,4 @@
-pool.flashloanSimple()
+pool.flashloan()
 ├── given length of assets doesn't match length of amounts
    └── it should revert
 ├── given assets[0] paused
