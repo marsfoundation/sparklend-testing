@@ -39,7 +39,7 @@ contract SupplyTestBase is SparkLendTestBase {
 
 contract SupplyFailureTests is SupplyTestBase {
 
-    function test_supply_whenAmountZero() public {
+    function test_supply_whenAmountZero() public virtual {
         vm.expectRevert(bytes(Errors.INVALID_AMOUNT));
         _callSupply(address(collateralAsset), 0, supplier, 0);
     }
@@ -68,7 +68,7 @@ contract SupplyFailureTests is SupplyTestBase {
         _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_amountOverSupplyCapBoundary() public {
+    function test_supply_amountOverSupplyCapBoundary() public virtual {
         vm.prank(admin);
         poolConfigurator.setSupplyCap(address(collateralAsset), 1000);
 
@@ -86,7 +86,7 @@ contract SupplyFailureTests is SupplyTestBase {
         _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_insufficientApproveBoundary() public {
+    function test_supply_insufficientApproveBoundary() public virtual {
         collateralAsset.mint(supplier, 1000 ether);
 
         vm.prank(supplier);
@@ -95,12 +95,13 @@ contract SupplyFailureTests is SupplyTestBase {
         vm.expectRevert(stdError.arithmeticError);
         _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
 
+        vm.prank(supplier);
         collateralAsset.approve(address(pool), 1000 ether);
 
         _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_insufficientBalanceBoundary() public {
+    function test_supply_insufficientBalanceBoundary() public virtual {
         vm.startPrank(supplier);
 
         collateralAsset.approve(address(pool), 1000 ether);
@@ -121,7 +122,7 @@ contract SupplyFailureTests is SupplyTestBase {
         aCollateralAsset.mint(address(this), address(this), 1000 ether, 1e18);
     }
 
-    function test_supply_aTokenMintScaledInvalidAmount() public {
+    function test_supply_aTokenMintScaledInvalidAmount() public virtual {
         _initCollateral({
             asset:                address(borrowAsset),
             ltv:                  50_00,
