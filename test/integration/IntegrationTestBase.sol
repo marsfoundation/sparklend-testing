@@ -7,5 +7,12 @@ import "sparklend-address-registry/Ethereum.sol";
 
 contract IntegrationTestBase is Test {
 
+    function setUp() public {
+
+    }
+
+    function test_integration() public {
+        console.log(Ethereum.POOL);
+    }
 }
 
