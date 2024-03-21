@@ -57,4 +57,46 @@ contract StableBorrowTests is IntegrationTestBase {
         }
     }
 
+    function test_stableSwapBorrowRateModeImpossible() public {
+        address[] memory reserves = pool.getReservesList();
+
+        _supplyAndUseAsCollateral(borrower, Ethereum.WETH, 1000 ether);
+
+        // Snapshot and revert to avoid issues with siloed borrowing
+        uint256 snapshot = vm.snapshot();
+
+        for (uint256 i = 0; i < reserves.length; i++) {
+            if (!pool.getReserveData(reserves[i]).configuration.getBorrowingEnabled()) continue;
+
+            _borrow(borrower, reserves[i], 100);
+
+            vm.prank(borrower);
+            vm.expectRevert(bytes(Errors.NO_OUTSTANDING_STABLE_DEBT));
+            pool.swapBorrowRateMode(reserves[i], 1);
+
+            vm.revertTo(snapshot);
+        }
+    }
+
+    function test_rebalanceStableBorrowRateImpossible() public {
+        address[] memory reserves = pool.getReservesList();
+
+        _supplyAndUseAsCollateral(borrower, Ethereum.WETH, 1000 ether);
+
+        // Snapshot and revert to avoid issues with siloed borrowing
+        uint256 snapshot = vm.snapshot();
+
+        for (uint256 i = 0; i < reserves.length; i++) {
+            if (!pool.getReserveData(reserves[i]).configuration.getBorrowingEnabled()) continue;
+
+            _borrow(borrower, reserves[i], 100);
+
+            vm.prank(borrower);
+            vm.expectRevert(bytes(Errors.INTEREST_RATE_REBALANCE_CONDITIONS_NOT_MET));
+            pool.rebalanceStableBorrowRate(reserves[i], borrower);
+
+            vm.revertTo(snapshot);
+        }
+    }
+
 }
