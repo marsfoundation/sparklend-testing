@@ -102,7 +102,7 @@ contract WithdrawFailureTests is WithdrawTestBase {
         vm.expectRevert(stdError.arithmeticError);
         pool.withdraw(address(collateralAsset), 1000 ether, user);
 
-        collateralAsset.mint(address(aCollateralAsset), 1);
+        deal(address(collateralAsset), address(aCollateralAsset), 1000 ether);
 
         pool.withdraw(address(collateralAsset), 1000 ether, user);
     }

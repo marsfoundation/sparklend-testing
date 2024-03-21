@@ -22,7 +22,8 @@ contract UserActions is Test {
 
     function _supply(address pool, address user, address asset, uint256 amount) internal {
         vm.startPrank(user);
-        MockERC20(asset).mint(user, amount);
+        deal(asset, user, amount);
+        // MockERC20(asset).mint(user, amount);
         MockERC20(asset).approve(address(pool), amount);
         IPool(pool).supply(asset, amount, user, 0);
         vm.stopPrank();
