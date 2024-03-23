@@ -5,12 +5,7 @@ import "forge-std/Test.sol";
 
 import { Errors } from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
 
-import {
-    IERC20,
-    IReserveInterestRateStrategy,
-    MockERC20,
-    SparkLendTestBase
-} from "./SparkLendTestBase.sol";
+import { SparkLendTestBase } from "./SparkLendTestBase.sol";
 
 contract RepayTestBase is SparkLendTestBase {
 

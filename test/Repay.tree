@@ -11,6 +11,8 @@ pool.repay()
    └── it should revert
 ├── when user doesn't approve enough underlying to repay
     └── it should revert (boundary)
+├── when user's balance is too low to repay
+    └── it should revert (boundary)
 ├── given reserve is NOT in isolation mode
     ├── given no time has passed since borrow
         └── when user is paying greater than debt
