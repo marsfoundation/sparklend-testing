@@ -7,12 +7,7 @@ import { UserConfiguration } from "aave-v3-core/contracts/protocol/libraries/con
 import { Errors }            from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
 import { DataTypes }         from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
 
-import {
-    IERC20,
-    IReserveInterestRateStrategy,
-    MockERC20,
-    SparkLendTestBase
-} from "./SparkLendTestBase.sol";
+import { SparkLendTestBase } from "./SparkLendTestBase.sol";
 
 import { MockOracleSentinel } from "test/mocks/MockOracleSentinel.sol";
 
@@ -231,7 +226,7 @@ contract BorrowFailureTests is BorrowTestBase {
 
     // TODO: Revisit - Don't think this code is reachable because the user getSiloedBorrowingState
     //       function calls reserveConfig.getSiloedBorrowing()
-    // function test_borrow_userNotSiloedButAssetIs() public {}
+    function test_borrow_userIsSiloedWithOtherAsset() public {}
 
 }
 
