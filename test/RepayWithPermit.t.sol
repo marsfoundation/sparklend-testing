@@ -73,7 +73,7 @@ contract RepayWithPermitFailureTests is RepayFailureTests {
     function test_repay_whenAmountIsUint256MaxAndUserNotOwner() public override {
         _getValidPermitSignature(type(uint256).max);
         vm.expectRevert(bytes(Errors.NO_EXPLICIT_AMOUNT_TO_REPAY_ON_BEHALF));
-        _callRepay(address(borrowAsset), type(uint256).max, 2, makeAddr('user'));
+        _callRepay(address(borrowAsset), type(uint256).max, 2, makeAddr("user"));
     }
 
     // Skipping test as it does not apply
