@@ -13,7 +13,7 @@ import {
     MockReceiverMintPremium
 } from "test/mocks/MockReceiver.sol";
 
-import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
+import { SparkLendTestBase } from "./SparkLendTestBase.sol";
 
 contract FlashLoanSimpleTestBase is SparkLendTestBase {
 
