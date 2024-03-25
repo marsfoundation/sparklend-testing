@@ -97,7 +97,7 @@ contract WithdrawFailureTests is WithdrawTestBase {
     function test_withdraw_amountGtLiquidityBoundary() public {
         vm.startPrank(user);
 
-        collateralAsset.burn(address(aCollateralAsset), 1);
+        deal(address(collateralAsset), address(aCollateralAsset), 1000 ether - 1);
 
         vm.expectRevert(stdError.arithmeticError);
         pool.withdraw(address(collateralAsset), 1000 ether, user);
