@@ -68,7 +68,6 @@ contract RepayFailureTests is RepayTestBase {
         pool.repay(address(borrowAsset), 500 ether, 2, borrower);
     }
 
-    // TODO: Determine convention for this
     function test_repay_success_whenFrozen() public {
         vm.prank(admin);
         poolConfigurator.setReserveFreeze(address(borrowAsset), true);

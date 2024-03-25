@@ -7,6 +7,8 @@ pool.repay()
    └── it should revert
 ├── given paused
    └── it should revert
+├── given frozen
+   └── it should succeed
 ├── when there is no debt to be repaid (no variable debt)
    └── it should revert
 ├── when user doesn't approve enough underlying to repay
