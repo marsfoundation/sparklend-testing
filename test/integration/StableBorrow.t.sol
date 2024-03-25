@@ -70,9 +70,17 @@ contract StableBorrowTests is IntegrationTestBase {
 
             _borrow(borrower, reserves[i], 100);
 
+            // Can't switch to stable from variable with no stable borrowing enabled
+            // (not possible to have stable debt to start)
             vm.prank(borrower);
             vm.expectRevert(bytes(Errors.NO_OUTSTANDING_STABLE_DEBT));
             pool.swapBorrowRateMode(reserves[i], 1);
+
+            // Can't switch to variable from stable with no stable borrowing enabled
+            // (not possible to create new stable debt)
+            vm.prank(borrower);
+            vm.expectRevert(bytes(Errors.STABLE_BORROWING_NOT_ENABLED));
+            pool.swapBorrowRateMode(reserves[i], 2);
 
             vm.revertTo(snapshot);
         }

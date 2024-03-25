@@ -14,7 +14,7 @@ contract IntegrationTestBase is UserActions {
     IPool constant pool = IPool(Ethereum.POOL);
 
     function setUp() public {
-        vm.createSelectFork(getChain("mainnet").rpcUrl, 19_483_900);  // March 21, 2023
+        vm.createSelectFork(getChain("mainnet").rpcUrl, 19483900);  // March 21, 2024
     }
 
     /**********************************************************************************************/
