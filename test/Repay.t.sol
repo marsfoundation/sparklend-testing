@@ -32,7 +32,10 @@ contract RepayTestBase is SparkLendTestBase {
         _borrow(borrower, address(borrowAsset), 500 ether);
     }
 
-    function _callRepay(address asset, uint256 amount, uint256 rateMode, address onBehalfOf) internal {
+    function _callRepay(address asset, uint256 amount, uint256 rateMode, address onBehalfOf)
+        internal virtual
+    {
+        vm.prank(borrower);
         pool.repay(asset, amount, rateMode, onBehalfOf);
     }
 
@@ -40,14 +43,14 @@ contract RepayTestBase is SparkLendTestBase {
 
 contract RepayFailureTests is RepayTestBase {
 
-    function test_repay_whenAmountZero() public {
+    function test_repay_whenAmountZero() public virtual {
         vm.expectRevert(bytes(Errors.INVALID_AMOUNT));
         _callRepay(address(borrowAsset), 0, 2, borrower);
     }
 
-    function test_repay_whenAmountIsUint256MaxAndUserNotOwner() public {
+    function test_repay_whenAmountIsUint256MaxAndUserNotOwner() public virtual {
         vm.expectRevert(bytes(Errors.NO_EXPLICIT_AMOUNT_TO_REPAY_ON_BEHALF));
-        _callRepay(address(borrowAsset), type(uint256).max, 2, borrower);
+        _callRepay(address(borrowAsset), type(uint256).max, 2, makeAddr("user"));
     }
 
     function test_repay_whenNotActive() public {
@@ -65,7 +68,7 @@ contract RepayFailureTests is RepayTestBase {
         vm.prank(admin);
         poolConfigurator.setReservePause(address(borrowAsset), true);
 
-        vm.startPrank(borrower);
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether);
 
         vm.expectRevert(bytes(Errors.RESERVE_PAUSED));
@@ -76,7 +79,7 @@ contract RepayFailureTests is RepayTestBase {
         vm.prank(admin);
         poolConfigurator.setReserveFreeze(address(borrowAsset), true);
 
-        vm.startPrank(borrower);
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether);
         _callRepay(address(borrowAsset), 500 ether, 2, borrower);
     }
@@ -86,20 +89,21 @@ contract RepayFailureTests is RepayTestBase {
         _callRepay(address(borrowAsset), 500 ether, 2, lender);
     }
 
-    function test_repay_notEnoughApprovalBoundary() public {
-        vm.startPrank(borrower);
+    function test_repay_insufficientApprovalBoundary() public virtual {
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether - 1);
         vm.expectRevert(stdError.arithmeticError);
         _callRepay(address(borrowAsset), 500 ether, 2, borrower);
 
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether);
         _callRepay(address(borrowAsset), 500 ether, 2, borrower);
     }
 
-    function test_repay_notEnoughBalanceBoundary() public {
+    function test_repay_insufficientBalanceBoundary() public virtual {
         borrowAsset.burn(borrower, 1);
 
-        vm.startPrank(borrower);
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether);
         vm.expectRevert(stdError.arithmeticError);
         _callRepay(address(borrowAsset), 500 ether, 2, borrower);
@@ -302,6 +306,7 @@ contract RepayConcreteTests is RepayTestBase {
         vm.startPrank(borrower);
         borrowAsset.approve(address(pool), 500 ether + 1);
         borrowAsset.mint(borrower, 1);
+        vm.stopPrank();
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
@@ -352,7 +357,7 @@ contract RepayConcreteTests is RepayTestBase {
     }
 
     function _repayEqualToDebtNoTimePassedTest() internal {
-        vm.startPrank(borrower);
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
@@ -404,7 +409,7 @@ contract RepayConcreteTests is RepayTestBase {
     }
 
     function _repayLessThanDebtNoTimePassedTest() internal {
-        vm.startPrank(borrower);
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether - 1);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
@@ -470,6 +475,7 @@ contract RepayConcreteTests is RepayTestBase {
         vm.startPrank(borrower);
         borrowAsset.approve(address(pool), 500 ether + borrowerDebt + 1);
         borrowAsset.mint(borrower, borrowerDebt + 1);
+        vm.stopPrank();
 
         // Borrower owes slightly more than lender has earned because of compounded interest
         assertEq(supplierYield,                1.85 ether);  // 500 * 0.37 * 1%
@@ -548,6 +554,7 @@ contract RepayConcreteTests is RepayTestBase {
         vm.startPrank(borrower);
         borrowAsset.approve(address(pool), 500 ether + borrowerDebt);
         borrowAsset.mint(borrower, borrowerDebt);
+        vm.stopPrank();
 
         // Borrower owes slightly more than lender has earned because of compounded interest
         assertEq(supplierYield,                1.85 ether);  // 500 * 0.37 * 1%
@@ -626,6 +633,7 @@ contract RepayConcreteTests is RepayTestBase {
         vm.startPrank(borrower);
         borrowAsset.approve(address(pool), 500 ether + borrowerDebt - 1);
         borrowAsset.mint(borrower, borrowerDebt - 1);
+        vm.stopPrank();
 
         // Borrower owes slightly more than lender has earned because of compounded interest
         assertEq(supplierYield,                1.85 ether);  // 500 * 0.37 * 1%
