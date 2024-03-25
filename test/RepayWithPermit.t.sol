@@ -110,48 +110,53 @@ contract RepayWithPermitFailureTests is RepayFailureTests {
 
 contract RepayWithPermitConcreteTests is RepayConcreteTests {
 
-    // uint256 borrowerSk = 1;
+    uint256 borrowerSk = 1;
 
-    // uint256 nonce;  // Nonce in storage to be used over the course of tests
+    uint256 nonce;  // Nonce in storage to be used over the course of tests
 
-    // function setUp() public virtual override {
-    //     borrower = vm.addr(borrowerSk);  // Overwrite borrower address before running other setUp
+    function setUp() public virtual override {
+        borrower = vm.addr(borrowerSk);  // Overwrite borrower address before running other setUp
 
-    //     super.setUp();
+        super.setUp();
 
-    //     vm.label(borrower, "borrower");
-    // }
+        vm.label(borrower, "borrower");
+    }
 
-    // function _callRepay(address asset, uint256 amount, address onBehalfOf, uint16 referralCode)
-    //     internal override
-    // {
-    //     // Explicitly set the approval to zero before the repayWithPermit is called.
-    //     // In the other tests, the approval state changes, in order to make this work we can
-    //     // set the approval to zero on every call and permit instead.
-    //     vm.prank(borrower);
-    //     collateralAsset.approve(address(pool), 0);
+    function _callRepay(
+        address asset,
+        uint256 amount,
+        uint256 rateMode,
+        address onBehalfOf
+    )
+        internal override
+    {
+        // Explicitly set the approval to zero before the repayWithPermit is called.
+        // In the other tests, the approval state changes, in order to make this work we can
+        // set the approval to zero on every call and permit instead.
+        vm.prank(borrower);
+        borrowAsset.approve(address(pool), 0);
 
-    //     ( uint8 permitV, bytes32 permitR, bytes32 permitS ) = _getValidPermitSignature(
-    //         address(collateralAsset),
-    //         onBehalfOf,
-    //         address(pool),
-    //         amount,
-    //         nonce++,
-    //         block.timestamp,
-    //         borrowerSk
-    //     );
+        ( uint8 permitV, bytes32 permitR, bytes32 permitS ) = _getValidPermitSignature(
+            address(borrowAsset),
+            onBehalfOf,
+            address(pool),
+            amount,
+            nonce++,
+            block.timestamp,
+            borrowerSk
+        );
 
-    //     vm.prank(borrower);
-    //     pool.repayWithPermit(
-    //         asset,
-    //         amount,
-    //         onBehalfOf,
-    //         referralCode,
-    //         block.timestamp,
-    //         permitV,
-    //         permitR,
-    //         permitS
-    //     );
-    // }
+        vm.prank(borrower);
+        pool.repayWithPermit(
+            asset,
+            amount,
+            rateMode,
+            onBehalfOf,
+            block.timestamp,
+            permitV,
+            permitR,
+            permitS
+        );
+    }
 
 }
