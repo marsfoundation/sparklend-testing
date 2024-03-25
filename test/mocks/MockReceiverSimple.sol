@@ -65,8 +65,6 @@ contract MockReceiverSimpleReturnFalse is MockReceiverSimpleBase {
     )
         public override returns (bool)
     {
-        IERC20(asset).approve(address(POOL), amount + premium);
-
         return false;
     }
 
