@@ -327,6 +327,8 @@ contract SparkLendTestBase is Test {
     function _getCompoundedNormalizedInterest(uint256 rate, uint256 timeDelta)
         internal pure returns (uint256 interestRate)
     {
+        if (timeDelta == 0) return 1e27;
+
         // interest = 1 + nx + (n/2)(n-1)x^2 + (n/6)(n-1)(n-2)x^3
         // where n = timeDelta and x = rate / 365 days
 
