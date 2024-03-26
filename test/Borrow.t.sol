@@ -226,7 +226,21 @@ contract BorrowFailureTests is BorrowTestBase {
 
     // TODO: Revisit - Don't think this code is reachable because the user getSiloedBorrowingState
     //       function calls reserveConfig.getSiloedBorrowing()
-    function test_borrow_userIsSiloedWithOtherAsset() public {}
+    function test_borrow_userIsSiloedWithOtherAsset() public {
+        address siloAsset = _setUpNewReserve();
+
+        vm.startPrank(admin);
+        poolConfigurator.setReserveBorrowing(siloAsset, true);
+        poolConfigurator.setSiloedBorrowing(siloAsset, true);
+        vm.stopPrank();
+
+        _supply(makeAddr("supplier"), address(siloAsset), 1000 ether);
+        _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
+        _borrow(borrower, siloAsset, 1 ether);
+
+        vm.expectRevert(bytes(Errors.SILOED_BORROWING_VIOLATION));
+        pool.borrow(address(borrowAsset), 1 ether, 2, 0, borrower);
+    }
 
 }
 
