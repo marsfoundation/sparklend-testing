@@ -202,7 +202,7 @@ contract BorrowFailureTests is BorrowTestBase {
         pool.borrow(address(borrowAsset), 500 ether, 1, 0, borrower);
     }
 
-    function test_borrow_assetNotUserSiloedAssetAddress() public {
+    function test_borrow_userSiloedAndTryingToBorrowNonSiloed() public {
         _initCollateral({
             asset:                address(borrowAsset),
             ltv:                  50_00,
@@ -224,9 +224,7 @@ contract BorrowFailureTests is BorrowTestBase {
         pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
     }
 
-    // TODO: Revisit - Don't think this code is reachable because the user getSiloedBorrowingState
-    //       function calls reserveConfig.getSiloedBorrowing()
-    function test_borrow_userIsSiloedWithOtherAsset() public {
+    function test_borrow_userBorrowingNonSiloedAndTryingToBorrowSiloed() public {
         address siloAsset = _setUpNewReserve();
 
         vm.startPrank(admin);
@@ -234,12 +232,12 @@ contract BorrowFailureTests is BorrowTestBase {
         poolConfigurator.setSiloedBorrowing(siloAsset, true);
         vm.stopPrank();
 
-        _supply(makeAddr("supplier"), address(siloAsset), 1000 ether);
+        _supply(makeAddr("supplier"), address(borrowAsset), 1 ether);
         _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
-        _borrow(borrower, siloAsset, 1 ether);
+        _borrow(borrower, address(borrowAsset), 1 ether);
 
         vm.expectRevert(bytes(Errors.SILOED_BORROWING_VIOLATION));
-        pool.borrow(address(borrowAsset), 1 ether, 2, 0, borrower);
+        pool.borrow(siloAsset, 1 ether, 2, 0, borrower);
     }
 
 }

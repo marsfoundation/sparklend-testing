@@ -31,9 +31,9 @@ pool.borrow()
     └── it should revert (boundary)
 ├── when user chooses stable borrow and it's not enabled (always for spark)
     └── it should revert
-├── when user is using siloed borrowing and the asset doesn't match the silo
+├── when user is using siloed borrowing and tries to borrow non siloed asset
     └── it should revert
-├── when user is borrowing another asset and the asset is siloed
+├── when user is NOT using siloed borrowing and tries to borrow siloed asset
     └── it should revert
 
 ├── when it's the user's first borrow
