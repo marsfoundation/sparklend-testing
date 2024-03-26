@@ -302,7 +302,6 @@ contract BorrowConcreteTests is BorrowTestBase {
 
     function test_borrow_01()
         public
-        whenUserIsDoingRegularBorrow
         whenItIsUsersFirstBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
@@ -311,6 +310,10 @@ contract BorrowConcreteTests is BorrowTestBase {
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
+
+    // NOTE: All `whenThereIsAnExistingBorrow` are below the borrow type modifiers
+    //       because the tests won't work unless the existing borrow is made after
+    //       that borrow configuration is set up.
 
     function test_borrow_02()
         public
@@ -341,11 +344,12 @@ contract BorrowConcreteTests is BorrowTestBase {
     function test_borrow_04()
         public
         whenUserIsDoingSiloedBorrow
-        whenItIsUsersFirstBorrow
+        whenThereIsAnExistingBorrow
+        whenNoTimeHasPassedSinceLastBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _usersFirstBorrowTest();
+        _existingBorrowNoTimePassedTest();
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
@@ -354,24 +358,24 @@ contract BorrowConcreteTests is BorrowTestBase {
         public
         whenUserIsDoingSiloedBorrow
         whenThereIsAnExistingBorrow
-        whenNoTimeHasPassedSinceLastBorrow
+        whenSomeTimeHasPassedSinceLastBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _existingBorrowNoTimePassedTest();
+        _existingBorrowSomeTimePassedTest();
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
     function test_borrow_06()
         public
-        whenUserIsDoingSiloedBorrow
+        whenUserIsDoingEModeBorrow
         whenThereIsAnExistingBorrow
-        whenSomeTimeHasPassedSinceLastBorrow
+        whenNoTimeHasPassedSinceLastBorrow
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _existingBorrowSomeTimePassedTest();
+        _existingBorrowNoTimePassedTest();
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
@@ -379,31 +383,6 @@ contract BorrowConcreteTests is BorrowTestBase {
     function test_borrow_07()
         public
         whenUserIsDoingEModeBorrow
-        whenItIsUsersFirstBorrow
-    {
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-
-        _usersFirstBorrowTest();
-
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-    }
-
-    function test_borrow_08()
-        public
-        whenUserIsDoingEModeBorrow
-        whenThereIsAnExistingBorrow
-        whenNoTimeHasPassedSinceLastBorrow
-    {
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-
-        _existingBorrowNoTimePassedTest();
-
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-    }
-
-    function test_borrow_09()
-        public
-        whenUserIsDoingEModeBorrow
         whenThereIsAnExistingBorrow
         whenSomeTimeHasPassedSinceLastBorrow
     {
@@ -414,19 +393,7 @@ contract BorrowConcreteTests is BorrowTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_borrow_10()
-        public
-        whenUserIsDoingIsolationModeBorrow
-        whenItIsUsersFirstBorrow
-    {
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
-
-        _usersFirstBorrowTest();
-
-        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
-    }
-
-    function test_borrow_11()
+    function test_borrow_08()
         public
         whenUserIsDoingIsolationModeBorrow
         whenThereIsAnExistingBorrow
@@ -439,7 +406,7 @@ contract BorrowConcreteTests is BorrowTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 600_00);
     }
 
-    function test_borrow_12()
+    function test_borrow_09()
         public
         whenUserIsDoingIsolationModeBorrow
         whenThereIsAnExistingBorrow
