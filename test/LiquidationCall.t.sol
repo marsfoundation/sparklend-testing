@@ -112,7 +112,7 @@ contract LiquidationCallFailureTest is LiquidationCallTestBase {
     function test_liquidationCall_priceSentinelActiveAndHealthFactorAboveThresholdAndLiquidationsNotAllowed() public {
         _setUpPosition();
 
-        vm.warp(10 minutes);
+        skip(10 minutes);
 
         vm.startPrank(admin);
         poolAddressesProvider.setPriceOracleSentinel(address(new MockOracleSentinel()));
@@ -146,7 +146,7 @@ contract LiquidationCallFailureTest is LiquidationCallTestBase {
         vm.expectRevert(bytes(Errors.HEALTH_FACTOR_NOT_BELOW_THRESHOLD));
         pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 500 ether, false);
 
-        vm.warp(block.timestamp + 1 seconds);
+        skip(1 seconds);
 
         ( ,,,,, healthFactor ) = pool.getUserAccountData(borrower);
 
@@ -155,7 +155,7 @@ contract LiquidationCallFailureTest is LiquidationCallTestBase {
         pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 500 ether, false);
     }
 
-    // TODO: Don't think this code is reachable (isUsingAsCollateral == true while getLiquidationThreshold() != 0)
+    // NOTE: Don't think this code is reachable (isUsingAsCollateral == true while getLiquidationThreshold() != 0)
     //       because this code reverts on the _supplyAndUseAsCollateral with USER_IN_ISOLATION_MODE_OR_LTV_ZERO
     // function test_liquidationCall_liquidationThresholdZero() public {
     //     _initCollateral({
@@ -236,6 +236,21 @@ contract LiquidationCallFailureTest is LiquidationCallTestBase {
         pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 500 ether, false);
     }
 
+    function test_liquidationCall_insufficientBalanceBoundary() public {
+        _setUpLiquidatablePosition();
+
+        vm.startPrank(liquidator);
+        borrowAsset.mint(liquidator, 500 ether);
+        borrowAsset.approve(address(pool), 500 ether);
+
+        vm.expectRevert(stdError.arithmeticError);
+        pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 500 ether, false);
+
+        deal(address(collateralAsset), address(aCollateralAsset), 500 ether
+
+        pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 500 ether, false);
+    }
+
 }
 
 contract LiquidationCallConcreteTest is LiquidationCallTestBase {
@@ -308,7 +323,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     modifier whenAmountLtAvailableDebt { _; }
 
     modifier whenUserDebtGtCollateral {
-        vm.warp(1 + 1000 days);
+        skip(1000 days);
 
         uint256 aTokenBalance    = aCollateralAsset.balanceOf(borrower);
         uint256 debtTokenBalance = IERC20(debtToken).balanceOf(borrower);
