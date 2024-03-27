@@ -73,7 +73,7 @@ It is also important to not only use hard-coded values either, as they can seem 
 
 ## Running Tests
 
-To run tests in this repo, simply run:
+To run tests in this repo, run:
 
 ```bash
 forge test
