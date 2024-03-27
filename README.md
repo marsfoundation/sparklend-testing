@@ -41,11 +41,7 @@ There are some functions that have identical logic trees to others, such as `rep
 
 Any differences in tests are remedied by overriding the tests themselves.
 
-## Assertions
-
-Due to large state changes occuring in the majority of SparkLend's user-facing functions, often with complex theoretical calculations involved, a few different approaches had to be taken.
-
-### Assertion Helper Functions
+## Assertion Helper Functions
 
 Since a lot of state variables are modified, the following procedure is followed to assert state:
 1. Declare structs with all expected values for all relevant contracts (`pool`, `aToken`, `collateralAsset`, etc.).
@@ -63,7 +59,7 @@ The second point is important because false assumptions can be made that a state
 
 The third point is also important, because tests with large blocks of repetitive assertions code can easily miss a line of important state that could be missed by a reviewer. Using standardized assertion functions asssures this never happens, while abstracting away all the repetitive code necessary to perform the assertions.
 
-### Asserting Both Hard-coded and Derived Values
+## Assertion of Both Hard-Coded and Derived Values
 
 Since a lot of the assertions required in the SparkLend codebase are complex in nature, it becomes necessary to derive their expected values. This is an effective approach, but can also lead to issues as the derivation itself could have a bug in it. 
 
