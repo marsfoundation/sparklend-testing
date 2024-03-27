@@ -65,7 +65,9 @@ The third point is also important, because tests with large blocks of repetitive
 
 ### Asserting Both Hard-coded and Derived Values
 
-Since a lot of the assertions required in the SparkLend codebase are complex in nature, it becomes necessary to derive their expected values. This is an effective approach, but can also lead to issues as the derivation itself could have a bug in it. For this reason, all derived expected values are also asserted against hardcoded values provided by the tester. This allows the reviewer to review the derivation to see that it makes logical sense, and then spot check the hard-coded values against the result to make sure that the result is in the range they expect. 
+Since a lot of the assertions required in the SparkLend codebase are complex in nature, it becomes necessary to derive their expected values. This is an effective approach, but can also lead to issues as the derivation itself could have a bug in it. 
+
+For this reason, all derived expected values are also asserted against hardcoded values provided by the tester. This allows the reviewer to review the derivation to see that it makes logical sense, and then spot check the hard-coded values against the result to make sure that the result is in the range they expect. 
 
 It is also important to not only use hard-coded values either, as they can seem to be in the right range but be incorrect. When both approaches are used, hard-coded values reinforce the derived value's correctness and vice versa.
 
