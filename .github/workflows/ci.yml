@@ -19,14 +19,6 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Checkout submodules
-        env:
-          SSH_KEY_AAVE_V3_CORE: ${{secrets.SSH_KEY_AAVE_V3_CORE}}
-        shell: bash
-        run: |
-          chmod +x ./install-submodules.sh
-          ./install-submodules.sh
-
       - name: Build contracts
         run: |
           forge --version
@@ -39,14 +31,6 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Checkout submodules
-        env:
-          SSH_KEY_AAVE_V3_CORE: ${{secrets.SSH_KEY_AAVE_V3_CORE}}
-        shell: bash
-        run: |
-          chmod +x ./install-submodules.sh
-          ./install-submodules.sh
 
       - name: Run tests
         run: FOUNDRY_PROFILE=ci forge test
@@ -61,14 +45,6 @@ jobs:
 
   #     - name: Run coverage
   #       run: forge coverage --report summary --report lcov
-
-  #     - name: Checkout submodules
-  #       env:
-  #         SSH_KEY_AAVE_V3_CORE: ${{secrets.SSH_KEY_AAVE_V3_CORE}}
-  #       shell: bash
-  #       run: |
-  #         chmod +x ./install-submodules.sh
-  #         ./install-submodules.sh
 
   #     # To ignore coverage for certain directories modify the paths in this step as needed. The
   #     # below default ignores coverage results for the test and script directories. Alternatively,
