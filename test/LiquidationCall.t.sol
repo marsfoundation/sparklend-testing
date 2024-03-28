@@ -112,19 +112,32 @@ contract LiquidationCallFailureTest is LiquidationCallTestBase {
     function test_liquidationCall_priceSentinelActiveAndHealthFactorAboveThresholdAndLiquidationsNotAllowed() public {
         _setUpPosition();
 
-        skip(10 minutes);
-
         vm.startPrank(admin);
         poolAddressesProvider.setPriceOracleSentinel(address(new MockOracleSentinel()));
         vm.stopPrank();
 
+        vm.startPrank(liquidator);
+        borrowAsset.mint(liquidator, 500 ether);
+        borrowAsset.approve(address(pool), 500 ether);
+
+        skip(50 days + 14 hours + 24 minutes + 35 seconds);
+
         ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
 
-        // Less than MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD and below 1
+        // Greater than MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD and below 1
         assertGt(healthFactor, 0.95e18);
         assertLt(healthFactor, 1e18);
+        assertEq(healthFactor, 0.950000010295150112e18);  // Closest to 0.95e18 possible with config
 
         vm.expectRevert(bytes(Errors.PRICE_ORACLE_SENTINEL_CHECK_FAILED));
+        pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 500 ether, false);
+
+        skip(1 seconds);
+
+        ( ,,,,, healthFactor ) = pool.getUserAccountData(borrower);
+
+        assertEq(healthFactor, 0.949999999158300001e18);  // Closest to 0.95e18 possible with config
+
         pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 500 ether, false);
     }
 
