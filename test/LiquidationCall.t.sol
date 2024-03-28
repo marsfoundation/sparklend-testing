@@ -414,6 +414,8 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     }
 
     modifier whenEmodePriceSourceIsOverridden {
+        assertEq(pool.getUserEMode(borrower), 1);
+
         address emodePriceSourceAsset = makeAddr("emodePriceSourceAsset");
 
         // Price is $1.01 in emode, override to $1
@@ -434,7 +436,10 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _;
     }
 
-    modifier whenEmodePriceSourceIsNotOverridden { _; }
+    modifier whenEmodePriceSourceIsNotOverridden {
+        assertEq(pool.getUserEMode(borrower), 1);
+        _;
+     }
 
     modifier whenLiquidatorSelectsReceiveAToken {
         _;
