@@ -443,11 +443,13 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
     modifier whenLiquidatorSelectsReceiveAToken {
         _;
-
         assertGt(aCollateralAsset.balanceOf(liquidator), 0);
     }
 
-    modifier whenLiquidatorHasNoAToken { _; }
+    modifier whenLiquidatorHasNoAToken {
+        assertEq(aCollateralAsset.balanceOf(liquidator), 0);
+        _;
+    }
 
     modifier whenValidateAutomaticUseOfCollateralIsFalse {
         address newAsset = _setUpNewCollateral();
