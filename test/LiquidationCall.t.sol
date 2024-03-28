@@ -1236,7 +1236,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     /*** Edge Case Tests                                                                        ***/
     /**********************************************************************************************/
 
-    function test_liquidationCall_edgeCase_01_badDebt_afterHalfLiquidation() public {
+    function test_liquidationCall_edgeCase_01_badDebtAfterHalfLiquidation() public {
         Params memory params;
 
         vm.prank(admin);
