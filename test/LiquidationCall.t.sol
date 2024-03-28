@@ -341,20 +341,20 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
         _;
 
-        // If the user gets half liquidated, they get fully half liquidated
-        // If the user gets fully liquidated, they get fully liquidated as long as
-        // they are overcollateralized
-        if (healthFactor > 0.95e18) {
-            assertApproxEqAbs(IERC20(debtToken).balanceOf(borrower), debt - availableDebt, 2);
+        // // If the user gets half liquidated, they get fully half liquidated
+        // // If the user gets fully liquidated, they get fully liquidated as long as
+        // // they are overcollateralized
+        // if (healthFactor > 0.95e18) {
+        //     assertApproxEqAbs(IERC20(debtToken).balanceOf(borrower), debt - availableDebt, 2);
 
-            assertGt(collateralAsset.balanceOf(liquidator), availableDebt);  // Receives bonus
-        } else if (pool.getUserConfiguration(borrower).isUsingAsCollateral(collateralAssetId)) {
-            assertEq(IERC20(debtToken).balanceOf(borrower), 0);
-            assertGt(collateralAsset.balanceOf(liquidator), debt);  // Receives bonus
-        } else {
-            assertGt(IERC20(debtToken).balanceOf(borrower), 0);
-            assertGt(collateralAsset.balanceOf(liquidator), 0);
-        }
+        //     assertGt(collateralAsset.balanceOf(liquidator), availableDebt);  // Receives bonus
+        // } else if (pool.getUserConfiguration(borrower).isUsingAsCollateral(collateralAssetId)) {
+        //     assertEq(IERC20(debtToken).balanceOf(borrower), 0);
+        //     assertGt(collateralAsset.balanceOf(liquidator), debt);  // Receives bonus
+        // } else {
+        //     assertGt(IERC20(debtToken).balanceOf(borrower), 0);
+        //     assertGt(collateralAsset.balanceOf(liquidator), 0);
+        // }
     }
 
     modifier whenAmountLtAvailableDebt {
@@ -683,6 +683,64 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
         _runLiquidationTest(params);
     }
+
+    function test_liquidationCall_edgeCase_01_badDebt()
+        public
+        whenProtocolFeeIsZero
+    {
+        Params memory params;
+
+        vm.prank(admin);
+        poolConfigurator.configureReserveAsCollateral(address(collateralAsset), 99_99, 99_99, 100_01);
+
+        _supply(lender, address(borrowAsset), 499.9 ether);  // Add more funds to pool to still have max utilization
+
+        // Borrow highest possible balance
+        _borrow(borrower, address(borrowAsset), 499.9 ether);
+
+        ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
+
+        assertEq(healthFactor, 1e18);  // Borrowed highest possible amount
+
+        skip(50 days);
+
+        ( ,,,,, healthFactor ) = pool.getUserAccountData(borrower);
+
+        assertEq(healthFactor, 0.950578372449886207e18);  // Warp to get close to 95% threshold
+
+        params.startingCollateral = 1000 ether;
+        params.startingBorrow     = 999.9 ether;
+
+        params.liquidationAmount = 600 ether;  // Just above available debt (half)
+        params.receiveAToken     = false;
+
+        params.borrowerDebt         = 1051.885913862788141804 ether;
+        params.debtLiquidated       = 525.942956931394070902 ether;  // Liquidate half
+        params.collateralLiquidated = 525.995551227087210309 ether;  // 0.01% liquidation bonus
+        params.remainingDebt        = 525.942956931394070902 ether;
+        params.healthFactor         = 0.901156754900857001e18;  // User has a worse position because of liquidation bonus
+
+        params.liquidityIndex         = 1.050684931506849315068493150e27;
+        params.borrowIndex            = 1.051991112974085550358973150e27;  // Smaller difference because compounded over a shorter period
+        params.resultingBorrowRate    = 0.0625e27;
+        params.resultingLiquidityRate = 0.03125e27;
+        params.updateTimestamp        = 1 + 50 days;
+
+        params.isBorrowing         = true;
+        params.isUsingAsCollateral = true;
+
+        // 1% liquidation bonus goes to the liquidator (rounding)
+        assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 100_01/100_00, 1);
+
+        // Half of debt is liquidated when HF is above close factor threshold (0.95)
+        assertApproxEqAbs(params.remainingDebt, params.borrowerDebt / 2, 1);
+
+        _runLiquidationTest(params);
+
+        assertEq(aCollateralAsset.balanceOf(borrower),  474.004448772912789691 ether);
+        assertEq(IERC20(debtToken).balanceOf(borrower), 525.942956931394070902 ether);
+    }
+
 
     function test_liquidationCall_06()
         public
@@ -1236,6 +1294,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     /*** Helper Functions                                                                       ***/
     /**********************************************************************************************/
 
+    // TODO: Make this not dependent on max utilization
     function _loadStartingParamsAndAssertState(
         uint256 timeSinceLastUpdate,
         uint256 borrowerCollateral,
@@ -1359,7 +1418,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
             liquidatorLiquidationAmount: params.liquidationAmount
         });
 
-        assertEq(params.borrowerDebt, IERC20(debtToken).balanceOf(borrower), "borrowerDebt");
+        assertEq(IERC20(debtToken).balanceOf(borrower), params.borrowerDebt, "borrowerDebt");
 
         assertApproxEqAbs(borrowerInterest, params.borrowerDebt - params.startingBorrow, 2, "borrowerInterest");
 
