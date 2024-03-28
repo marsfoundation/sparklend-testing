@@ -487,19 +487,6 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _;
     }
 
-    modifier whenLiquidationBonusIsNotZero { _; }
-
-    modifier whenLiquidationBonusIsZero {
-        vm.prank(admin);
-        poolConfigurator.configureReserveAsCollateral({
-            asset:                address(collateralAsset),
-            ltv:                  50_00,
-            liquidationThreshold: 50_00,
-            liquidationBonus:     100_00
-        });
-        _;
-    }
-
     /**********************************************************************************************/
     /*** Tests                                                                                  ***/
     /**********************************************************************************************/
