@@ -236,17 +236,19 @@ contract LiquidationCallFailureTest is LiquidationCallTestBase {
         pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 500 ether, false);
     }
 
-    function test_liquidationCall_insufficientBalanceBoundary() public {
+    function test_liquidationCall_insufficientLiquidityBoundary() public {
         _setUpLiquidatablePosition();
 
         vm.startPrank(liquidator);
         borrowAsset.mint(liquidator, 500 ether);
         borrowAsset.approve(address(pool), 500 ether);
 
+        deal(address(collateralAsset), address(aCollateralAsset), 505 ether - 1);  // 1% liquidation bonus
+
         vm.expectRevert(stdError.arithmeticError);
         pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 500 ether, false);
 
-        deal(address(collateralAsset), address(aCollateralAsset), 500 ether
+        deal(address(collateralAsset), address(aCollateralAsset), 505 ether);
 
         pool.liquidationCall(address(collateralAsset), address(borrowAsset), borrower, 500 ether, false);
     }
