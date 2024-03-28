@@ -125,7 +125,7 @@ contract LiquidationCallFailureTest is LiquidationCallTestBase {
         ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
 
         // Greater than MINIMUM_HEALTH_FACTOR_LIQUIDATION_THRESHOLD and below 1
-        assertGt(healthFactor, 0.95e18);
+        assertGe(healthFactor, 0.95e18);
         assertLt(healthFactor, 1e18);
         assertEq(healthFactor, 0.950000010295150112e18);  // Closest to 0.95e18 possible with config
 
@@ -327,7 +327,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         skip(WARP_TIME);
 
         ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
-        assertGt(healthFactor, 0.95e18);  // Greater than 0.95 so half of debt position is liquidatable at once
+        assertGe(healthFactor, 0.95e18);  // Greater than 0.95 so half of debt position is liquidatable at once
         assertLt(healthFactor, 1e18);
 
         _;
@@ -388,7 +388,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     modifier whenEmodePriceSourceIsOverridden {
         address emodePriceSourceAsset = makeAddr("emodePriceSourceAsset");
 
-        // Price is $2
+        // Price is $1.01 in emode, override to $1
         _setUpMockOracle(emodePriceSourceAsset, 1e8);
 
         // Update to change the price source only

@@ -53,7 +53,7 @@ pool.liquidationCall()
          └── when the amount of debt is less than the amount of collateral available
             └── it should succeed and liquidate the amount specified, setting isBorrowing to false [08]
       └── when the amount of debt specificied is less than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
-         └── when the amount of debt is greater than the amount of collateral available
+         └── when the amount of debt is greater than the amount of collateral available (bad debt)
             └── it should succeed and liquidate all the user's collateral and remove the corresponding debt and isUsingAsCollateral to false, keeping isBorrowing as true [09]
          └── when the amount of debt is less than the amount of collateral available
             └── it should succeed and liquidate the amount specified [10]
