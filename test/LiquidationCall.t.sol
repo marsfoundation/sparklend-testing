@@ -333,12 +333,40 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         _;
     }
 
-    modifier whenAmountGtAvailableDebt { _; }
+    modifier whenAmountGtAvailableDebt {
+        ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
 
-    modifier whenAmountLtAvailableDebt { _; }
+        uint256 debt          = IERC20(debtToken).balanceOf(borrower);
+        uint256 availableDebt = healthFactor < 0.95e18 ? debt : debt / 2;
+
+        _;
+
+        // If the user gets half liquidated, they get fully half liquidated
+        // If the user gets fully liquidated, they get fully liquidated as long as
+        // they are overcollateralized
+        if (healthFactor > 0.95e18) {
+            assertApproxEqAbs(IERC20(debtToken).balanceOf(borrower), debt - availableDebt, 2);
+
+            assertGt(collateralAsset.balanceOf(liquidator), availableDebt);  // Receives bonus
+        } else if (pool.getUserConfiguration(borrower).isUsingAsCollateral(collateralAssetId)) {
+            assertEq(IERC20(debtToken).balanceOf(borrower), 0);
+            assertGt(collateralAsset.balanceOf(liquidator), debt);  // Receives bonus
+        } else {
+            assertGt(IERC20(debtToken).balanceOf(borrower), 0);
+            assertGt(collateralAsset.balanceOf(liquidator), 0);
+        }
+    }
+
+    modifier whenAmountLtAvailableDebt {
+        _;
+
+        // There was a liquidation and there is debt remaining
+        assertGt(IERC20(debtToken).balanceOf(borrower), 0);
+        assertGt(collateralAsset.balanceOf(liquidator), 0);
+    }
 
     modifier whenUserDebtGtCollateral {
-        skip(1000 days);
+        vm.warp(1 + 1000 days);  // Use warp to be independent of other modifiers
 
         uint256 aTokenBalance    = aCollateralAsset.balanceOf(borrower);
         uint256 debtTokenBalance = IERC20(debtToken).balanceOf(borrower);
@@ -638,7 +666,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.liquidationAmount = 300 ether;  // Just above available debt (half)
         params.receiveAToken     = false;
 
-        params.borrowerDebt         = 501.853426710065837121 ether;   // 500 ether + 37% APR over 3.65 days
+        params.borrowerDebt         = 501.853426710065837121 ether;  // 500 ether + 37% APR over 3.65 days
         params.debtLiquidated       = 250.926713355032918561 ether;
         params.collateralLiquidated = 253.435980488583247747 ether;  // 1% liquidation bonus
         params.remainingDebt        = 250.926713355032918559 ether;
