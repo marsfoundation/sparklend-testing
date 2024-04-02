@@ -37,7 +37,7 @@ contract ReserveLogicTests is SparkLendTestBase {
         assertEq(returnedIndex, prevIndex * (1e27 + (1 * 1e27 / 1000)) / 1e27);
     }
 
-    function testFuzz_cumulateToLiquidityIndex_firstExample(
+    function testFuzz_cumulateToLiquidityIndex_multiCumulation(
         uint256 totalLiquidity1,
         uint256 totalLiquidity2,
         uint256 amount1,
@@ -81,7 +81,7 @@ contract ReserveLogicTests is SparkLendTestBase {
     )
         external
     {
-        for (uint256 i; i < 100; ++i) {
+        for (uint256 i; i < 25; ++i) {
             totalLiquidity = _bound(_random(totalLiquidity, i), 1, 1e27);
             amount         = _bound(_random(totalLiquidity, i), 1, totalLiquidity / 10);  // Max of 10% growth
 

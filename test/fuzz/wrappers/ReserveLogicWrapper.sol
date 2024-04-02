@@ -18,4 +18,5 @@ contract ReserveLogicWrapper is Pool {
         updatedLiquidityIndex
             = ReserveLogic.cumulateToLiquidityIndex(_reserves[reserve], totalLiquidity, amount);
     }
+
 }
