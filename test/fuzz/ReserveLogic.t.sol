@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import { SparkLendTestBase } from "test/SparkLendTestBase.sol";
 
-import { ReserveLogicWrapper} from "test/fuzz/wrappers/ReserveLogicWrapper.sol";
+import { ReserveLogicWrapper } from "test/fuzz/wrappers/ReserveLogicWrapper.sol";
 
 contract ReserveLogicTests is SparkLendTestBase {
 
@@ -94,24 +94,32 @@ contract ReserveLogicTests is SparkLendTestBase {
             assertEq(newIndex, returnedIndex);
             assertEq(newIndex, _rayMul(prevIndex, 1e27 + _rayDiv(amount, totalLiquidity)));
 
-            // As prevIndex scales in magnitude, its product can introduce errors that scale with its size, plus one from rayMul
-            assertApproxEqAbs(newIndex, prevIndex * (1e27 + (amount * 1e27 / totalLiquidity)) / 1e27, 2 + prevIndex / 1e27);
+            // As prevIndex scales in magnitude, its product deviates in rounding, scaling with its size, plus one from rayMul
+            assertApproxEqAbs(
+                newIndex,
+                prevIndex * (1e27 + (amount * 1e27 / totalLiquidity)) / 1e27,
+                2 + prevIndex / 1e27
+            );
         }
     }
+
+    /**********************************************************************************************/
+    /*** Helper functions                                                                       ***/
+    /**********************************************************************************************/
 
     function _getLiquidityIndex() internal view returns (uint256) {
         return wrapper.getReserveData(address(borrowAsset)).liquidityIndex;
     }
 
-    function _random(uint256 startingValue, uint256 salt) internal returns (uint256) {
+    function _random(uint256 startingValue, uint256 salt) internal pure returns (uint256) {
         return uint256(keccak256(abi.encode(startingValue, salt)));
     }
 
-    function _rayMul(uint256 a, uint256 b) internal returns (uint256) {
+    function _rayMul(uint256 a, uint256 b) internal pure returns (uint256) {
         return ((a * b) + 0.5e27) / 1e27;  // Round up half
     }
 
-    function _rayDiv(uint256 a, uint256 b) internal returns (uint256) {
+    function _rayDiv(uint256 a, uint256 b) internal pure returns (uint256) {
         return ((a * 1e27) + (b / 2)) / b;  // Round up half
     }
 }

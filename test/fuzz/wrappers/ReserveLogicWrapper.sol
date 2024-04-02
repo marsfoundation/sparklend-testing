@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.0;
 
+import { IPoolAddressesProvider } from 'aave-v3-core/contracts/interfaces/IPoolAddressesProvider.sol';
+
 import { ReserveLogic } from "aave-v3-core/contracts/protocol/libraries/logic/ReserveLogic.sol";
 import { Pool }         from "aave-v3-core/contracts/protocol/pool/Pool.sol";
-
-import {IPoolAddressesProvider} from 'aave-v3-core/contracts/interfaces/IPoolAddressesProvider.sol';
 
 contract ReserveLogicWrapper is Pool {
 
