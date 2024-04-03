@@ -13,7 +13,8 @@ remappings = [
     "ds-test/=lib/forge-std/lib/ds-test/src/",
     "erc20-helpers/=lib/erc20-helpers/src/",
     "forge-std/=lib/forge-std/src/",
-    "sparklend-advanced/=lib/sparklend-advanced/src/"
+    "sparklend-advanced/=lib/sparklend-advanced/src/",
+    "sparklend-address-registry/=lib/sparklend-address-registry/src/"
 ]
 
 [fuzz]
