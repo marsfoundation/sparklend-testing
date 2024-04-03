@@ -42,7 +42,8 @@ contract SparkLendTestBase is Test {
     // 3.65 days in seconds - gives clean numbers for testing (1% of APR)
     uint256 constant WARP_TIME = 365 days / 100;
 
-    address admin = makeAddr("admin");
+    address admin    = makeAddr("admin");
+    address treasury = makeAddr("treasury");
 
     AaveOracle            aaveOracle;
     ACLManager            aclManager;
@@ -199,7 +200,7 @@ contract SparkLendTestBase is Test {
             underlyingAssetDecimals:     token.decimals(),
             interestRateStrategyAddress: address(strategy),
             underlyingAsset:             address(token),
-            treasury:                    makeAddr("treasury"),
+            treasury:                    treasury,
             incentivesController:        address(0),
             aTokenName:                  string(string.concat("Spark ",               symbol)),
             aTokenSymbol:                string(string.concat("sp",                   symbol)),
@@ -246,8 +247,7 @@ contract SparkLendTestBase is Test {
         );
     }
 
-    // TODO: More parameters
-    function _setUpNewCollateral() internal returns (address newCollateralAsset) {
+    function _setUpNewReserve() internal returns (address newAsset) {
         IReserveInterestRateStrategy strategy
             = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
                 provider:               poolAddressesProvider,
@@ -257,10 +257,15 @@ contract SparkLendTestBase is Test {
                 variableRateSlope2:     SLOPE2
             }));
 
-        newCollateralAsset = address(new MockERC20("Collateral Asset", "COLL", 18));
+        newAsset = address(new MockERC20("Borrow Asset", "BRRW", 18));
 
-        _initReserve(IERC20(newCollateralAsset), strategy);
-        _setUpMockOracle(newCollateralAsset, int256(1e8));
+        _initReserve(IERC20(newAsset), strategy);
+        _setUpMockOracle(newAsset, int256(1e8));
+    }
+
+    // TODO: More parameters
+    function _setUpNewCollateral() internal returns (address newCollateralAsset) {
+        newCollateralAsset = _setUpNewReserve();
 
         // Set LTV to 1%
         vm.prank(admin);
@@ -326,6 +331,8 @@ contract SparkLendTestBase is Test {
     function _getCompoundedNormalizedInterest(uint256 rate, uint256 timeDelta)
         internal pure returns (uint256 interestRate)
     {
+        if (timeDelta == 0) return 1e27;
+
         // interest = 1 + nx + (n/2)(n-1)x^2 + (n/6)(n-1)(n-2)x^3
         // where n = timeDelta and x = rate / 365 days
 
