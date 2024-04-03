@@ -1,0 +1,62 @@
+pool.borrow()
+├── when amount is zero
+   └── it should revert (boundary)
+├── given not active
+   └── it should revert
+├── given paused
+   └── it should revert
+├── given frozen
+   └── it should revert
+├── given borrowing not enabled
+   └── it should revert
+├── given price oracle sentinel is not zero and borrow is not allowed
+   └── it should revert
+├── when interest rate mode is not stable or variable
+   └── it should revert
+├── when borrowed amount surpasses the borrow cap
+    └── it should revert (boundary)
+├── when user is in isolation mode and asset is not borrowable in isolation mode
+    └── it should revert
+├── when user is in isolation mode and the isolation mode debt ceiling is surpassed
+    └── it should revert (boundary)
+├── when the user's emode category doesn't match the borrow asset's emode category
+    └── it should revert
+├── when the user has no collateral
+    └── it should revert
+├── when the user has no LTV
+    └── it should revert
+├── when existing health factor is below 1
+    └── it should revert
+├── when resulting LTV is below the minimum LTV
+    └── it should revert (boundary)
+├── when user chooses stable borrow and it's not enabled (always for spark)
+    └── it should revert
+├── when user is using siloed borrowing and tries to borrow non siloed asset
+    └── it should revert
+├── when user is NOT using siloed borrowing and tries to borrow siloed asset
+    └── it should revert
+
+├── when it's the user's first borrow
+    └── it should succeed, updating rates and isBorrowing for user [01]
+
+└── when there is an existing borrow
+    ├── when the user doing a regular borrow
+        ├── when no time has passed since the last borrow
+            └── it should succeed, updating rates [02]
+        └── when some time has passed since the last borrow
+            └── it should succeed, updating rates, indexes, and lastUpdated timestamp [03]
+    ├── when the user doing a siloed borrow
+        ├── when no time has passed since the last borrow
+            └── it should succeed, updating rates [04]
+        └── when some time has passed since the last borrow
+            └── it should succeed, updating rates, indexes, and lastUpdated timestamp [05]
+    ├── when the user doing an e-mode borrow
+        ├── when no time has passed since the last borrow
+            └── it should succeed, updating rates [06]
+        └── when some time has passed since the last borrow
+            └── it should succeed, updating rates, indexes, and lastUpdated timestamp [07]
+    └──  when the user is borrowing in isolation mode
+        ├── when no time has passed since the last borrow
+            └── it should succeed, updating rates [08]
+        └── when some time has passed since the last borrow
+            └── it should succeed, updating rates, indexes, and lastUpdated timestamp [09]
