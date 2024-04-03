@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IPool } from "aave-v3-core/contracts/interfaces/IPool.sol";
+import { IPool } from "sparklend-v1-core/contracts/interfaces/IPool.sol";
 
 import { MockERC20 } from "erc20-helpers/MockERC20.sol";
 

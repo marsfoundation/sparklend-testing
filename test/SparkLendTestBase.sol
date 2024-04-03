@@ -5,25 +5,26 @@ import "forge-std/Test.sol";
 
 import { VmSafe } from "forge-std/Vm.sol";
 
-import { AaveOracle }                               from "aave-v3-core/contracts/misc/AaveOracle.sol";
-import { AaveProtocolDataProvider as DataProvider } from "aave-v3-core/contracts/misc/AaveProtocolDataProvider.sol";
+import { AaveOracle }                               from "sparklend-v1-core/contracts/misc/AaveOracle.sol";
+import { AaveProtocolDataProvider as DataProvider } from "sparklend-v1-core/contracts/misc/AaveProtocolDataProvider.sol";
 
-import { ACLManager }                    from "aave-v3-core/contracts/protocol/configuration/ACLManager.sol";
-import { PoolAddressesProvider }         from "aave-v3-core/contracts/protocol/configuration/PoolAddressesProvider.sol";
-import { PoolAddressesProviderRegistry } from "aave-v3-core/contracts/protocol/configuration/PoolAddressesProviderRegistry.sol";
+import { ACLManager }                    from "sparklend-v1-core/contracts/protocol/configuration/ACLManager.sol";
+import { PoolAddressesProvider }         from "sparklend-v1-core/contracts/protocol/configuration/PoolAddressesProvider.sol";
+import { PoolAddressesProviderRegistry } from "sparklend-v1-core/contracts/protocol/configuration/PoolAddressesProviderRegistry.sol";
 
-import { Pool }             from "aave-v3-core/contracts/protocol/pool/Pool.sol";
-import { PoolConfigurator } from "aave-v3-core/contracts/protocol/pool/PoolConfigurator.sol";
+import { Pool }             from "sparklend-v1-core/contracts/protocol/pool/Pool.sol";
+import { PoolConfigurator } from "sparklend-v1-core/contracts/protocol/pool/PoolConfigurator.sol";
 
-import { ConfiguratorInputTypes } from "aave-v3-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
-import { DataTypes }              from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
+import { ConfiguratorInputTypes } from "sparklend-v1-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
+import { DataTypes }              from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
 
-import { AToken }            from "aave-v3-core/contracts/protocol/tokenization/AToken.sol";
-import { StableDebtToken }   from "aave-v3-core/contracts/protocol/tokenization/StableDebtToken.sol";
-import { VariableDebtToken } from "aave-v3-core/contracts/protocol/tokenization/VariableDebtToken.sol";
+import { AToken }            from "sparklend-v1-core/contracts/protocol/tokenization/AToken.sol";
+import { StableDebtToken }   from "sparklend-v1-core/contracts/protocol/tokenization/StableDebtToken.sol";
+import { VariableDebtToken } from "sparklend-v1-core/contracts/protocol/tokenization/VariableDebtToken.sol";
 
-import { IAaveIncentivesController }    from "aave-v3-core/contracts/interfaces/IAaveIncentivesController.sol";
-import { IReserveInterestRateStrategy } from "aave-v3-core/contracts/interfaces/IReserveInterestRateStrategy.sol";
+import { IAaveIncentivesController }    from "sparklend-v1-core/contracts/interfaces/IAaveIncentivesController.sol";
+import { IPoolAddressesProvider }       from "sparklend-v1-core/contracts/interfaces/IPoolAddressesProvider.sol";
+import { IReserveInterestRateStrategy } from "sparklend-v1-core/contracts/interfaces/IReserveInterestRateStrategy.sol";
 
 import { VariableBorrowInterestRateStrategy } from "sparklend-advanced/VariableBorrowInterestRateStrategy.sol";
 

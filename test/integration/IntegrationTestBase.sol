@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { IPool } from "aave-v3-core/contracts/interfaces/IPool.sol";
+import { IPool } from "sparklend-v1-core/contracts/interfaces/IPool.sol";
 
 import "sparklend-address-registry/Ethereum.sol";
 
