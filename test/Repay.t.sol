@@ -93,14 +93,14 @@ contract RepayFailureTests is RepayTestBase {
     }
 
     function test_repay_notEnoughBalanceBoundary() public {
-        borrowAsset.burn(borrower, 1);
+        deal(address(borrowAsset), borrower, 500 ether - 1);
 
         vm.startPrank(borrower);
         borrowAsset.approve(address(pool), 500 ether);
         vm.expectRevert(stdError.arithmeticError);
         pool.repay(address(borrowAsset), 500 ether, 2, borrower);
 
-        borrowAsset.mint(borrower, 1);
+        deal(address(borrowAsset), borrower, 500 ether);
 
         pool.repay(address(borrowAsset), 500 ether, 2, borrower);
     }
