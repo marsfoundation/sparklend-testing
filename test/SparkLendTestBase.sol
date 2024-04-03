@@ -391,6 +391,52 @@ contract SparkLendTestBase is Test {
     }
 
     /**********************************************************************************************/
+    /*** Permit helper functions                                                                ***/
+    /**********************************************************************************************/
+
+    // Returns an ERC-2612 `permit` digest for the `owner` to sign
+    function _getDigest(
+        address token,
+        address owner,
+        address spender,
+        uint256 amount,
+        uint256 nonce,
+        uint256 deadline
+    )
+        internal view returns (bytes32 digest)
+    {
+        return keccak256(
+            abi.encodePacked(
+                '\x19\x01',
+                IERC20(token).DOMAIN_SEPARATOR(),
+                keccak256(abi.encode(
+                    IERC20(token).PERMIT_TYPEHASH(),
+                    owner,
+                    spender,
+                    amount,
+                    nonce,
+                    deadline
+                ))
+            )
+        );
+    }
+
+    // Returns a valid `permit` signature signed by this contract's `owner` address
+    function _getValidPermitSignature(
+        address token,
+        address owner,
+        address spender,
+        uint256 amount,
+        uint256 nonce,
+        uint256 deadline,
+        uint256 ownerSk
+    )
+        internal view returns (uint8 v, bytes32 r, bytes32 s)
+    {
+        return vm.sign(ownerSk, _getDigest(token, owner, spender, amount, nonce, deadline));
+    }
+
+    /**********************************************************************************************/
     /*** Assertion helper functions                                                             ***/
     /**********************************************************************************************/
 
