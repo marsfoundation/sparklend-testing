@@ -30,6 +30,8 @@ import { VariableBorrowInterestRateStrategy } from "sparklend-advanced/VariableB
 import { IERC20 }    from "erc20-helpers/interfaces/IERC20.sol";
 import { MockERC20 } from "erc20-helpers/MockERC20.sol";
 
+import { UserActions } from "src/UserActions.sol";
+
 import { MockOracle } from "test/mocks/MockOracle.sol";
 
 // TODO: Is the deploy a pool admin on mainnet?
@@ -37,7 +39,7 @@ import { MockOracle } from "test/mocks/MockOracle.sol";
 // TODO: Remove unnecessary imports.
 // TODO: In dedicated AToken tests, explore UserState mapping so index can be asserted.
 
-contract SparkLendTestBase is Test {
+contract SparkLendTestBase is UserActions {
 
     // 3.65 days in seconds - gives clean numbers for testing (1% of APR)
     uint256 constant WARP_TIME = 365 days / 100;
@@ -282,38 +284,27 @@ contract SparkLendTestBase is Test {
     /**********************************************************************************************/
 
     function _useAsCollateral(address user, address newCollateralAsset) internal {
-        vm.prank(user);
-        pool.setUserUseReserveAsCollateral(newCollateralAsset, true);
+        _useAsCollateral(address(pool), user, newCollateralAsset);
     }
 
     function _borrow(address user, address asset, uint256 amount) internal {
-        vm.prank(user);
-        pool.borrow(asset, amount, 2, 0, user);
+        _borrow(address(pool), user, asset, amount);
     }
 
     function _supply(address user, address asset, uint256 amount) internal {
-        vm.startPrank(user);
-        MockERC20(asset).mint(user, amount);
-        MockERC20(asset).approve(address(pool), amount);
-        pool.supply(asset, amount, user, 0);
-        vm.stopPrank();
+        _supply(address(pool), user, asset, amount);
     }
 
     function _repay(address user, address asset, uint256 amount) internal {
-        vm.startPrank(user);
-        IERC20(asset).approve(address(pool), amount);
-        pool.repay(asset, amount, 2, user);
-        vm.stopPrank();
+        _repay(address(pool), user, asset, amount);
     }
 
     function _withdraw(address user, address asset, uint256 amount) internal {
-        vm.prank(user);
-        pool.withdraw(asset, amount, user);
+        _withdraw(address(pool), user, asset, amount);
     }
 
     function _supplyAndUseAsCollateral(address user, address asset, uint256 amount) internal {
-        _supply(user, asset, amount);
-        _useAsCollateral(user, asset);
+        _supplyAndUseAsCollateral(address(pool), user, asset, amount);
     }
 
     /**********************************************************************************************/
