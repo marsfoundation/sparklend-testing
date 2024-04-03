@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { DataTypes } from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
+import { DataTypes } from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
 
-import { ReserveConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
-import { UserConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
+import { ReserveConfiguration } from "sparklend-v1-core/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
+import { UserConfiguration } from "sparklend-v1-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
 
-import { Errors } from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
+import { Errors } from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
 import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
 
@@ -97,12 +97,12 @@ contract WithdrawFailureTests is WithdrawTestBase {
     function test_withdraw_amountGtLiquidityBoundary() public {
         vm.startPrank(user);
 
-        collateralAsset.burn(address(aCollateralAsset), 1);
+        deal(address(collateralAsset), address(aCollateralAsset), 1000 ether - 1);
 
         vm.expectRevert(stdError.arithmeticError);
         pool.withdraw(address(collateralAsset), 1000 ether, user);
 
-        collateralAsset.mint(address(aCollateralAsset), 1);
+        deal(address(collateralAsset), address(aCollateralAsset), 1000 ether);
 
         pool.withdraw(address(collateralAsset), 1000 ether, user);
     }
