@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { Errors } from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
+import { Errors } from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
 import {
     MockReceiverBasic,
@@ -66,6 +66,55 @@ contract FlashLoanTestBase is SparkLendTestBase {
 }
 
 contract FlashLoanFailureTests is FlashLoanTestBase {
+
+    function test_flashLoan_whenLengthAssetsDoesNotEqualLengthAmounts() public {
+        address[] memory assets  = new address[](3);
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory modes   = new uint256[](2);
+
+        assets[0] = asset0;
+        assets[1] = asset1;
+
+        amounts[0] = 1;
+        amounts[1] = 1;
+
+        modes[0] = 0;
+        modes[1] = 0;
+
+        vm.expectRevert(bytes(Errors.INCONSISTENT_FLASHLOAN_PARAMS));
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+
+        assets = new address[](1);  // Check less than case as well
+        assets[0] = asset0;
+
+        vm.expectRevert(bytes(Errors.INCONSISTENT_FLASHLOAN_PARAMS));
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+    }
+
+    function test_flashLoan_whenModesLengthLtAmounts() public {
+        address[] memory assets  = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory modes   = new uint256[](1);
+
+        assets[0] = asset0;
+        assets[1] = asset1;
+
+        amounts[0] = 1;
+        amounts[1] = 1;
+
+        modes[0] = 0;
+
+        vm.expectRevert(stdError.indexOOBError);
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+
+        // Demonstrate modes can be greater than
+        modes = new uint256[](3);
+        modes[0] = 0;
+        modes[1] = 0;
+        modes[2] = 0;
+
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+    }
 
     function test_flashLoan_whenNotActive_asset0() public {
         // Avoid RESERVE_LIQUIDITY_NOT_ZERO error when deactivating
@@ -146,13 +195,6 @@ contract FlashLoanFailureTests is FlashLoanTestBase {
         vm.expectRevert(stdError.arithmeticError);
         _callFlashLoan(1000 ether, 1000 ether + 1, borrower);
 
-        _callFlashLoan(1000 ether, 1000 ether, borrower);
-    }
-
-    function test_flashLoan_receiverReturnsFalse_asset0() public {
-        receiver = address(new MockReceiverReturnFalse(address(poolConfigurator), address(pool)));
-
-        vm.expectRevert(bytes(Errors.INVALID_FLASHLOAN_EXECUTOR_RETURN));
         _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 

@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 
 import { IERC20, MockERC20 } from "../SparkLendTestBase.sol";
 
-import { IFlashLoanSimpleReceiver, IPool, IPoolAddressesProvider } from 'aave-v3-core/contracts/flashloan/interfaces/IFlashLoanSimpleReceiver.sol';
+import { IFlashLoanSimpleReceiver, IPool, IPoolAddressesProvider } from 'sparklend-v1-core/contracts/flashloan/interfaces/IFlashLoanSimpleReceiver.sol';
 
 contract MockReceiverSimpleBase is IFlashLoanSimpleReceiver {
 
@@ -65,8 +65,6 @@ contract MockReceiverSimpleReturnFalse is MockReceiverSimpleBase {
     )
         public override returns (bool)
     {
-        IERC20(asset).approve(address(POOL), amount + premium);
-
         return false;
     }
 

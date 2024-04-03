@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import { IERC20, MockERC20 } from "../SparkLendTestBase.sol";
 
-import { IFlashLoanReceiver, IPool, IPoolAddressesProvider } from 'aave-v3-core/contracts/flashloan/interfaces/IFlashLoanReceiver.sol';
+import { IFlashLoanReceiver, IPool, IPoolAddressesProvider } from 'sparklend-v1-core/contracts/flashloan/interfaces/IFlashLoanReceiver.sol';
 
 contract MockReceiverBase is IFlashLoanReceiver {
 

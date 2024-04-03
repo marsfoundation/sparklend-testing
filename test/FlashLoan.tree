@@ -1,13 +1,15 @@
 pool.flashloan()
 ├── given length of assets doesn't match length of amounts
    └── it should revert
-├── given assets[0] paused
-   └── it should revert
-├── given assets[01] paused
+├── given length of modes is less than length of amounts/assets
    └── it should revert
 ├── given assets[0] not active
    └── it should revert
 ├── given assets[1] not active
+   └── it should revert
+├── given assets[0] paused
+   └── it should revert
+├── given assets[1] paused
    └── it should revert
 ├── given assets[0] frozen
    └── it should succeed
