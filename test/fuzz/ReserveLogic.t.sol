@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
+import { BaseImmutableAdminUpgradeabilityProxy } from "sparklend-v1-core/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol";
+
 import { SparkLendTestBase } from "test/SparkLendTestBase.sol";
 
 import { ReserveLogicWrapper } from "test/fuzz/wrappers/ReserveLogicWrapper.sol";
@@ -18,11 +20,14 @@ contract ReserveLogicTests is SparkLendTestBase {
 
         _supply(makeAddr("borrower"), address(borrowAsset), 100 ether);
 
-        address wrapperDeployment = address(new ReserveLogicWrapper(poolAddressesProvider));
+        ReserveLogicWrapper wrapperImpl = new ReserveLogicWrapper(poolAddressesProvider);
+        wrapperImpl.initialize(poolAddressesProvider);
 
-        vm.etch(address(pool), wrapperDeployment.code);
+        // Upgrade the Pool to use the ReserveLogicWrapper as an implementation
+        vm.prank(admin);
+        poolAddressesProvider.setPoolImpl(address(wrapperImpl));
 
-        // Get wrapper interface at pool address after etching
+        // Use the ReserveLogicWrapper interface at the pool address
         wrapper = ReserveLogicWrapper(address(pool));
     }
 
@@ -83,7 +88,7 @@ contract ReserveLogicTests is SparkLendTestBase {
     {
         for (uint256 i; i < 25; ++i) {
             totalLiquidity = _bound(_random(totalLiquidity, i), 1, 1e27);
-            amount         = _bound(_random(totalLiquidity, i), 1, totalLiquidity / 10);  // Max of 10% growth
+            amount         = _bound(_random(amount,         i), 1, totalLiquidity / 10);  // Max of 10% growth
 
             wrapper.cumulateToLiquidityIndex(address(borrowAsset), totalLiquidity, amount);
 
@@ -108,7 +113,7 @@ contract ReserveLogicTests is SparkLendTestBase {
     /**********************************************************************************************/
 
     function _getLiquidityIndex() internal view returns (uint256) {
-        return wrapper.getReserveData(address(borrowAsset)).liquidityIndex;
+        return pool.getReserveData(address(borrowAsset)).liquidityIndex;
     }
 
     function _random(uint256 startingValue, uint256 salt) internal pure returns (uint256) {
