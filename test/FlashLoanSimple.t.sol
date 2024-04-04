@@ -3,17 +3,17 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { Errors } from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
+import { Errors } from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
 import {
-    MockReceiverBasic,
-    MockReceiverReturnFalse,
-    MockReceiverInsufficientApprove,
-    MockReceiverInsufficientBalance,
-    MockReceiverMintPremium
-} from "test/mocks/MockReceiver.sol";
+    MockReceiverSimpleBasic,
+    MockReceiverSimpleReturnFalse,
+    MockReceiverSimpleInsufficientApprove,
+    MockReceiverSimpleInsufficientBalance,
+    MockReceiverSimpleMintPremium
+} from "test/mocks/MockReceiverSimple.sol";
 
-import { SparkLendTestBase } from "./SparkLendTestBase.sol";
+import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
 
 contract FlashLoanSimpleTestBase is SparkLendTestBase {
 
@@ -25,7 +25,7 @@ contract FlashLoanSimpleTestBase is SparkLendTestBase {
     function setUp() public virtual override {
         super.setUp();
 
-        receiver = address(new MockReceiverBasic(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverSimpleBasic(address(poolConfigurator), address(pool)));
 
         // Set up necessary conditions for success
         _supply(supplier, address(borrowAsset), 1000 ether);
@@ -80,30 +80,30 @@ contract FlashLoanSimpleFailureTests is FlashLoanSimpleTestBase {
     }
 
     function test_flashLoanSimple_receiverReturnsFalse() public {
-        receiver = address(new MockReceiverReturnFalse(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverSimpleReturnFalse(address(poolConfigurator), address(pool)));
 
         vm.expectRevert(bytes(Errors.INVALID_FLASHLOAN_EXECUTOR_RETURN));
         pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
     }
 
     function test_flashLoanSimple_receiverInsufficientApprovalBoundary() public {
-        receiver = address(new MockReceiverInsufficientApprove(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverSimpleInsufficientApprove(address(poolConfigurator), address(pool)));
 
         vm.expectRevert(stdError.arithmeticError);
         pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
 
-        receiver = address(new MockReceiverBasic(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverSimpleBasic(address(poolConfigurator), address(pool)));
 
         pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
     }
 
     function test_flashLoanSimple_receiverInsufficientBalanceBoundary() public {
-        receiver = address(new MockReceiverInsufficientBalance(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverSimpleInsufficientBalance(address(poolConfigurator), address(pool)));
 
         vm.expectRevert(stdError.arithmeticError);
         pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
 
-        receiver = address(new MockReceiverBasic(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverSimpleBasic(address(poolConfigurator), address(pool)));
 
         pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
     }
@@ -118,7 +118,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         super.setUp();
 
         // Mint the premium to allow for successful flashloans with premiums
-        receiver = address(new MockReceiverMintPremium(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverSimpleMintPremium(address(poolConfigurator), address(pool)));
 
         _initCollateral({
             asset:                address(collateralAsset),
