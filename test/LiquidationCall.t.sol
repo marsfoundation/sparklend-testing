@@ -341,20 +341,21 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
 
         _;
 
-        // // If the user gets half liquidated, they get fully half liquidated
-        // // If the user gets fully liquidated, they get fully liquidated as long as
-        // // they are overcollateralized
-        // if (healthFactor > 0.95e18) {
-        //     assertApproxEqAbs(IERC20(debtToken).balanceOf(borrower), debt - availableDebt, 2);
+        // If the user gets half liquidated, they get fully half liquidated
+        // If the user gets fully liquidated, they get fully liquidated as long as
+        // they are overcollateralized
+        if (healthFactor > 0.95e18) {
+            assertApproxEqAbs(IERC20(debtToken).balanceOf(borrower), debt - availableDebt, 2);
 
-        //     assertGt(collateralAsset.balanceOf(liquidator), availableDebt);  // Receives bonus
-        // } else if (pool.getUserConfiguration(borrower).isUsingAsCollateral(collateralAssetId)) {
-        //     assertEq(IERC20(debtToken).balanceOf(borrower), 0);
-        //     assertGt(collateralAsset.balanceOf(liquidator), debt);  // Receives bonus
-        // } else {
-        //     assertGt(IERC20(debtToken).balanceOf(borrower), 0);
-        //     assertGt(collateralAsset.balanceOf(liquidator), 0);
-        // }
+            assertGt(collateralAsset.balanceOf(liquidator), availableDebt);  // Receives bonus
+        } else if (pool.getUserConfiguration(borrower).isUsingAsCollateral(collateralAssetId)) {
+            assertEq(IERC20(debtToken).balanceOf(borrower), 0);
+            assertGt(collateralAsset.balanceOf(liquidator), debt);  // Receives bonus
+        } else {
+            assertGt(IERC20(debtToken).balanceOf(borrower), 0);
+            assertGt(collateralAsset.balanceOf(liquidator), 0);
+            assertEq(aCollateralAsset.balanceOf(borrower),  0);
+        }
     }
 
     modifier whenAmountLtAvailableDebt {
