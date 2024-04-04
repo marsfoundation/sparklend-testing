@@ -1233,10 +1233,15 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
     }
 
     /**********************************************************************************************/
-    /*** Edge Case Tests                                                                        ***/
+    /*** Dedicated Tests                                                                        ***/
     /**********************************************************************************************/
 
-    function test_liquidationCall_edgeCase_01_badDebtAfterHalfLiquidation() public {
+    // NOTE: These tests cover a situation where the user's health factor is above the
+    //       CLOSE_FACTOR_HF_THRESHOLD (uses DEFAULT_LIQUIDATION_CLOSE_FACTOR) but still introduces
+    //       a bad debt scenario. This was not included in the BTT tests as it requires a specific
+    //       setup that didn't work with the use of existing modifiers.
+
+    function test_liquidationCall_edgeCase_01() public {
         Params memory params;
 
         vm.prank(admin);
@@ -1284,10 +1289,96 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         // Half of debt is liquidated when HF is above close factor threshold (0.95)
         assertApproxEqAbs(params.remainingDebt, params.borrowerDebt / 2, 1);
 
+        // Starting position (bad debt)
+        assertEq(aCollateralAsset.balanceOf(borrower),  1000 ether);
+        assertEq(IERC20(debtToken).balanceOf(borrower), 1051.885913862788141804 ether);
+
+        assertEq(
+            IERC20(debtToken).balanceOf(borrower) - aCollateralAsset.balanceOf(borrower),
+            51.885913862788141804 ether
+        );
+
         _runLiquidationTest(params);
 
+        // Resulting position (same bad debt)
         assertEq(aCollateralAsset.balanceOf(borrower),  474.004448772912789691 ether);
         assertEq(IERC20(debtToken).balanceOf(borrower), 525.942956931394070902 ether);
+
+        // Bad debt amount increases slightly because of liquidation bonus
+        assertEq(
+            IERC20(debtToken).balanceOf(borrower) - aCollateralAsset.balanceOf(borrower),
+            51.938508158481281211 ether
+        );
+    }
+
+    function test_liquidationCall_edgeCase_02() public {
+        Params memory params;
+
+        vm.prank(admin);
+        poolConfigurator.configureReserveAsCollateral(address(collateralAsset), 99_99, 99_99, 100_01);
+
+        _supply(lender, address(borrowAsset), 499.9 ether);  // Add more funds to pool to still have max utilization
+
+        // Borrow highest possible balance
+        _borrow(borrower, address(borrowAsset), 499.9 ether);
+
+        ( ,,,,, uint256 healthFactor ) = pool.getUserAccountData(borrower);
+
+        assertEq(healthFactor, 1e18);  // Borrowed highest possible amount
+
+        skip(50 days);
+
+        ( ,,,,, healthFactor ) = pool.getUserAccountData(borrower);
+
+        assertEq(healthFactor, 0.950578372449886207e18);  // Warp to get close to 95% threshold
+
+        params.startingCollateral = 1000 ether;
+        params.startingBorrow     = 999.9 ether;
+
+        params.liquidationAmount = 500 ether;
+        params.receiveAToken     = false;
+
+        params.borrowerDebt         = 1051.885913862788141804 ether;
+        params.debtLiquidated       = 500 ether;  // Liquidate half
+        params.collateralLiquidated = 500.05 ether;  // 0.01% liquidation bonus
+        params.remainingDebt        = 551.885913862788141804 ether;
+        params.healthFactor         = 0.901156754900857001e18;  // User has a worse position because of liquidation bonus
+
+        params.liquidityIndex         = 1.050684931506849315068493150e27;
+        params.borrowIndex            = 1.051991112974085550358973150e27;  // Smaller difference because compounded over a shorter period
+        params.resultingBorrowRate    = 0.0625e27;
+        params.resultingLiquidityRate = 0.03125e27;
+        params.updateTimestamp        = 1 + 50 days;
+
+        params.isBorrowing         = true;
+        params.isUsingAsCollateral = true;
+
+        // 1% liquidation bonus goes to the liquidator (rounding)
+        assertApproxEqAbs(params.collateralLiquidated, params.debtLiquidated * 100_01/100_00, 1);
+
+        // Half of debt is liquidated when HF is above close factor threshold (0.95)
+        assertApproxEqAbs(params.remainingDebt, params.borrowerDebt / 2, 1);
+
+        // Starting position (bad debt)
+        assertEq(aCollateralAsset.balanceOf(borrower),  1000 ether);
+        assertEq(IERC20(debtToken).balanceOf(borrower), 1051.885913862788141804 ether);
+
+        assertEq(
+            IERC20(debtToken).balanceOf(borrower) - aCollateralAsset.balanceOf(borrower),
+            51.885913862788141804 ether
+        );
+
+        _runLiquidationTest(params);
+
+        // Resulting position (same bad debt)
+        assertEq(aCollateralAsset.balanceOf(borrower),  474.004448772912789691 ether);
+        assertEq(IERC20(debtToken).balanceOf(borrower), 525.942956931394070902 ether);
+
+        // Bad debt amount increases slightly because of liquidation bonus
+        assertEq(
+            IERC20(debtToken).balanceOf(borrower) - aCollateralAsset.balanceOf(borrower),
+            51.938508158481281211 ether
+        );
     }
 
     /**********************************************************************************************/
