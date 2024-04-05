@@ -303,10 +303,10 @@ contract RepayConcreteTests is RepayTestBase {
     /**********************************************************************************************/
 
     function _repayMoreThanDebtNoTimePassedTest() internal {
-        vm.startPrank(borrower);
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether + 1);
+
         borrowAsset.mint(borrower, 1);
-        vm.stopPrank();
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
@@ -472,10 +472,10 @@ contract RepayConcreteTests is RepayTestBase {
 
         uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27 + 1;  // Rounding
 
-        vm.startPrank(borrower);
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether + borrowerDebt + 1);
+
         borrowAsset.mint(borrower, borrowerDebt + 1);
-        vm.stopPrank();
 
         // Borrower owes slightly more than lender has earned because of compounded interest
         assertEq(supplierYield,                1.85 ether);  // 500 * 0.37 * 1%
@@ -551,10 +551,10 @@ contract RepayConcreteTests is RepayTestBase {
 
         uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27 + 1;  // Rounding
 
-        vm.startPrank(borrower);
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether + borrowerDebt);
+
         borrowAsset.mint(borrower, borrowerDebt);
-        vm.stopPrank();
 
         // Borrower owes slightly more than lender has earned because of compounded interest
         assertEq(supplierYield,                1.85 ether);  // 500 * 0.37 * 1%
@@ -630,10 +630,10 @@ contract RepayConcreteTests is RepayTestBase {
 
         uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27 + 1;  // Rounding
 
-        vm.startPrank(borrower);
+        vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether + borrowerDebt - 1);
+
         borrowAsset.mint(borrower, borrowerDebt - 1);
-        vm.stopPrank();
 
         // Borrower owes slightly more than lender has earned because of compounded interest
         assertEq(supplierYield,                1.85 ether);  // 500 * 0.37 * 1%
@@ -696,6 +696,5 @@ contract RepayConcreteTests is RepayTestBase {
         _assertDebtTokenState(debtTokenParams);
         _assertAssetState(assetParams);
     }
-
 
 }
