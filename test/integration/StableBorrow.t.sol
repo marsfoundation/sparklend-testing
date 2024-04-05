@@ -115,13 +115,6 @@ contract StableBorrowTests is IntegrationTestBase {
     }
 
     function test_rebalanceStableBorrowRateAfterIrmChangeBoundary() public {
-        // TODO: Remove
-        _etchLibrary(Ethereum.BORROW_LOGIC);
-
-        address stableDebtToken = deployCode("StableDebtToken.sol:StableDebtToken", bytes(abi.encode(address(pool))));
-        // address deployedBorrowLogic = 0x4662C88C542F0954F8CccCDE4542eEc32d7E7e9a;
-        vm.etch(Ethereum.DAI_STABLE_DEBT_TOKEN, stableDebtToken.code);
-
         // Set the supply cap to be higher so the borrower can post enough ETH to borrow all the DAI
         vm.prank(Ethereum.SPARK_PROXY);
         poolConfigurator.setSupplyCap(Ethereum.WETH, 10_000_000);
