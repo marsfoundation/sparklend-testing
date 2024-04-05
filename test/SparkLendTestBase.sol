@@ -5,25 +5,26 @@ import "forge-std/Test.sol";
 
 import { VmSafe } from "forge-std/Vm.sol";
 
-import { AaveOracle }                               from "aave-v3-core/contracts/misc/AaveOracle.sol";
-import { AaveProtocolDataProvider as DataProvider } from "aave-v3-core/contracts/misc/AaveProtocolDataProvider.sol";
+import { AaveOracle }                               from "sparklend-v1-core/contracts/misc/AaveOracle.sol";
+import { AaveProtocolDataProvider as DataProvider } from "sparklend-v1-core/contracts/misc/AaveProtocolDataProvider.sol";
 
-import { ACLManager }                    from "aave-v3-core/contracts/protocol/configuration/ACLManager.sol";
-import { PoolAddressesProvider }         from "aave-v3-core/contracts/protocol/configuration/PoolAddressesProvider.sol";
-import { PoolAddressesProviderRegistry } from "aave-v3-core/contracts/protocol/configuration/PoolAddressesProviderRegistry.sol";
+import { ACLManager }                    from "sparklend-v1-core/contracts/protocol/configuration/ACLManager.sol";
+import { PoolAddressesProvider }         from "sparklend-v1-core/contracts/protocol/configuration/PoolAddressesProvider.sol";
+import { PoolAddressesProviderRegistry } from "sparklend-v1-core/contracts/protocol/configuration/PoolAddressesProviderRegistry.sol";
 
-import { Pool }             from "aave-v3-core/contracts/protocol/pool/Pool.sol";
-import { PoolConfigurator } from "aave-v3-core/contracts/protocol/pool/PoolConfigurator.sol";
+import { Pool }             from "sparklend-v1-core/contracts/protocol/pool/Pool.sol";
+import { PoolConfigurator } from "sparklend-v1-core/contracts/protocol/pool/PoolConfigurator.sol";
 
-import { ConfiguratorInputTypes } from "aave-v3-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
-import { DataTypes }              from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
+import { ConfiguratorInputTypes } from "sparklend-v1-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
+import { DataTypes }              from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
 
-import { AToken }            from "aave-v3-core/contracts/protocol/tokenization/AToken.sol";
-import { StableDebtToken }   from "aave-v3-core/contracts/protocol/tokenization/StableDebtToken.sol";
-import { VariableDebtToken } from "aave-v3-core/contracts/protocol/tokenization/VariableDebtToken.sol";
+import { AToken }            from "sparklend-v1-core/contracts/protocol/tokenization/AToken.sol";
+import { StableDebtToken }   from "sparklend-v1-core/contracts/protocol/tokenization/StableDebtToken.sol";
+import { VariableDebtToken } from "sparklend-v1-core/contracts/protocol/tokenization/VariableDebtToken.sol";
 
-import { IAaveIncentivesController }    from "aave-v3-core/contracts/interfaces/IAaveIncentivesController.sol";
-import { IReserveInterestRateStrategy } from "aave-v3-core/contracts/interfaces/IReserveInterestRateStrategy.sol";
+import { IAaveIncentivesController }    from "sparklend-v1-core/contracts/interfaces/IAaveIncentivesController.sol";
+import { IPoolAddressesProvider }       from "sparklend-v1-core/contracts/interfaces/IPoolAddressesProvider.sol";
+import { IReserveInterestRateStrategy } from "sparklend-v1-core/contracts/interfaces/IReserveInterestRateStrategy.sol";
 
 import { VariableBorrowInterestRateStrategy } from "sparklend-advanced/VariableBorrowInterestRateStrategy.sol";
 
@@ -251,13 +252,13 @@ contract SparkLendTestBase is UserActions {
 
     function _setUpNewReserve() internal returns (address newAsset) {
         IReserveInterestRateStrategy strategy
-            = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
+            = IReserveInterestRateStrategy(address(new VariableBorrowInterestRateStrategy({
                 provider:               poolAddressesProvider,
                 optimalUsageRatio:      OPTIMAL_RATIO,
                 baseVariableBorrowRate: BASE_RATE,
                 variableRateSlope1:     SLOPE1,
                 variableRateSlope2:     SLOPE2
-            }));
+            })));
 
         newAsset = address(new MockERC20("Borrow Asset", "BRRW", 18));
 
@@ -266,12 +267,23 @@ contract SparkLendTestBase is UserActions {
     }
 
     // TODO: More parameters
-    function _setUpNewCollateral() internal returns (address newCollateralAsset) {
+    function _setUpNewCollateral(
+        uint256 ltv,
+        uint256 liquidationThreshold,
+        uint256 liquidationBonus
+    )
+        internal returns (address newCollateralAsset)
+    {
         newCollateralAsset = _setUpNewReserve();
 
-        // Set LTV to 1%
         vm.prank(admin);
-        poolConfigurator.configureReserveAsCollateral(newCollateralAsset, 100, 100, 100_01);
+        poolConfigurator.configureReserveAsCollateral(
+            newCollateralAsset, ltv, liquidationThreshold, liquidationBonus
+        );
+    }
+
+    function _setUpNewCollateral() internal returns (address newCollateralAsset) {
+        newCollateralAsset = _setUpNewCollateral(100, 100, 100_01);  // Set up with 1% LTV
     }
 
     function _setCollateralDebtCeiling(address asset, uint256 ceiling) internal {
@@ -379,6 +391,52 @@ contract SparkLendTestBase is UserActions {
             slope2:       SLOPE2,
             optimalRatio: OPTIMAL_RATIO
         });
+    }
+
+    /**********************************************************************************************/
+    /*** Permit helper functions                                                                ***/
+    /**********************************************************************************************/
+
+    // Returns an ERC-2612 `permit` digest for the `owner` to sign
+    function _getDigest(
+        address token,
+        address owner,
+        address spender,
+        uint256 amount,
+        uint256 nonce,
+        uint256 deadline
+    )
+        internal view returns (bytes32 digest)
+    {
+        return keccak256(
+            abi.encodePacked(
+                '\x19\x01',
+                IERC20(token).DOMAIN_SEPARATOR(),
+                keccak256(abi.encode(
+                    IERC20(token).PERMIT_TYPEHASH(),
+                    owner,
+                    spender,
+                    amount,
+                    nonce,
+                    deadline
+                ))
+            )
+        );
+    }
+
+    // Returns a valid `permit` signature signed by this contract's `owner` address
+    function _getValidPermitSignature(
+        address token,
+        address owner,
+        address spender,
+        uint256 amount,
+        uint256 nonce,
+        uint256 deadline,
+        uint256 ownerSk
+    )
+        internal view returns (uint8 v, bytes32 r, bytes32 s)
+    {
+        return vm.sign(ownerSk, _getDigest(token, owner, spender, amount, nonce, deadline));
     }
 
     /**********************************************************************************************/

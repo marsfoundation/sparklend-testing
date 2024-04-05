@@ -4,15 +4,15 @@
 [submodule "lib/sparklend-advanced"]
 	path = lib/sparklend-advanced
 	url = https://github.com/marsfoundation/sparklend-advanced
-[submodule "lib/aave-v3-periphery"]
-	path = lib/aave-v3-periphery
-	url = https://github.com/aave/aave-v3-periphery
-[submodule "lib/aave-v3-core"]
-	path = lib/aave-v3-core
-	url = git@github.com:marsfoundation/aave-v3-core.git
 [submodule "lib/erc20-helpers"]
 	path = lib/erc20-helpers
 	url = https://github.com/marsfoundation/erc20-helpers
+<<<<<<< HEAD
+=======
+[submodule "lib/sparklend-v1-core"]
+	path = lib/sparklend-v1-core
+	url = https://github.com/marsfoundation/sparklend-v1-core
+>>>>>>> master
 [submodule "lib/sparklend-address-registry"]
 	path = lib/sparklend-address-registry
 	url = https://github.com/marsfoundation/sparklend-address-registry

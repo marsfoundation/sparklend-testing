@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IPoolAddressesProvider } from "aave-v3-core/contracts/interfaces/IPoolAddressesProvider.sol";
+import { IPoolAddressesProvider } from "sparklend-v1-core/contracts/interfaces/IPoolAddressesProvider.sol";
 
-import { ReserveConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
+import { ReserveConfiguration } from "sparklend-v1-core/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
 
-import { DataTypes } from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
-import { Errors }    from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
+import { DataTypes } from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
+import { Errors }    from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
 import { VariableBorrowInterestRateStrategy } from "sparklend-advanced/VariableBorrowInterestRateStrategy.sol";
 
@@ -131,7 +131,7 @@ contract StableBorrowTests is IntegrationTestBase {
 
         _borrow(borrower, Ethereum.DAI, 100);
 
-        _etchLibrary(Ethereum.BORROW_LOGIC, "BorrowLogic");
+        _etchLibrary(Ethereum.BORROW_LOGIC);
 
         // address borrowLogic = deployCode("BorrowLogic.sol:BorrowLogic", bytes(""));
         // address deployedBorrowLogic = 0x4662C88C542F0954F8CccCDE4542eEc32d7E7e9a;

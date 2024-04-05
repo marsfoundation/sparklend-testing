@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { IPool }             from "aave-v3-core/contracts/interfaces/IPool.sol";
-import { IPoolConfigurator } from "aave-v3-core/contracts/interfaces/IPoolConfigurator.sol";
+import { IPool }             from "sparklend-v1-core/contracts/interfaces/IPool.sol";
+import { IPoolConfigurator } from "sparklend-v1-core/contracts/interfaces/IPoolConfigurator.sol";
 
-import "sparklend-address-registry/Ethereum.sol";
+import { Ethereum } from "sparklend-address-registry/Ethereum.sol";
 
 import { UserActions } from "src/UserActions.sol";
 
@@ -54,12 +54,15 @@ contract IntegrationTestBase is UserActions {
     function _etchLibrary(address deployedLib) internal {
         string memory libName;
 
-        if (deployedLib == Ethereum.BORROWLOGIC) libName = "BorrowLogic";
-        else if (deployedLib == Ethereum.BRIDGE_LOGIC) libName = "LiquidationLogic";
-        else if (deployedLib == Ethereum.EMODE_LOGIC) libName = "RepaymentLogic";
-        else if (deployedLib == Ethereum.SUPPLYLOGIC) libName = "SupplyLogic";
-        else if (deployedLib == Ethereum.WITHDRAWALLOGIC) libName = "WithdrawalLogic";
+        if      (deployedLib == Ethereum.BORROW_LOGIC)      libName = "BorrowLogic";
+        else if (deployedLib == Ethereum.BRIDGE_LOGIC)      libName = "BridgeLogic";
+        else if (deployedLib == Ethereum.EMODE_LOGIC)       libName = "EmodeLogic";
+        else if (deployedLib == Ethereum.FLASH_LOAN_LOGIC)  libName = "FlashLoanLogic";
+        else if (deployedLib == Ethereum.LIQUIDATION_LOGIC) libName = "LiquidationLogic";
+        else if (deployedLib == Ethereum.POOL_LOGIC)        libName = "PoolLogic";
+        else if (deployedLib == Ethereum.SUPPLY_LOGIC)      libName = "SupplyLogic";
         else revert("Unknown library");
+
         string memory path = string(abi.encodePacked(libName, ".sol:", libName));
         address debuggingLib = deployCode(path, bytes(""));
         vm.etch(deployedLib, debuggingLib.code);

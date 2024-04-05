@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { UserConfiguration } from "aave-v3-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
-import { Errors }            from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
-import { DataTypes }         from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
+import { UserConfiguration } from "sparklend-v1-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
+import { Errors }            from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
+import { DataTypes }         from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
 
 import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
 
@@ -23,13 +23,25 @@ contract SupplyTestBase is SparkLendTestBase {
         vm.label(supplier, "supplier");
     }
 
+    function _callSupply(
+        address asset,
+        uint256 amount,
+        address onBehalfOf,
+        uint16 referralCode
+    )
+        internal virtual
+    {
+        vm.prank(supplier);
+        pool.supply(asset, amount, onBehalfOf, referralCode);
+    }
+
 }
 
 contract SupplyFailureTests is SupplyTestBase {
 
-    function test_supply_whenAmountZero() public {
+    function test_supply_whenAmountZero() public virtual {
         vm.expectRevert(bytes(Errors.INVALID_AMOUNT));
-        pool.supply(address(collateralAsset), 0, supplier, 0);
+        _callSupply(address(collateralAsset), 0, supplier, 0);
     }
 
     function test_supply_whenNotActive() public {
@@ -37,7 +49,7 @@ contract SupplyFailureTests is SupplyTestBase {
         poolConfigurator.setReserveActive(address(collateralAsset), false);
 
         vm.expectRevert(bytes(Errors.RESERVE_INACTIVE));
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
     function test_supply_whenPaused() public {
@@ -45,7 +57,7 @@ contract SupplyFailureTests is SupplyTestBase {
         poolConfigurator.setReservePause(address(collateralAsset), true);
 
         vm.expectRevert(bytes(Errors.RESERVE_PAUSED));
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
     function test_supply_whenFrozen() public {
@@ -53,55 +65,56 @@ contract SupplyFailureTests is SupplyTestBase {
         poolConfigurator.setReserveFreeze(address(collateralAsset), true);
 
         vm.expectRevert(bytes(Errors.RESERVE_FROZEN));
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_amountOverSupplyCapBoundary() public {
+    function test_supply_amountOverSupplyCapBoundary() public virtual {
         vm.prank(admin);
         poolConfigurator.setSupplyCap(address(collateralAsset), 1000);
 
         // Mint enough funds for the 1000 ether supply to succeed
         collateralAsset.mint(supplier, 1000 ether);
 
-        vm.startPrank(supplier);
-
+        vm.prank(supplier);
         collateralAsset.approve(address(pool), 1000 ether);
 
         // Boundary is 1 wei, not 1 ether even though supply cap is
         // using units without decimals.
         vm.expectRevert(bytes(Errors.SUPPLY_CAP_EXCEEDED));
-        pool.supply(address(collateralAsset), 1000 ether + 1, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether + 1, supplier, 0);
 
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_insufficientApproveBoundary() public {
+    function test_supply_insufficientApproveBoundary() public virtual {
         collateralAsset.mint(supplier, 1000 ether);
 
-        vm.startPrank(supplier);
-
+        vm.prank(supplier);
         collateralAsset.approve(address(pool), 1000 ether - 1);
 
         vm.expectRevert(stdError.arithmeticError);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
 
+        vm.prank(supplier);
         collateralAsset.approve(address(pool), 1000 ether);
 
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
-    function test_supply_insufficientBalanceBoundary() public {
+    function test_supply_insufficientBalanceBoundary() public virtual {
         vm.startPrank(supplier);
 
         collateralAsset.approve(address(pool), 1000 ether);
         collateralAsset.mint(supplier, 1000 ether - 1);
 
+        vm.stopPrank();
+
         vm.expectRevert(stdError.arithmeticError);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
 
         collateralAsset.mint(supplier, 1);
 
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
     }
 
     function test_supply_aTokenMintNotCalledByPool() public {
@@ -109,7 +122,7 @@ contract SupplyFailureTests is SupplyTestBase {
         aCollateralAsset.mint(address(this), address(this), 1000 ether, 1e18);
     }
 
-    function test_supply_aTokenMintScaledInvalidAmount() public {
+    function test_supply_aTokenMintScaledInvalidAmount() public virtual {
         _initCollateral({
             asset:                address(borrowAsset),
             ltv:                  50_00,
@@ -134,8 +147,10 @@ contract SupplyFailureTests is SupplyTestBase {
         collateralAsset.approve(address(pool), 1);
         collateralAsset.mint(supplier, 1);
 
+        vm.stopPrank();
+
         vm.expectRevert(bytes(Errors.INVALID_MINT_AMOUNT));
-        pool.supply(address(collateralAsset), 1, supplier, 0);
+        _callSupply(address(collateralAsset), 1, supplier, 0);
     }
 
 }
@@ -152,7 +167,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
     address borrower = makeAddr("borrower");
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
 
         collateralAsset.mint(supplier, 1000 ether);
@@ -459,8 +474,7 @@ contract SupplyConcreteTests is SupplyTestBase {
             "isUsingAsCollateral"
         );
 
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
 
         aTokenParams.userBalance = 1000 ether;
         aTokenParams.totalSupply = 1500 ether;
@@ -486,6 +500,10 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenActiveBorrow
         givenNoTimeHasPassedAfterBorrow
     {
+        // Overwrite approve for cleaner numbers
+        vm.prank(supplier);
+        collateralAsset.approve(address(pool), 750 ether);
+
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
@@ -513,7 +531,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
             asset:         address(collateralAsset),
-            allowance:     1000 ether,
+            allowance:     750 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
         });
@@ -531,8 +549,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         );
 
         // Approving 750 instead of 1000 to get cleaner numbers
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 750 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 750 ether, supplier, 0);
 
         ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether, 1250 ether);
 
@@ -546,7 +563,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether;
 
-        assetParams.allowance     = 250 ether;   // Remaining from 1000
+        assetParams.allowance     = 0;
         assetParams.userBalance   = 250 ether;   // Remaining from 1000
         assetParams.aTokenBalance = 1150 ether;  // 100 borrowed
 
@@ -567,6 +584,10 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenActiveBorrow
         givenSomeTimeHasPassedAfterBorrow
     {
+        // Overwrite approve for cleaner numbers
+        vm.prank(supplier);
+        collateralAsset.approve(address(pool), 750 ether);
+
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
@@ -605,7 +626,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
             asset:         address(collateralAsset),
-            allowance:     1000 ether,
+            allowance:     750 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
         });
@@ -623,8 +644,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         );
 
         // Approving 750 instead of 1000 to get cleaner numbers
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 750 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 750 ether, supplier, 0);
 
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
@@ -651,7 +671,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether + supplierYield;
 
-        assetParams.allowance     = 250 ether;  // Remaining from 1000
+        assetParams.allowance     = 0;
         assetParams.userBalance   = 250 ether;  // Remaining from 1000
         assetParams.aTokenBalance = 1150 ether; // 100 borrowed
 
@@ -710,8 +730,7 @@ contract SupplyConcreteTests is SupplyTestBase {
             "isUsingAsCollateral"
         );
 
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
 
         poolParams.lastUpdateTimestamp = WARP_TIME + 1;
 
@@ -739,6 +758,10 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenActiveBorrow
         givenNoTimeHasPassedAfterBorrow
     {
+        // Overwrite approve for cleaner numbers
+        vm.prank(supplier);
+        collateralAsset.approve(address(pool), 750 ether);
+
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
@@ -766,7 +789,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
             asset:         address(collateralAsset),
-            allowance:     1000 ether,
+            allowance:     750 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
         });
@@ -784,8 +807,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         );
 
         // Approving 750 instead of 1000 to get cleaner numbers
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 750 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 750 ether, supplier, 0);
 
         ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether, 1250 ether);
 
@@ -799,7 +821,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether;
 
-        assetParams.allowance     = 250 ether;   // Remaining from 1000
+        assetParams.allowance     = 0;
         assetParams.userBalance   = 250 ether;   // Remaining from 1000
         assetParams.aTokenBalance = 1150 ether;  // 100 borrowed
 
@@ -820,6 +842,10 @@ contract SupplyConcreteTests is SupplyTestBase {
         givenActiveBorrow
         givenSomeTimeHasPassedAfterBorrow
     {
+        // Overwrite approve for cleaner numbers
+        vm.prank(supplier);
+        collateralAsset.approve(address(pool), 750 ether);
+
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
@@ -858,7 +884,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         AssertAssetStateParams memory assetParams = AssertAssetStateParams({
             user:          supplier,
             asset:         address(collateralAsset),
-            allowance:     1000 ether,
+            allowance:     750 ether,
             userBalance:   1000 ether,
             aTokenBalance: 400 ether  // 100 borrowed
         });
@@ -876,8 +902,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         );
 
         // Approving 750 instead of 1000 to get cleaner numbers
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 750 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 750 ether, supplier, 0);
 
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
@@ -904,7 +929,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether + supplierYield;
 
-        assetParams.allowance     = 250 ether;  // Remaining from 1000
+        assetParams.allowance     = 0;
         assetParams.userBalance   = 250 ether;  // Remaining from 1000
         assetParams.aTokenBalance = 1150 ether; // 100 borrowed
 
@@ -957,8 +982,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         assertEq(block.timestamp, 1);
 
-        vm.prank(supplier);
-        pool.supply(address(collateralAsset), 1000 ether, supplier, 0);
+        _callSupply(address(collateralAsset), 1000 ether, supplier, 0);
 
         aTokenParams.userBalance = 1000 ether;
         aTokenParams.totalSupply = 1500 ether;
