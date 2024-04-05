@@ -1,0 +1,80 @@
+pool.flashloan()
+├── given length of assets doesn't match length of amounts
+   └── it should revert
+├── given length of modes is less than length of amounts/assets
+   └── it should revert
+├── given assets[0] not active
+   └── it should revert
+├── given assets[1] not active
+   └── it should revert
+├── given assets[0] paused
+   └── it should revert
+├── given assets[1] paused
+   └── it should revert
+├── given assets[0] frozen
+   └── it should succeed
+├── given assets[1] frozen
+   └── it should succeed
+├── given assets[0] flashloan not enabled
+    └── it should revert
+├── given assets[1] flashloan not enabled
+    └── it should revert
+├── given assets[0] insufficient liquidity in pool
+    └── it should revert (boundary)
+├── given assets[1] insufficient liquidity in pool
+    └── it should revert (boundary)
+├── given receiver contract returns false on executeOperation
+    └── it should revert
+├── given receiver contract has insufficient approval on assets[0]
+    └── it should revert
+├── given receiver contract has insufficient approval on assets[1]
+    └── it should revert
+├── given receiver contract has insufficient balance on assets[0]
+    └── it should revert
+├── given receiver contract has insufficient balance on assets[1]
+    └── it should revert
+├── when user tries to use flashloan into borrow with assets[0]
+    └── it should revert
+├── when user tries to use flashloan into borrow with assets[1]
+    └── it should revert
+├── when no time has passed
+    ├── given amount is zero
+        └── it should succeed with a no-op [01]
+    └── given amount is not zero
+        ├── given totalPremium is zero
+            ├── given flashloanPremiumToProtocol is zero
+                └── it should succeed with no fees [02]
+            └── given flashloanPremiumToProtocol is not zero
+                └── it should succeed with no fees [03]
+        └── given totalPremium is not zero
+            ├── when the user is not an authorized flash borrower
+                ├── given flashloanPremiumToProtocol is zero
+                    └── it should succeed with fees going to LPs [04]
+                └── given flashloanPremiumToProtocol is not zero
+                    └── it should succeed with fees going to LPs and protocol [05]
+            └── when the user is an authorized flash borrower
+                ├── given flashloanPremiumToProtocol is zero
+                    └── it should succeed with no fees [06]
+                └── given flashloanPremiumToProtocol is not zero
+                    └── it should succeed with no fees [07]
+└── when some time has passed
+    ├── given amount is zero
+        └── it should succeed with a no-op [08]
+    └── given amount is not zero
+        ├── given totalPremium is zero
+            ├── given flashloanPremiumToProtocol is zero
+                └── it should succeed with no fees [09]
+            └── given flashloanPremiumToProtocol is not zero
+                └── it should succeed with no fees [10]
+        └── given totalPremium is not zero
+            ├── when the user is not an authorized flash borrower
+                ├── given flashloanPremiumToProtocol is zero
+                    └── it should succeed with fees going to LPs [11]
+                └── given flashloanPremiumToProtocol is not zero
+                    └── it should succeed with fees going to LPs and protocol [12]
+            └── when the user is not an authorized flash borrower
+                ├── given flashloanPremiumToProtocol is zero
+                    └── it should succeed with no fees [13]
+                └── given flashloanPremiumToProtocol is not zero
+                    └── it should succeed with no fees [14]
+

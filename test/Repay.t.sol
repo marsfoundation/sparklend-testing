@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { Errors } from "aave-v3-core/contracts/protocol/libraries/helpers/Errors.sol";
+import { Errors } from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
 import { SparkLendTestBase } from "./SparkLendTestBase.sol";
 
@@ -101,14 +101,14 @@ contract RepayFailureTests is RepayTestBase {
     }
 
     function test_repay_insufficientBalanceBoundary() public virtual {
-        borrowAsset.burn(borrower, 1);
+        deal(address(borrowAsset), borrower, 500 ether - 1);
 
         vm.prank(borrower);
         borrowAsset.approve(address(pool), 500 ether);
         vm.expectRevert(stdError.arithmeticError);
         _callRepay(address(borrowAsset), 500 ether, 2, borrower);
 
-        borrowAsset.mint(borrower, 1);
+        deal(address(borrowAsset), borrower, 500 ether);
 
         _callRepay(address(borrowAsset), 500 ether, 2, borrower);
     }

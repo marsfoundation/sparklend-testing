@@ -5,30 +5,33 @@ import "forge-std/Test.sol";
 
 import { VmSafe } from "forge-std/Vm.sol";
 
-import { AaveOracle }                               from "aave-v3-core/contracts/misc/AaveOracle.sol";
-import { AaveProtocolDataProvider as DataProvider } from "aave-v3-core/contracts/misc/AaveProtocolDataProvider.sol";
+import { AaveOracle }                               from "sparklend-v1-core/contracts/misc/AaveOracle.sol";
+import { AaveProtocolDataProvider as DataProvider } from "sparklend-v1-core/contracts/misc/AaveProtocolDataProvider.sol";
 
-import { ACLManager }                    from "aave-v3-core/contracts/protocol/configuration/ACLManager.sol";
-import { PoolAddressesProvider }         from "aave-v3-core/contracts/protocol/configuration/PoolAddressesProvider.sol";
-import { PoolAddressesProviderRegistry } from "aave-v3-core/contracts/protocol/configuration/PoolAddressesProviderRegistry.sol";
+import { ACLManager }                    from "sparklend-v1-core/contracts/protocol/configuration/ACLManager.sol";
+import { PoolAddressesProvider }         from "sparklend-v1-core/contracts/protocol/configuration/PoolAddressesProvider.sol";
+import { PoolAddressesProviderRegistry } from "sparklend-v1-core/contracts/protocol/configuration/PoolAddressesProviderRegistry.sol";
 
-import { Pool }             from "aave-v3-core/contracts/protocol/pool/Pool.sol";
-import { PoolConfigurator } from "aave-v3-core/contracts/protocol/pool/PoolConfigurator.sol";
+import { Pool }             from "sparklend-v1-core/contracts/protocol/pool/Pool.sol";
+import { PoolConfigurator } from "sparklend-v1-core/contracts/protocol/pool/PoolConfigurator.sol";
 
-import { ConfiguratorInputTypes } from "aave-v3-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
-import { DataTypes }              from "aave-v3-core/contracts/protocol/libraries/types/DataTypes.sol";
+import { ConfiguratorInputTypes } from "sparklend-v1-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
+import { DataTypes }              from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
 
-import { AToken }            from "aave-v3-core/contracts/protocol/tokenization/AToken.sol";
-import { StableDebtToken }   from "aave-v3-core/contracts/protocol/tokenization/StableDebtToken.sol";
-import { VariableDebtToken } from "aave-v3-core/contracts/protocol/tokenization/VariableDebtToken.sol";
+import { AToken }            from "sparklend-v1-core/contracts/protocol/tokenization/AToken.sol";
+import { StableDebtToken }   from "sparklend-v1-core/contracts/protocol/tokenization/StableDebtToken.sol";
+import { VariableDebtToken } from "sparklend-v1-core/contracts/protocol/tokenization/VariableDebtToken.sol";
 
-import { IAaveIncentivesController }    from "aave-v3-core/contracts/interfaces/IAaveIncentivesController.sol";
-import { IReserveInterestRateStrategy } from "aave-v3-core/contracts/interfaces/IReserveInterestRateStrategy.sol";
+import { IAaveIncentivesController }    from "sparklend-v1-core/contracts/interfaces/IAaveIncentivesController.sol";
+import { IPoolAddressesProvider }       from "sparklend-v1-core/contracts/interfaces/IPoolAddressesProvider.sol";
+import { IReserveInterestRateStrategy } from "sparklend-v1-core/contracts/interfaces/IReserveInterestRateStrategy.sol";
 
 import { VariableBorrowInterestRateStrategy } from "sparklend-advanced/VariableBorrowInterestRateStrategy.sol";
 
 import { IERC20 }    from "erc20-helpers/interfaces/IERC20.sol";
 import { MockERC20 } from "erc20-helpers/MockERC20.sol";
+
+import { UserActions } from "src/UserActions.sol";
 
 import { MockOracle } from "test/mocks/MockOracle.sol";
 
@@ -37,7 +40,7 @@ import { MockOracle } from "test/mocks/MockOracle.sol";
 // TODO: Remove unnecessary imports.
 // TODO: In dedicated AToken tests, explore UserState mapping so index can be asserted.
 
-contract SparkLendTestBase is Test {
+contract SparkLendTestBase is UserActions {
 
     // 3.65 days in seconds - gives clean numbers for testing (1% of APR)
     uint256 constant WARP_TIME = 365 days / 100;
@@ -247,25 +250,40 @@ contract SparkLendTestBase is Test {
         );
     }
 
-    // TODO: More parameters
-    function _setUpNewCollateral() internal returns (address newCollateralAsset) {
+    function _setUpNewReserve() internal returns (address newAsset) {
         IReserveInterestRateStrategy strategy
-            = IReserveInterestRateStrategy(new VariableBorrowInterestRateStrategy({
+            = IReserveInterestRateStrategy(address(new VariableBorrowInterestRateStrategy({
                 provider:               poolAddressesProvider,
                 optimalUsageRatio:      OPTIMAL_RATIO,
                 baseVariableBorrowRate: BASE_RATE,
                 variableRateSlope1:     SLOPE1,
                 variableRateSlope2:     SLOPE2
-            }));
+            })));
 
-        newCollateralAsset = address(new MockERC20("Collateral Asset", "COLL", 18));
+        newAsset = address(new MockERC20("Borrow Asset", "BRRW", 18));
 
-        _initReserve(IERC20(newCollateralAsset), strategy);
-        _setUpMockOracle(newCollateralAsset, int256(1e8));
+        _initReserve(IERC20(newAsset), strategy);
+        _setUpMockOracle(newAsset, int256(1e8));
+    }
 
-        // Set LTV to 1%
+    // TODO: More parameters
+    function _setUpNewCollateral(
+        uint256 ltv,
+        uint256 liquidationThreshold,
+        uint256 liquidationBonus
+    )
+        internal returns (address newCollateralAsset)
+    {
+        newCollateralAsset = _setUpNewReserve();
+
         vm.prank(admin);
-        poolConfigurator.configureReserveAsCollateral(newCollateralAsset, 100, 100, 100_01);
+        poolConfigurator.configureReserveAsCollateral(
+            newCollateralAsset, ltv, liquidationThreshold, liquidationBonus
+        );
+    }
+
+    function _setUpNewCollateral() internal returns (address newCollateralAsset) {
+        newCollateralAsset = _setUpNewCollateral(100, 100, 100_01);  // Set up with 1% LTV
     }
 
     function _setCollateralDebtCeiling(address asset, uint256 ceiling) internal {
@@ -278,38 +296,27 @@ contract SparkLendTestBase is Test {
     /**********************************************************************************************/
 
     function _useAsCollateral(address user, address newCollateralAsset) internal {
-        vm.prank(user);
-        pool.setUserUseReserveAsCollateral(newCollateralAsset, true);
+        _useAsCollateral(address(pool), user, newCollateralAsset);
     }
 
     function _borrow(address user, address asset, uint256 amount) internal {
-        vm.prank(user);
-        pool.borrow(asset, amount, 2, 0, user);
+        _borrow(address(pool), user, asset, amount);
     }
 
     function _supply(address user, address asset, uint256 amount) internal {
-        vm.startPrank(user);
-        MockERC20(asset).mint(user, amount);
-        MockERC20(asset).approve(address(pool), amount);
-        pool.supply(asset, amount, user, 0);
-        vm.stopPrank();
+        _supply(address(pool), user, asset, amount);
     }
 
     function _repay(address user, address asset, uint256 amount) internal {
-        vm.startPrank(user);
-        IERC20(asset).approve(address(pool), amount);
-        pool.repay(asset, amount, 2, user);
-        vm.stopPrank();
+        _repay(address(pool), user, asset, amount);
     }
 
     function _withdraw(address user, address asset, uint256 amount) internal {
-        vm.prank(user);
-        pool.withdraw(asset, amount, user);
+        _withdraw(address(pool), user, asset, amount);
     }
 
     function _supplyAndUseAsCollateral(address user, address asset, uint256 amount) internal {
-        _supply(user, asset, amount);
-        _useAsCollateral(user, asset);
+        _supplyAndUseAsCollateral(address(pool), user, asset, amount);
     }
 
     /**********************************************************************************************/
