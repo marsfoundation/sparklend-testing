@@ -166,7 +166,7 @@ contract StableBorrowTests is IntegrationTestBase {
         // Revert occurs in `rayDiv((currentBalance + amount).wadToRay())` portion of calculation
         // in the `mint` function because `currentBalance` and `amount` are both zero, resulting in
         // a division by zero. Since a user can not mint stable debt through the SparkLend protocol,
-        // This function cannot ever be successfully called.
+        // this function cannot be successfully called.
         vm.prank(borrower);
         vm.expectRevert(bytes(""));  // EvmError: Revert
         pool.rebalanceStableBorrowRate(Ethereum.DAI, borrower);
