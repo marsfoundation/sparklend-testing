@@ -7,12 +7,9 @@
 [submodule "lib/erc20-helpers"]
 	path = lib/erc20-helpers
 	url = https://github.com/marsfoundation/erc20-helpers
-<<<<<<< HEAD
-=======
 [submodule "lib/sparklend-v1-core"]
 	path = lib/sparklend-v1-core
 	url = https://github.com/marsfoundation/sparklend-v1-core
->>>>>>> master
 [submodule "lib/sparklend-address-registry"]
 	path = lib/sparklend-address-registry
 	url = https://github.com/marsfoundation/sparklend-address-registry
