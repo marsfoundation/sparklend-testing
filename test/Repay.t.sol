@@ -682,7 +682,7 @@ contract RepayConcreteTests is RepayTestBase {
         poolParams.liquidityIndex            = expectedLiquidityIndex;
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
         poolParams.currentLiquidityRate      = 0.99631e5;           // 1/501.853426710065837121e18 = 1.992613e-21 => 1.992613e-21 * (0.05e27 + 4.9815e4) = 0.99631e5 in ray
-        poolParams.currentVariableBorrowRate = 0.05e27 + 4.9815e4;  // 1/501.853426710065837121e18 = 1.992613e-21 => 1.992613e-21/0.8 * 0.02 = 4.9815e4 = 5e4 in ray
+        poolParams.currentVariableBorrowRate = 0.05e27 + 4.9815e4;  // 1/501.853426710065837121e18 = 1.992613e-21 => 1.992613e-21/0.8 * 0.02 = 4.9815e4 in ray
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
 
         debtTokenParams.userBalance = 1;
