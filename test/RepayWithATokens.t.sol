@@ -43,7 +43,7 @@ contract RepayWithATokensFailureTests is RepayWithATokensTestBase {
 
     function test_repayWithATokens_whenNotActive() public virtual {
         _repay(borrower, address(borrowAsset), 500 ether);
-        _withdraw(borrower, address(borrowAsset), 500 ether);
+        _withdraw(borrower, address(borrowAsset), 1000 ether);
 
         vm.prank(admin);
         poolConfigurator.setReserveActive(address(borrowAsset), false);
