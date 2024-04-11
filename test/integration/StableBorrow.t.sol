@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { ReserveConfiguration } from "sparklend-v1-core/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
+import "forge-std/Test.sol";
 
-import { DataTypes } from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
-import { Errors }    from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
+import { IERC20 } from "erc20-helpers/interfaces/IERC20.sol";
 
 import { Ethereum } from "sparklend-address-registry/Ethereum.sol";
+
+import { VariableBorrowInterestRateStrategy } from "sparklend-advanced/VariableBorrowInterestRateStrategy.sol";
+
+import { IPoolAddressesProvider } from "sparklend-v1-core/contracts/interfaces/IPoolAddressesProvider.sol";
+
+import { ReserveConfiguration } from "sparklend-v1-core/contracts/protocol/libraries/configuration/ReserveConfiguration.sol";
+import { DataTypes }            from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
+import { Errors }               from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
 import { IntegrationTestBase } from "./IntegrationTestBase.sol";
 
@@ -105,6 +112,64 @@ contract StableBorrowTests is IntegrationTestBase {
 
             vm.revertTo(snapshot);
         }
+    }
+
+    function test_rebalanceStableBorrowRateAfterIrmChangeBoundary() public {
+        // Set the supply cap to be higher so the borrower can post enough ETH to borrow all the DAI
+        vm.prank(Ethereum.SPARK_PROXY);
+        poolConfigurator.setSupplyCap(Ethereum.WETH, 10_000_000);
+
+        _supplyAndUseAsCollateral(borrower, Ethereum.WETH, 1_000_000 ether);
+
+        // Borrow all the DAI so that liquidityRate == borrowRate for easier test configuration
+        _borrow(borrower, Ethereum.DAI, IERC20(Ethereum.DAI).balanceOf(Ethereum.DAI_ATOKEN));
+
+        uint256 currentLiquidityRate = pool.getReserveData(Ethereum.DAI).currentLiquidityRate;
+
+        assertEq(currentLiquidityRate, 0.148420005467532821842464000e27);
+
+        // Rebalance fails under normal conditions
+        vm.prank(borrower);
+        vm.expectRevert(bytes(Errors.INTEREST_RATE_REBALANCE_CONDITIONS_NOT_MET));
+        pool.rebalanceStableBorrowRate(Ethereum.DAI, borrower);
+
+        // Update the strategy to boundary condition of 90% of liquidity rate check
+        address strategy = address(new VariableBorrowInterestRateStrategy({
+            provider:               IPoolAddressesProvider(Ethereum.POOL_ADDRESSES_PROVIDER),
+            optimalUsageRatio:      1e27,
+            baseVariableBorrowRate: currentLiquidityRate * 100 / 90 - 1,
+            variableRateSlope1:     0,
+            variableRateSlope2:     0
+        }));
+
+        vm.prank(Ethereum.SPARK_PROXY);
+        poolConfigurator.setReserveInterestRateStrategyAddress(Ethereum.DAI, strategy);
+
+        // Same error
+        vm.prank(borrower);
+        vm.expectRevert(bytes(Errors.INTEREST_RATE_REBALANCE_CONDITIONS_NOT_MET));
+        pool.rebalanceStableBorrowRate(Ethereum.DAI, borrower);
+
+        // Update the strategy to pass the 90% check
+        strategy = address(new VariableBorrowInterestRateStrategy({
+            provider:               IPoolAddressesProvider(Ethereum.POOL_ADDRESSES_PROVIDER),
+            optimalUsageRatio:      1e27,
+            baseVariableBorrowRate: currentLiquidityRate * 100 / 90,
+            variableRateSlope1:     0,
+            variableRateSlope2:     0
+        }));
+
+        vm.prank(Ethereum.SPARK_PROXY);
+        poolConfigurator.setReserveInterestRateStrategyAddress(Ethereum.DAI, strategy);
+
+        // Get a different error, an EVM revert on line 146 of StableDebtToken.sol
+        // Revert occurs in `rayDiv((currentBalance + amount).wadToRay())` portion of calculation
+        // in the `mint` function because `currentBalance` and `amount` are both zero, resulting in
+        // a division by zero. Since a user can not mint stable debt through the SparkLend protocol,
+        // this function cannot be successfully called.
+        vm.prank(borrower);
+        vm.expectRevert(bytes(""));  // EvmError: Revert
+        pool.rebalanceStableBorrowRate(Ethereum.DAI, borrower);
     }
 
 }
