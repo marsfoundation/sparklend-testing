@@ -115,7 +115,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _repayMoreThanDebtNoTimePassedTest();
+        _repayMoreThanDebtNoTimePassedTest({ useMaxUint: false });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
@@ -151,7 +151,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _repayMoreThanDebtSomeTimePassedTest();
+        _repayMoreThanDebtSomeTimePassedTest({ useMaxUint: false });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
@@ -187,7 +187,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
 
-        _repayMoreThanDebtNoTimePassedTest();
+        _repayMoreThanDebtNoTimePassedTest({ useMaxUint: false });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
@@ -225,7 +225,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
 
-        _repayMoreThanDebtSomeTimePassedTest();
+        _repayMoreThanDebtSomeTimePassedTest({ useMaxUint: false });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
@@ -262,7 +262,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     /*** Test running functions                                                                 ***/
     /**********************************************************************************************/
 
-    function _repayMoreThanDebtNoTimePassedTest() internal {
+    function _repayMoreThanDebtNoTimePassedTest(bool useMaxUint) internal {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
@@ -293,8 +293,10 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         _assertDebtTokenState(debtTokenParams);
         _assertATokenState(aTokenParams);
 
+        uint256 amount = useMaxUint ? type(uint256).max : 500 ether + 1;
+
         vm.prank(borrower);
-        pool.repayWithATokens(address(borrowAsset), 500 ether + 1, 2);
+        pool.repayWithATokens(address(borrowAsset), amount, 2);
 
         // No more outstanding debt
         poolParams.currentLiquidityRate      = 0;
@@ -408,7 +410,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         _assertATokenState(aTokenParams);
     }
 
-    function _repayMoreThanDebtSomeTimePassedTest() internal {
+    function _repayMoreThanDebtSomeTimePassedTest(bool useMaxUint) internal {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 1000 ether);
 
         assertEq(borrowRate,    0.0625e27);
@@ -455,8 +457,10 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         _assertDebtTokenState(debtTokenParams);
         _assertATokenState(aTokenParams);
 
+        uint256 amount = useMaxUint ? type(uint256).max : 500 ether + borrowerDebt + 1;
+
         vm.prank(borrower);
-        pool.repayWithATokens(address(borrowAsset), 500 ether + borrowerDebt + 1, 2);
+        pool.repayWithATokens(address(borrowAsset), amount, 2);
 
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest

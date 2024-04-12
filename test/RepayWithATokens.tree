@@ -39,3 +39,6 @@ pool.repayWithATokens()
             └── it should repay all debt, user is no longer borrowing [11]
         └── when user is paying with less than debt
             └── it should repay some of the debt, user is still borrowing [12]
+
+├── when user is paying max uint256
+    └── it should repay all debt, user is no longer borrowing [13]
