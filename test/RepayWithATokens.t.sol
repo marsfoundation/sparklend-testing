@@ -127,7 +127,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _repayEqualToDebtNoTimePassedTest();
+        _repayMoreThanDebtNoTimePassedTest({ useMaxUint: true });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
@@ -139,19 +139,19 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _repayLessThanDebtNoTimePassedTest();
+        _repayEqualToDebtNoTimePassedTest();
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
     function test_repayWithATokens_04()
         givenNotInIsolationMode
-        givenSomeTimeHasPassedSinceBorrow
+        givenNoTimeHasPassedSinceBorrow
         public
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _repayMoreThanDebtSomeTimePassedTest({ useMaxUint: false });
+        _repayLessThanDebtNoTimePassedTest();
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
@@ -163,7 +163,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _repayEqualToDebtSomeTimePassedTest();
+        _repayMoreThanDebtSomeTimePassedTest({ useMaxUint: false });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
@@ -175,12 +175,36 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _repayLessThanDebtSomeTimePassedTest();
+        _repayMoreThanDebtSomeTimePassedTest({ useMaxUint: true });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
     function test_repayWithATokens_07()
+        givenNotInIsolationMode
+        givenSomeTimeHasPassedSinceBorrow
+        public
+    {
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+        _repayEqualToDebtSomeTimePassedTest();
+
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    }
+
+    function test_repayWithATokens_08()
+        givenNotInIsolationMode
+        givenSomeTimeHasPassedSinceBorrow
+        public
+    {
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+        _repayLessThanDebtSomeTimePassedTest();
+
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    }
+
+    function test_repayWithATokens_09()
         givenInIsolationMode
         givenNoTimeHasPassedSinceBorrow
         public
@@ -192,7 +216,19 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repayWithATokens_08()
+    function test_repayWithATokens_10()
+        givenInIsolationMode
+        givenNoTimeHasPassedSinceBorrow
+        public
+    {
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
+
+        _repayMoreThanDebtNoTimePassedTest({ useMaxUint: true });
+
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    }
+
+    function test_repayWithATokens_11()
         givenInIsolationMode
         givenNoTimeHasPassedSinceBorrow
         public
@@ -204,7 +240,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repayWithATokens_09()
+    function test_repayWithATokens_12()
         givenInIsolationMode
         givenNoTimeHasPassedSinceBorrow
         public
@@ -218,7 +254,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 1);
     }
 
-    function test_repayWithATokens_10()
+    function test_repayWithATokens_13()
         givenInIsolationMode
         givenSomeTimeHasPassedSinceBorrow
         public
@@ -230,7 +266,20 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repayWithATokens_11()
+    function test_repayWithATokens_14()
+        givenInIsolationMode
+        givenSomeTimeHasPassedSinceBorrow
+        public
+    {
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
+
+        _repayMoreThanDebtSomeTimePassedTest({ useMaxUint: true });
+
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    }
+
+
+    function test_repayWithATokens_15()
         givenInIsolationMode
         givenSomeTimeHasPassedSinceBorrow
         public
@@ -242,7 +291,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repayWithATokens_12()
+    function test_repayWithATokens_16()
         givenInIsolationMode
         givenSomeTimeHasPassedSinceBorrow
         public

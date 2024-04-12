@@ -13,32 +13,37 @@ pool.repayWithATokens()
     ├── given no time has passed since borrow
         └── when user is paying greater than debt
             └── it should repay all debt, user is no longer borrowing [01]
-        └── when user is paying equal to the debt
+        └── when user is paying with max uint
             └── it should repay all debt, user is no longer borrowing [02]
+        └── when user is paying equal to the debt
+            └── it should repay all debt, user is no longer borrowing [03]
         └── when user is paying with less than debt
-            └── it should repay some of the debt, user is still borrowing [03]
+            └── it should repay some of the debt, user is still borrowing [04]
     ├── given some time has passed since borrow (same tree as above, updating indexes)
         └── when user is paying greater than debt
-            └── it should repay all debt, user is no longer borrowing [04]
-        └── when user is paying equal to the debt
             └── it should repay all debt, user is no longer borrowing [05]
+        └── when user is paying with max uint
+            └── it should repay all debt, user is no longer borrowing [06]
+        └── when user is paying equal to the debt
+            └── it should repay all debt, user is no longer borrowing [07]
         └── when user is paying with less than debt
-            └── it should repay some of the debt, user is still borrowing [06]
+            └── it should repay some of the debt, user is still borrowing [08]
 ├── given reserve is in isolation mode (same tree as above, updating isolation debt)
     ├── given no time has passed since borrow
         └── when user is paying greater than debt
-            └── it should repay all debt, user is no longer borrowing [07]
-        └── when user is paying equal to the debt
-            └── it should repay all debt, user is no longer borrowing [08]
-        └── when user is paying with less than debt
-            └── it should repay some of the debt, user is still borrowing [09]
-    ├── given some time has passed since borrow (same tree as above, updating indexes)
-        └── when user is paying greater than debt
+            └── it should repay all debt, user is no longer borrowing [09]
+        └── when user is paying with max uint
             └── it should repay all debt, user is no longer borrowing [10]
         └── when user is paying equal to the debt
             └── it should repay all debt, user is no longer borrowing [11]
         └── when user is paying with less than debt
             └── it should repay some of the debt, user is still borrowing [12]
-
-├── when user is paying max uint256
-    └── it should repay all debt, user is no longer borrowing [13]
+    ├── given some time has passed since borrow (same tree as above, updating indexes)
+        └── when user is paying greater than debt
+            └── it should repay all debt, user is no longer borrowing [13]
+        └── when user is paying with max uint
+            └── it should repay all debt, user is no longer borrowing [14]
+        └── when user is paying equal to the debt
+            └── it should repay all debt, user is no longer borrowing [15]
+        └── when user is paying with less than debt
+            └── it should repay some of the debt, user is still borrowing [16]
