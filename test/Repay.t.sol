@@ -53,7 +53,7 @@ contract RepayFailureTests is RepayTestBase {
         _callRepay(address(borrowAsset), type(uint256).max, 2, makeAddr("user"));
     }
 
-    function test_repay_whenNotActive() public virtual {
+    function test_repay_whenNotActive() public {
         _repay(borrower, address(borrowAsset), 500 ether);
         _withdraw(lender, address(borrowAsset), 500 ether);
 
