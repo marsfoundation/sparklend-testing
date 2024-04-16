@@ -14,7 +14,6 @@ pool.mintToTreasury()
                 └── it succeeds transferring aTokens to treasury [05]
             └── when some time has passed
                 └── it succeeds transferring more aTokens to treasury according to current normalizedIncome and old scaledBalance [06]
-
 ├── when minting with two assets (conditions on the first asset are kept as what is in test 05, second asset changing)
     ├── when the reserve is inactive
         └── it succeeds with a no-op [07]
