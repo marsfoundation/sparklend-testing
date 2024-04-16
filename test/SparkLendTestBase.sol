@@ -347,6 +347,12 @@ contract SparkLendTestBase is UserActions {
         interestRate = term1 + term2 + term3 + term4;
     }
 
+    function _getBorrowerInterest(uint256 rate, uint256 timeDelta, uint256 amount)
+        internal pure returns (uint256 interest)
+    {
+        interest = amount * (_getCompoundedNormalizedInterest(rate, timeDelta) - 1e27) / 1e27;
+    }
+
     function _rateExp(uint256 x, uint256 n) internal pure returns (uint256 result) {
         result = x / 365 days;
 

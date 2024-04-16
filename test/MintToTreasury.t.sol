@@ -9,11 +9,41 @@ import { SparkLendTestBase } from "./SparkLendTestBase.sol";
 
 contract MintToTreasuryTests is SparkLendTestBase {
 
+    address borrower = makeAddr("borrower");
+
     function setUp() public override {
         super.setUp();
         
         vm.prank(admin);
         poolConfigurator.setReserveFactor(address(borrowAsset), 5_00);
+    }
+
+    modifier whenReserveHasAccruedValue {
+        _initCollateral({
+            asset:                address(collateralAsset),
+            ltv:                  50_00,
+            liquidationThreshold: 50_00,
+            liquidationBonus:     100_01
+        });
+
+        vm.prank(admin);
+        poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
+
+        _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
+        _supply(borrower, address(borrowAsset), 500 ether);
+        _borrow(borrower, address(borrowAsset), 100 ether);
+
+        skip(WARP_TIME);
+
+        _;
+    }
+
+    modifier whenAccruedToTreasuryHasBeenUpdated {
+        // Update reserve state without updating reserve value
+        _supply(borrower, address(borrowAsset), 1 ether);  
+        _withdraw(borrower, address(borrowAsset), 1 ether);
+
+        _;
     }
 
     function test_mintToTreasury_01() public proveNoOp {
@@ -43,25 +73,11 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
     }
 
-    function test_mintToTreasury_04() public proveNoOp {
-        address borrower = makeAddr("borrower");
-
-        _initCollateral({
-            asset:                address(collateralAsset),
-            ltv:                  50_00,
-            liquidationThreshold: 50_00,
-            liquidationBonus:     100_01
-        });
-
-        vm.prank(admin);
-        poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
-
-        _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
-        _supply(borrower, address(borrowAsset), 1 ether);
-        _borrow(borrower, address(borrowAsset), 1 ether);
-
-        skip(100 days);
-
+    function test_mintToTreasury_04() 
+        public 
+        whenReserveHasAccruedValue
+        proveNoOp 
+    {
         address[] memory assets = new address[](1);
         assets[0] = address(borrowAsset);
 
@@ -71,70 +87,44 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
     }
 
-    function test_mintToTreasury_05() public {
-        address borrower = makeAddr("borrower");
-
-        _initCollateral({
-            asset:                address(collateralAsset),
-            ltv:                  50_00,
-            liquidationThreshold: 50_00,
-            liquidationBonus:     100_01
-        });
-
-        vm.prank(admin);
-        poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
-
-        _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
-        _supply(borrower, address(borrowAsset), 500 ether);
-        _borrow(borrower, address(borrowAsset), 100 ether);  // 20% utilization = 5 + (20%/80%) * 2% = 5.5%
-
-        skip(WARP_TIME);
-
+    function test_mintToTreasury_05() 
+        public 
+        whenReserveHasAccruedValue
+        whenAccruedToTreasuryHasBeenUpdated
+    {
         // borrowRate * utilization * (1 - reserveFactor)
-        uint256 liquidityRate = 0.055e27 * 20/100 * 95/100;
-        uint256 supplierYield = 500 ether * liquidityRate / 100 / 1e27;  // 1% of a year has passed
+        uint256 liquidityRate  = 0.055e27 * 20/100 * 95/100;
+        uint256 supplierYield  = 500 ether * liquidityRate / 100 / 1e27;  // 1% of a year has passed
 
-        assertEq(pool.getReserveData(address(borrowAsset)).currentLiquidityRate, liquidityRate);
-        assertEq(pool.getReserveData(address(borrowAsset)).accruedToTreasury,    0);
-
-        // Update reserve state without updating reserve value
-        _supply(borrower, address(borrowAsset), 1 ether);  
-        _withdraw(borrower, address(borrowAsset), 1 ether);
-
-        // assertEq(pool.getReserveData(address(borrowAsset)).accruedToTreasury, 2);
-
-        uint256 liquidityIndex = 1e27 + (1e27 * liquidityRate / 100 / 1e27);
-
-        uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(0.055e27, WARP_TIME);
-
-        // NOTE: This is only true on the first index update
-        uint256 borrowIndex = compoundedNormalizedInterest;
-
-        assertEq(pool.getReserveData(address(borrowAsset)).variableBorrowIndex, borrowIndex);
-
-        uint256 borrowerInterest = (compoundedNormalizedInterest - 1e27) * 100 ether / 1e27;
-
-        assertEq(borrowerInterest, 0.055015127565607543 ether);
+        uint256 liquidityIndex   = 1e27 + (1e27 * liquidityRate / 100 / 1e27);
+        uint256 borrowerInterest = _getBorrowerInterest(0.055e27, WARP_TIME, 100 ether);
 
         uint256 scaledAccruedToTreasury = borrowerInterest * 5/100 * 1e27 / liquidityIndex;
+
+        assertEq(supplierYield,           0.05225 ether);
+        assertEq(borrowerInterest,        0.055015127565607543 ether);  // 5.5% compounded
+        assertEq(scaledAccruedToTreasury, 0.002750468954274655 ether);  // 5% of borrowerInterest
         
-        assertEq(pool.getReserveData(address(borrowAsset)).accruedToTreasury, scaledAccruedToTreasury); 
+        assertEq(aBorrowAsset.totalSupply(),             500 ether + supplierYield);
+        assertEq(aBorrowAsset.balanceOf(treasury),       0);
+        assertEq(aBorrowAsset.scaledBalanceOf(treasury), 0);
 
-        // IERC20 debtToken = IERC20(pool.getReserveData(address(borrowAsset)).variableDebtTokenAddress);
-
-        // assertEq(debtToken.totalSupply(), 100 ether + borrowerInterest); 
-
-        assertEq(aBorrowAsset.totalSupply(), 500 ether + supplierYield);
+        assertEq(pool.getReserveData(address(borrowAsset)).accruedToTreasury, scaledAccruedToTreasury);
 
         address[] memory assets = new address[](1);
         assets[0] = address(borrowAsset);
         pool.mintToTreasury(assets);
+        
+        uint256 accruedToTreasury = scaledAccruedToTreasury * liquidityIndex / 1e27 + 1;  // Rounding
 
-        assertEq(aBorrowAsset.totalSupply(), 500 ether + supplierYield + scaledAccruedToTreasury * liquidityIndex / 1e27 + 1);
+        assertEq(aBorrowAsset.totalSupply(),             500 ether + supplierYield + accruedToTreasury);
+        assertEq(aBorrowAsset.balanceOf(treasury),       accruedToTreasury);
+        assertEq(aBorrowAsset.scaledBalanceOf(treasury), scaledAccruedToTreasury);
 
-        // assertEq(pool.getReserveData(address(borrowAsset)).accruedToTreasury, 0); 
-
-        // assertEq(debtToken.totalSupply(), 100 ether + borrowerInterest + scaledAccruedToTreasury * liquidityIndex / 1e27); 
+        assertEq(pool.getReserveData(address(borrowAsset)).accruedToTreasury, 0);
     }
+
+    // Try to think of weird edge cases where indexes haven't been updated before minting
+    // Update index/accrued, warp, mint, update index, check accrued
 
 }
