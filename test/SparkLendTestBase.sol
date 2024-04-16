@@ -367,7 +367,8 @@ contract SparkLendTestBase is UserActions {
         uint256 baseRate,
         uint256 slope1,
         uint256 slope2,
-        uint256 optimalRatio
+        uint256 optimalRatio,
+        uint256 reserveFactor
     )
         internal pure returns (uint256, uint256)
     {
@@ -381,21 +382,36 @@ contract SparkLendTestBase is UserActions {
         uint256 borrowRate
             = baseRate + (slope1 * slope1Ratio / 1e27) + (slope2 * slope2Ratio / 1e27);
 
-        uint256 liquidityRate = borrowRate * borrowRatio / 1e27;
+        uint256 liquidityRate = borrowRate * borrowRatio * (10_000 - reserveFactor) / 1e27 / 10_000;
 
         return (borrowRate, liquidityRate);
     }
 
-    function _getUpdatedRates(uint256 borrowed, uint256 supplied)
+    function _getUpdatedRates(uint256 borrowed, uint256 totalValue)
         internal pure returns (uint256, uint256)
     {
         return _getUpdatedRates({
-            borrowed:     borrowed,
-            totalValue:   supplied,
-            baseRate:     BASE_RATE,
-            slope1:       SLOPE1,
-            slope2:       SLOPE2,
-            optimalRatio: OPTIMAL_RATIO
+            borrowed:      borrowed,
+            totalValue:    totalValue,
+            baseRate:      BASE_RATE,
+            slope1:        SLOPE1,
+            slope2:        SLOPE2,
+            optimalRatio:  OPTIMAL_RATIO,
+            reserveFactor: 0
+        });
+    }
+
+    function _getUpdatedRates(uint256 borrowed, uint256 totalValue, uint256 reserveFactor)
+        internal pure returns (uint256, uint256)
+    {
+        return _getUpdatedRates({
+            borrowed:      borrowed,
+            totalValue:    totalValue,
+            baseRate:      BASE_RATE,
+            slope1:        SLOPE1,
+            slope2:        SLOPE2,
+            optimalRatio:  OPTIMAL_RATIO,
+            reserveFactor: reserveFactor
         });
     }
 
