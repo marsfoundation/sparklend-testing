@@ -15,28 +15,19 @@ pool.mintToTreasury()
             └── when some time has passed
                 └── it succeeds transferring more aTokens to treasury according to current normalizedIncome and old scaledBalance [06]
 
-TODO: Refactor this to use test 05 as a reference and then test the other asset for all
-
-├── when minting with two assets (conditions on the first asset)
+├── when minting with two assets (conditions on the first asset are kept as what is in test 05, second asset changing)
     ├── when the reserve is inactive
-        └── it succeeds with a no-op [06]
-    ├── when the reserve is invalid
         └── it succeeds with a no-op [07]
-    ├── when the reserve hasn't accrued any value
-        └── it succeeds with a no-op [08]
-    ├── when the reserve has accrued value but accruedToTreasury haven't been updated
-        └── it succeeds with a no-op [09]
-    └── when the reserve has accrued value and accruedToTreasury has been updated
-        └── it succeeds transferring aTokens to treasury [10]
-└── when minting with two assets (conditions on the second asset)
-    ├── when the reserve is inactive
-        └── it succeeds with a no-op [11]
     ├── when the reserve is invalid
-        └── it succeeds with a no-op [12]
+        └── it succeeds with a no-op [08]
     ├── when the reserve hasn't accrued any value
-        └── it succeeds with a no-op [13]
-    ├── when the reserve has accrued value but accruedToTreasury haven't been updated
-        └── it succeeds with a no-op [14]
-    └── when the reserve has accrued value and accruedToTreasury has been updated
-        └── it succeeds transferring aTokens to treasury [15]
-9
+        └── it succeeds with a no-op [09]
+    └── when the reserve has accrued value 
+        ├── when accruedToTreasury hasn NOT been updated
+            └── it succeeds with a no-op [10]
+        └── when accruedToTreasury has been updated
+            ├── when no time has passed
+                └── it succeeds transferring aTokens to treasury [11]
+            └── when some time has passed
+                └── it succeeds transferring more aTokens to treasury according to current normalizedIncome and old scaledBalance [12]
+

@@ -28,9 +28,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
         poolConfigurator.setReserveFactor(borrowAsset1, 5_00);
         poolConfigurator.setReserveFactor(borrowAsset2, 5_00);
         vm.stopPrank();
-    }
 
-    modifier whenReserveHasAccruedValue(address borrowAsset_) {
         _initCollateral({
             asset:                address(collateralAsset),
             ltv:                  50_00,
@@ -38,14 +36,15 @@ contract MintToTreasuryTests is SparkLendTestBase {
             liquidationBonus:     100_01
         });
 
-        vm.prank(admin);
-        poolConfigurator.setReserveBorrowing(borrowAsset_, true);
-
         _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
-        _supply(borrower, borrowAsset_, 500 ether);
-        _borrow(borrower, borrowAsset_, 100 ether);
+        _supply(borrower, borrowAsset1, 500 ether);
+        _supply(borrower, borrowAsset2, 500 ether);
+        _borrow(borrower, borrowAsset1, 100 ether);
+        _borrow(borrower, borrowAsset2, 100 ether);
+    }
 
-        skip(WARP_TIME);
+    modifier whenReserveHasAccruedValue {
+        vm.warp(1 + WARP_TIME);  // Using warp so multiple assets can be tested with this 
 
         _;
     }
@@ -70,7 +69,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
     }
 
     modifier whenSomeTimeHasPassed {
-        skip(WARP_TIME);
+        vm.warp(1 + WARP_TIME * 2);  // Using warp so multiple assets can be tested with this
 
         _;
     }
@@ -104,7 +103,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
     function test_mintToTreasury_04() 
         public 
-        whenReserveHasAccruedValue(borrowAsset1)
+        whenReserveHasAccruedValue
         whenAccruedToTreasuryHasNotBeenUpdated(borrowAsset1)
         proveNoOp 
     {
@@ -117,7 +116,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
     function test_mintToTreasury_05() 
         public 
-        whenReserveHasAccruedValue(borrowAsset1)
+        whenReserveHasAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenNoTimeHasPassed
     {
@@ -159,7 +158,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
     function test_mintToTreasury_06() 
         public 
-        whenReserveHasAccruedValue(borrowAsset1)
+        whenReserveHasAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenSomeTimeHasPassed
     {
@@ -216,6 +215,15 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
         assertEq(pool.getReserveData(borrowAsset1).accruedToTreasury, 0);
     }
+
+    // function test_mintToTreasury_06() 
+    //     public 
+    //     whenReserveHasAccruedValue
+    //     whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
+    //     whenReserveHasAccruedValue
+    //     whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
+    // {
+
 
     // TODO: Refactor to use these functions to do case with asset1 live, asset2 live, both live
 
