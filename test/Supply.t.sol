@@ -646,7 +646,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         // Approving 750 instead of 1000 to get cleaner numbers
         _callSupply(address(collateralAsset), 750 ether, supplier, 0);
 
-        uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate * 1e27 / 100 / 1e27);  // Normalized yield accrues 1% of APR
+        uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate / 100);                // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
         assertEq(expectedLiquidityIndex,      1.00011e27);
@@ -904,7 +904,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         // Approving 750 instead of 1000 to get cleaner numbers
         _callSupply(address(collateralAsset), 750 ether, supplier, 0);
 
-        uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate * 1e27 / 100 / 1e27);  // Normalized yield accrues 1% of APR
+        uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate / 100);                // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
         assertEq(expectedLiquidityIndex,      1.00011e27);

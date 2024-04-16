@@ -102,7 +102,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
         uint256 liquidityRate = 0.055e27 * 20/100 * 95/100;
         uint256 supplierYield = 500 ether * liquidityRate / 100 / 1e27;  // 1% of a year has passed
 
-        uint256 liquidityIndex   = 1e27 + (liquidityRate * 1e27 / 100 / 1e27);
+        uint256 liquidityIndex   = 1e27 + (liquidityRate / 100);
         uint256 borrowerInterest = _getBorrowerInterest(0.055e27, WARP_TIME, 100 ether);
 
         uint256 scaledAccruedToTreasury = borrowerInterest * 5/100 * 1e27 / liquidityIndex;
@@ -141,7 +141,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
         // These values were updated at last supply/withdraw which was at WARP_TIME
         // borrowRate * utilization * (1 - reserveFactor)
         uint256 liquidityRate1  = 0.055e27 * 20/100 * 95/100;
-        uint256 liquidityIndex1 = 1e27 + (liquidityRate1 * 1e27 / 100 / 1e27);  // 1% of a year has passed
+        uint256 liquidityIndex1 = 1e27 + (liquidityRate1 / 100);  // 1% of a year has passed
 
         uint256 borrowerInterest1 = _getBorrowerInterest(0.055e27, WARP_TIME, 100 ether);
 
@@ -151,7 +151,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
         uint256 borrowerInterest2 
             = _getBorrowerInterest(borrowRate2, WARP_TIME, 100 ether + borrowerInterest1);
 
-        uint256 liquidityIndex2 = (1e27 + (liquidityRate2 * 1e27 / 100 / 1e27)) * liquidityIndex1 / 1e27;  // 1% of a year has passed
+        uint256 liquidityIndex2 = (1e27 + (liquidityRate2 / 100)) * liquidityIndex1 / 1e27;  // 1% of a year has passed
         uint256 supplierYield   = 500 ether * liquidityIndex2 / 1e27 - 500 ether;
 
         assertEq(pool.getReserveData(address(borrowAsset)).liquidityIndex,       liquidityIndex1);

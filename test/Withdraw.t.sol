@@ -347,7 +347,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         pool.withdraw(address(collateralAsset), 800 ether, user);
 
         // Update indexes using old rates info
-        uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate * 1e27 / 100 / 1e27);  // Normalized yield accrues 1% of APR
+        uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate / 100);                // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
         assertEq(expectedLiquidityIndex,      1.0000525e27);
@@ -549,7 +549,7 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         pool.withdraw(address(collateralAsset), 800 ether, user);
 
         // Update indexes using old rates info
-        uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate * 1e27 / 100 / 1e27);  // Normalized yield accrues 1% of APR
+        uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate / 100);                // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
         assertEq(expectedLiquidityIndex,      1.0000525e27);
