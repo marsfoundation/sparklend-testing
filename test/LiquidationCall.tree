@@ -1,0 +1,85 @@
+pool.liquidationCall()
+├── when collateralAsset is not active
+   └── it should revert
+├── when borrowAsset is not active
+   └── it should revert
+├── when collateralAsset is paused
+   └── it should revert
+├── when borrowAsset is paused
+   └── it should revert
+├── when collateralAsset is frozen
+   └── it should succeed
+├── when borrowAsset is frozen
+   └── it should succeed
+├── when price oracle sentinel is active and health factor is greater than or equal to min threshold and liquidations not allowed
+   └── it should revert (boundary)
+├── when health factor is greater than or equal to one
+   └── it should revert (boundary)
+├── when the LT is zero
+   └── it should revert
+├── when the user isn't using as collateral
+   └── it should revert
+├── when the total debt is zero
+   └── it should revert
+├── when the user does an insufficient approve on the debtAsset
+   └── it should revert (boundary)
+├── when the user has an insufficient balance on the debtAsset
+   └── it should revert (boundary)
+├── when the pool doesn't have enough collateralAsset liquidity and user selects receiveAToken as false
+   └── it should revert (boundary)
+
+├── when the protocol fee is zero
+   ├── when the users health factor is less than CLOSE_FACTOR_HF_THRESHOLD
+      ├── when the amount of debt specified is greater than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
+         └── when the amount of debt is greater than the amount of collateral available (bad debt)
+            └── it should succeed and liquidate all the user's collateral and remove the corresponding debt and isUsingAsCollateral to false, keeping isBorrowing as true [01]
+         └── when the amount of debt is less than the amount of collateral available
+            └── it should succeed and liquidate the amount specified, setting isBorrowing to false [02]
+      └── when the amount of debt specificied is less than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
+         └── when the amount of debt is greater than the amount of collateral available (bad debt)
+            └── it should succeed and liquidate all the user's collateral and remove the corresponding debt and isUsingAsCollateral to false, keeping isBorrowing as true [03]
+         └── when the amount of debt is less than the amount of collateral available
+            └── it should succeed and liquidate the amount specified [04]
+   └── when the users health factor is greater than CLOSE_FACTOR_HF_THRESHOLD
+      ├── when the amount of debt specified is greater than the user's liquidatable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
+         └── it should succeed and liquidate all the user's liquidatable debt [05]
+      └── when the amount of debt specified is less than the user's liquidatable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
+         └── it should succeed and liquidate the amount specified [06]
+└── when the protocol fee is greater than zero (same as above with treasury transfers)
+   ├── when the users health factor is less than CLOSE_FACTOR_HF_THRESHOLD
+      ├── when the amount of debt specified is greater than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
+         └── when the amount of debt is greater than the amount of collateral available (bad debt)
+            └── it should succeed and liquidate all the user's collateral and remove the corresponding debt and isUsingAsCollateral to false, keeping isBorrowing as true [07]
+         └── when the amount of debt is less than the amount of collateral available
+            └── it should succeed and liquidate the amount specified, setting isBorrowing to false [08]
+      └── when the amount of debt specified is less than the user's full debt (using MAX_LIQUIDATION_CLOSE_FACTOR)
+         └── when the amount of debt is greater than the amount of collateral available (bad debt)
+            └── it should succeed and liquidate all the user's collateral and remove the corresponding debt and isUsingAsCollateral to false, keeping isBorrowing as true [09]
+         └── when the amount of debt is less than the amount of collateral available
+            └── it should succeed and liquidate the amount specified [10]
+   └── when the users health factor is greater than CLOSE_FACTOR_HF_THRESHOLD
+      ├── when the amount of debt specified is greater than the user's liquidatable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
+         └── it should succeed and liquidate all the user's liquidatable debt [11]
+      └── when the amount of debt specified is less than the user's liquidatable debt (using DEFAULT_LIQUIDATION_CLOSE_FACTOR)
+         └── it should succeed and liquidate the amount specified [12]
+
+├── when the user is in emode
+   ├── when the price source is overridden
+      └── it should succeed using the overridden price for both assets and overridden liquidation bonus [13]
+   └── when the price source is not overridden
+      └── it should succeed using the NORMAL price for both assets and overridden liquidation bonus [14]
+
+├── when the liquidator selects receiveAToken
+   ├── when the liquidators previous balance is zero
+      ├── when validateAutomaticUseOfCollateral is false
+         └── it should succeed and transfer the collateralAToken to the liquidator without them using as collateral [15]
+      └── when validateAutomaticUseOfCollateral is true
+         └── it should succeed and transfer the collateralAToken to the liquidator and add collateral automatically [16]
+   └── when the liquidators previous balance is NOT zero
+      └── it should succeed and transfer the collateralAToken to the liquidator [17]
+
+├── given the collateralAsset is in isolation mode
+   └── it should succeed and update the debt ceiling of the collateralAsset [18]
+
+TODO: Figure out what the deal is with handleRepayment
+TODO: Think more about _calculateAvailableCollateralToLiquidate and how HF plays into it with LT
