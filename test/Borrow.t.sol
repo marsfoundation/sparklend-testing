@@ -586,7 +586,7 @@ contract BorrowConcreteTests is BorrowTestBase {
         assertEq(borrowRate,    0.065000525110257445296653722e27);  // ~60% utilized: 5% + 60%/80% * 2% = ~6.5%
         assertEq(liquidityRate, 0.039001680363853456248262541e27);  // ~60% utilized: 60% * ~6.5% = ~3.9%
 
-        uint256 expectedLiquidityIndex      = 1e27 + (0.00525e27 / 100);                   // Normalized yield accrues 1% of APR
+        uint256 expectedLiquidityIndex      = 1e27 + (0.00525e27 * 1/100);                 // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
         assertEq(expectedLiquidityIndex,      1.0000525e27);
