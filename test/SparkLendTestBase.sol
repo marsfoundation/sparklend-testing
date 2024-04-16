@@ -541,15 +541,41 @@ contract SparkLendTestBase is UserActions {
                     records[i].storageAccesses[j].previousValue
                 ) continue;
 
-                console.log("");
-                console2.log("account:  %s", vm.getLabel(records[i].account));
-                console2.log("accessor: %s", vm.getLabel(records[i].accessor));
-                console2.log("slot:     %s", vm.toString(records[i].storageAccesses[j].slot));
-
-                _logAddressOrUint("oldValue:", records[i].storageAccesses[j].previousValue);
-                _logAddressOrUint("newValue:", records[i].storageAccesses[j].newValue);
+                _logStorageModification(records[i], j);
             }
         }
+    }
+
+    modifier proveNoOp {
+        // NOTE: If there is state setup in the test, add `vm.startStateDiffRecording();` right
+        //       before the function to be tested is called.
+
+        vm.startStateDiffRecording();
+
+        _;
+
+        VmSafe.AccountAccess[] memory records = vm.stopAndReturnStateDiff();
+
+        for (uint256 i = 0; i < records.length; i++) {
+            for (uint256 j; j < records[i].storageAccesses.length; j++) {
+                if (!records[i].storageAccesses[j].isWrite) continue;
+
+                _logStorageModification(records[i], j);
+                fail("Storage write detected");
+            }
+        }
+    }
+
+    function _logStorageModification(VmSafe.AccountAccess memory record, uint256 index) 
+        internal view 
+    {
+        console.log("");
+        console2.log("account:  %s", vm.getLabel(record.account));
+        console2.log("accessor: %s", vm.getLabel(record.accessor));
+        console2.log("slot:     %s", vm.toString(record.storageAccesses[index].slot));
+
+        _logAddressOrUint("oldValue:", record.storageAccesses[index].previousValue);
+        _logAddressOrUint("newValue:", record.storageAccesses[index].newValue);
     }
 
     function _logAddressOrUint(string memory key, bytes32 _bytes) internal view {
@@ -563,12 +589,8 @@ contract SparkLendTestBase is UserActions {
     function isAddress(bytes32 _bytes) public pure returns (bool) {
         if (_bytes == 0) return false;
 
-        // Extract the 20 bytes Ethereum address
-        address extractedAddress;
-        assembly {
-            extractedAddress := mload(add(_bytes, 0x14))
-        }
-
+        address extractedAddress = address(uint160(uint256(_bytes)));
+    
         // Check if the address equals the original bytes32 value when padded back to bytes32
         return extractedAddress != address(0) && bytes32(bytes20(extractedAddress)) == _bytes;
     }

@@ -1,0 +1,34 @@
+pool.mintToTreasury()
+├── when minting with one asset
+    ├── when the reserve is inactive
+        └── it succeeds with a no-op [01]
+    ├── when the reserve is invalid
+        └── it succeeds with a no-op [02]
+    ├── when the reserve hasn't accrued any value
+        └── it succeeds with a no-op [03]
+    ├── when the reserve has accrued value but accruedToTreasury haven't been updated
+        └── it succeeds with a no-op [04]
+    └── when the reserve has accrued value and accruedToTreasury has been updated
+        └── it succeeds transferring aTokens to treasury [05]
+├── when minting with two assets (conditions on the first asset)
+    ├── when the reserve is inactive
+        └── it succeeds with a no-op [06]
+    ├── when the reserve is invalid
+        └── it succeeds with a no-op [07]
+    ├── when the reserve hasn't accrued any value
+        └── it succeeds with a no-op [08]
+    ├── when the reserve has accrued value but accruedToTreasury haven't been updated
+        └── it succeeds with a no-op [09]
+    └── when the reserve has accrued value and accruedToTreasury has been updated
+        └── it succeeds transferring aTokens to treasury [10]
+└── when minting with two assets (conditions on the second asset)
+    ├── when the reserve is inactive
+        └── it succeeds with a no-op [11]
+    ├── when the reserve is invalid
+        └── it succeeds with a no-op [12]
+    ├── when the reserve hasn't accrued any value
+        └── it succeeds with a no-op [13]
+    ├── when the reserve has accrued value but accruedToTreasury haven't been updated
+        └── it succeeds with a no-op [14]
+    └── when the reserve has accrued value and accruedToTreasury has been updated
+        └── it succeeds transferring aTokens to treasury [15]
