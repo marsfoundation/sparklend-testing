@@ -116,8 +116,8 @@ contract ReserveLogicTests is SparkLendTestBase {
         return pool.getReserveData(address(borrowAsset)).liquidityIndex;
     }
 
-    function _random(uint256 startingValue, uint256 salt) internal pure returns (uint256) {
-        return uint256(keccak256(abi.encode(startingValue, salt)));
+    function _random(uint256 prevValue, uint256 salt) internal pure returns (uint256) {
+        return uint256(keccak256(abi.encode(prevValue, salt)));
     }
 
     function _rayMul(uint256 a, uint256 b) internal pure returns (uint256) {
