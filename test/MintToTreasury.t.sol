@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { IAToken } from "sparklend-v1-core/contracts/interfaces/IAToken.sol";
-
 import { IERC20 } from "erc20-helpers/interfaces/IERC20.sol";
+
+import { IAToken } from "sparklend-v1-core/contracts/interfaces/IAToken.sol";
 
 import { SparkLendTestBase } from "./SparkLendTestBase.sol";
 
