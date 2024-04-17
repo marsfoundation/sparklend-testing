@@ -43,7 +43,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
         _borrow(borrower, borrowAsset2, 100 ether);
     }
 
-    modifier whenReserveHasAccruedValue {
+    modifier whenReservesHaveAccruedValue {
         vm.warp(1 + WARP_TIME);  // Using warp so multiple assets can be tested with this 
 
         _;
@@ -106,7 +106,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
     function test_mintToTreasury_04() 
         public 
-        whenReserveHasAccruedValue
+        whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasNotBeenUpdated(borrowAsset1)
         proveNoOp 
     {
@@ -119,7 +119,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
     function test_mintToTreasury_05() 
         public 
-        whenReserveHasAccruedValue
+        whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenNoTimeHasPassed
     {
@@ -140,7 +140,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
     function test_mintToTreasury_06() 
         public 
-        whenReserveHasAccruedValue
+        whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenSomeTimeHasPassed
     {        
@@ -161,7 +161,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
     function test_mintToTreasury_07() 
         public  
-        whenReserveHasAccruedValue
+        whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
     {
         ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex, uint256 supplierYield ) 
@@ -189,7 +189,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
     function test_mintToTreasury_08() 
         public 
-        whenReserveHasAccruedValue
+        whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
     {
         // NOTE: In order to set a reserve inactive, both totalSupply and accruedToTreasury have to
@@ -242,9 +242,9 @@ contract MintToTreasuryTests is SparkLendTestBase {
         assertEq(aBorrowAsset2.totalSupply(), totalSupplyBefore);
     }
 
-    function test_mintToTreasury_10() 
+    function test_mintToTreasury_09() 
         public 
-        whenReserveHasAccruedValue
+        whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenAccruedToTreasuryHasNotBeenUpdated(borrowAsset2)
     { 
@@ -271,9 +271,9 @@ contract MintToTreasuryTests is SparkLendTestBase {
         assertEq(aBorrowAsset2.totalSupply(), totalSupplyBefore);
     }
 
-    function test_mintToTreasury_11() 
+    function test_mintToTreasury_10() 
         public 
-        whenReserveHasAccruedValue
+        whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset2)
         whenNoTimeHasPassed
@@ -304,9 +304,9 @@ contract MintToTreasuryTests is SparkLendTestBase {
         );
     }
 
-    function test_mintToTreasury_12() 
+    function test_mintToTreasury_11() 
         public 
-        whenReserveHasAccruedValue
+        whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset2)
         whenSomeTimeHasPassed

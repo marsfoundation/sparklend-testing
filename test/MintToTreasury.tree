@@ -4,7 +4,7 @@ pool.mintToTreasury()
         └── it succeeds with a no-op [01]
     ├── when the reserve is inactive
         └── it succeeds with a no-op [02]
-    ├── when the reserve hasn't accrued any value
+    ├── when the reserve has NOT accrued any value
         └── it succeeds with a no-op [03]
     └── when the reserve has accrued value 
         ├── when accruedToTreasury has NOT been updated
@@ -19,12 +19,12 @@ pool.mintToTreasury()
         └── it succeeds with a no-op [07]
     ├── when the reserve is inactive
         └── it succeeds with a no-op [08]
-    └── when the reserve has accrued value (skipping not accrued value case)
+    └── when the reserve has accrued value (skipping non-accrued value test because of warping side effects)
         ├── when accruedToTreasury has NOT been updated
-            └── it succeeds with a no-op [10]
+            └── it succeeds with a no-op [09]
         └── when accruedToTreasury has been updated
             ├── when no time has passed
-                └── it succeeds transferring aTokens to treasury [11]
+                └── it succeeds transferring aTokens to treasury [10]
             └── when some time has passed
-                └── it succeeds transferring more aTokens to treasury according to current normalizedIncome and old scaledBalance [12]
+                └── it succeeds transferring more aTokens to treasury according to current normalizedIncome and old scaledBalance [11]
 
