@@ -379,11 +379,11 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
         IAToken aBorrowAsset_ = IAToken(pool.getReserveData(borrowAsset_).aTokenAddress);
 
-        // assertEq(aBorrowAsset_.totalSupply(),             500 ether + supplierYield + accruedToTreasury);
-        // assertEq(aBorrowAsset_.balanceOf(treasury),       accruedToTreasury);
-        // assertEq(aBorrowAsset_.scaledBalanceOf(treasury), scaledAccruedToTreasury);
+        assertEq(aBorrowAsset_.totalSupply(),             500 ether + supplierYield + accruedToTreasury);
+        assertEq(aBorrowAsset_.balanceOf(treasury),       accruedToTreasury);
+        assertEq(aBorrowAsset_.scaledBalanceOf(treasury), scaledAccruedToTreasury);
 
-        // assertEq(pool.getReserveData(borrowAsset_).accruedToTreasury, 0);
+        assertEq(pool.getReserveData(borrowAsset_).accruedToTreasury, 0);
     }
 
     function _someTimePassedTestBefore(address borrowAsset_) 
@@ -452,10 +452,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
         assertEq(pool.getReserveData(borrowAsset_).accruedToTreasury, 0);
     }
 
-
-    // TODO: Refactor to use these functions to do case with asset1 live, asset2 live, both live
-
     // TODO: Try to think of weird edge cases where indexes haven't been updated before minting
-    // Update index/accrued, warp, mint, update index, check accrued
+    //       Update index/accrued, warp, mint, update index, check accrued
 
 }
