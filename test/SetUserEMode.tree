@@ -1,0 +1,38 @@
+pool.supply()
+├── when amount is zero
+   └── it should revert (boundary)
+├── given not active
+   └── it should revert
+├── given paused
+   └── it should revert
+├── given frozen
+   └── it should revert
+├── when not supplyCap == 0 && amount puts over supply cap
+   └── it should revert (boundary)
+├── when approval is insufficient
+   └── it should revert (boundary)
+├── when underlying balance is insufficient
+   └── it should revert (boundary)
+├── when `aToken.mint` is not called by the Pool (aToken unit test)
+   └── it should revert
+├── when `aToken._mintScaled` results in a scaled amount that's zero (aToken unit test)
+   └── it should revert
+├── when this is the first user supply
+   ├── given the asset is in isolation mode
+      ├── when msg.sender DOES NOT have ISOLATED_COLLATERAL_SUPPLIER_ROLE
+         └── it should succeed without automatic collateral supply [01]
+      └── when msg.sender DOES have ISOLATED_COLLATERAL_SUPPLIER_ROLE
+         ├── given the LTV is zero
+            └── it should succeed without automatic collateral supply [02]
+         └── given the LTV is NOT zero
+            ├── when the user IS NOT using any other collateral
+               └── it should succeed with automatic collateral supply [03]
+            └── when the user IS using any other collateral
+               ├── when the user is using a single collateral type
+                  ├── given the other collateral type is in isolation mode
+                     └── it should succeed without automatic collateral supply [04]
+                  └── given the other collateral type is NOT in isolation mode
+                     └── it should succeed without automatic collateral supply [05]
+               └── when the user is using multiple collateral types
+                  └── it should succeed without automatic collateral supply [06] (NOTE: DC is already NOT zero so condition on line 722 in ValidationLogic doesn't apply)
+  
