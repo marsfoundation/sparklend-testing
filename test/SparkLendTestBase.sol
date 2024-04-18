@@ -214,8 +214,10 @@ contract SparkLendTestBase is UserActions {
             params:                      ""
         });
 
-        vm.prank(admin);
+        vm.startPrank(admin);
         poolConfigurator.initReserves(reserveInputs);
+        poolConfigurator.setReserveFactor(address(token), 5_00);
+        vm.stopPrank();
     }
 
     function _setUpMockOracle(address asset, int256 price) internal {
