@@ -1,15 +1,45 @@
-pool.setUserEmode()
+pool.setUserEMode()
 ├── when categoryId is not zero liquidationThreshold for categoryId is zero
    └── it should revert  
 ├── when user has an active borrow with another eMode categoryId
    └── it should revert
 ├── when user is changing from an active eMode and their HF is below 1
    └── it should revert (boundary)
-├── when the user is changing from no eMode to active eMode
-   └── it should succeed
-├── when the user is changing from active eMode to different eMode with same ID
-   └── it should succeed
-├── when the user is changing from active eMode to different eMode with different ID
-   └── it should succeed
-└── when the user is changing from active eMode to no eMode
-   └── it should succeed
+├── when user has not supplied any assets
+   ├── when user does not have an active eMode
+      ├── when the user is changing to zero eMode
+         └── it should succeed with a no-op [01]
+      └── when the user is changing to an active eMode
+         └── it should succeed [02]
+   └── when user has an active eMode
+      ├── when the user is changing to zero eMode
+         └── it should succeed [03]
+      ├── when the user is changing to the same active eMode
+         └── it should succeed a no-op [04]
+      └── when the user is changing to the a different active eMode
+         └── it should succeed [05]
+└── when user has supplied an asset
+   ├── when user does not have an active eMode
+      ├── when user does not have an active borrow
+         ├── when the user is changing to zero eMode
+            └── it should succeed with a no-op [06]
+         └── when the user is changing to an active eMode
+            └── it should succeed [07]
+      └── when user has an active borrow
+         ├── when the user is changing to zero eMode
+            └── it should succeed with a no-op [08]
+         └── when the user is changing to an active eMode that matches their current borrow
+            └── it should succeed [09]
+   └── when user has an active eMode
+      ├── when user does not have an active borrow
+         ├── when the user is changing to zero eMode
+            └── it should succeed [10]
+         └── when the user is changing to the same active eMode
+            └── it should succeed with a no-op [11]
+      └── when user has an active borrow
+         ├── when the user is changing to zero eMode
+            └── it should succeed [12]
+         └── when the user is changing to an active eMode
+            └── it should succeed with a no-op [13]
+
+
