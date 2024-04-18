@@ -41,5 +41,3 @@ pool.setUserEMode()
             └── it should succeed [12]
          └── when the user is changing to an active eMode
             └── it should succeed with a no-op [13]
-
-
