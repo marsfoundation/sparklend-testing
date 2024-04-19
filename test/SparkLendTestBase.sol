@@ -379,7 +379,8 @@ contract SparkLendTestBase is UserActions {
 
         uint256 liquidityRate = borrowRate * borrowRatio / 1e27;
 
-        return (borrowRate, liquidityRate);
+        // TODO: Update this once repayWithATokens is merged
+        return (borrowRate, liquidityRate * 95/100);  
     }
 
     function _getUpdatedRates(uint256 borrowed, uint256 supplied)

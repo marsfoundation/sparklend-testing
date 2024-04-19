@@ -462,8 +462,6 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     function _repayMoreThanDebtSomeTimePassedTest(bool useMaxUint) internal {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 1000 ether);
 
-        liquidityRate = liquidityRate * 95/100;  // Reserve factor
-
         assertEq(borrowRate,    0.0625e27);
         assertEq(liquidityRate, 0.0296875e27);
 
@@ -540,8 +538,6 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     function _repayEqualToDebtSomeTimePassedTest() internal {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 1000 ether);
 
-        liquidityRate = liquidityRate * 95/100;  // Reserve factor
-
         assertEq(borrowRate,    0.0625e27);
         assertEq(liquidityRate, 0.0296875e27);
 
@@ -616,8 +612,6 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     function _repayLessThanDebtSomeTimePassedTest() internal {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 1000 ether);
 
-        liquidityRate = liquidityRate * 95/100;  // Reserve factor
-
         assertEq(borrowRate,    0.0625e27);
         assertEq(liquidityRate, 0.0296875e27);
 
@@ -677,8 +671,8 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
 
         ( borrowRate, liquidityRate ) = _getUpdatedRates(1, remainingSupply);
 
-        liquidityRate = liquidityRate * 95/100 - 2;  // Reserve factor (rounding)
-        borrowRate   -= 1;  // Rounding
+        liquidityRate -= 2;  // Rounding
+        borrowRate    -= 1;  // Rounding
 
         // Diff from 500 is small enough that it rounds to clean numbers here (unlike repay tests where full utilization caused more debt)
         assertEq(borrowRate,    0.050000000000000000000050000e27);  // 1 / 499.999902325764663556e18 = 2e-21 => 2e-21/0.8 * 0.02 = 5e4 in ray (rounding)

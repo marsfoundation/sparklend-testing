@@ -583,10 +583,8 @@ contract BorrowConcreteTests is BorrowTestBase {
         ( uint256 borrowRate, uint256 liquidityRate )
             = _getUpdatedRates(600 ether + borrowerDebt, 1000 ether + borrowerDebt);
 
-        liquidityRate = liquidityRate * 95/100 + 2;  // Account for reserve factor (rounding)
-
         assertEq(borrowRate,    0.065000525110257445296653722e27);  // ~60% utilized: 5% + 60%/80% * 2% = ~6.5%
-        assertEq(liquidityRate, 0.037051596345660783435849415e27);  // ~60% utilized: 60% * ~6.5% = ~3.9%
+        assertEq(liquidityRate, 0.037051596345660783435849413e27);  // ~60% utilized: 60% * ~6.5% = ~3.9%
 
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * 0.00525e27 * 95/100 / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;        // Accrues slightly more than 1% of APR because of compounded interest
@@ -595,7 +593,7 @@ contract BorrowConcreteTests is BorrowTestBase {
         assertEq(expectedVariableBorrowIndex, compoundedNormalizedInterest);
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
-        poolParams.currentLiquidityRate      = liquidityRate; 
+        poolParams.currentLiquidityRate      = liquidityRate + 2;
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
         poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;

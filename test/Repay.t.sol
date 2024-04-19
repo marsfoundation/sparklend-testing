@@ -463,8 +463,6 @@ contract RepayConcreteTests is RepayTestBase {
     function _repayMoreThanDebtSomeTimePassedTest() internal {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 500 ether);
 
-        liquidityRate = liquidityRate * 95/100;  // Reserve factor
-
         assertEq(borrowRate,    0.37e27);
         assertEq(liquidityRate, 0.3515e27);
 
@@ -545,8 +543,6 @@ contract RepayConcreteTests is RepayTestBase {
     function _repayEqualToDebtSomeTimePassedTest() internal {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 500 ether);
 
-        liquidityRate = liquidityRate * 95/100;  // Reserve factor
-
         assertEq(borrowRate,    0.37e27);
         assertEq(liquidityRate, 0.3515e27);
 
@@ -626,8 +622,6 @@ contract RepayConcreteTests is RepayTestBase {
 
     function _repayLessThanDebtSomeTimePassedTest() internal {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 500 ether);
-
-        liquidityRate = liquidityRate * 95/100;  // Reserve factor
 
         assertEq(borrowRate,    0.37e27);
         assertEq(liquidityRate, 0.3515e27);

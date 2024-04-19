@@ -1267,7 +1267,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         state.borrowReserveParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.37e27,
+            currentLiquidityRate:      0.37e27 * 0.95,
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.37e27,
             currentStableBorrowRate:   0,
@@ -1394,6 +1394,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         state.borrowReserveParams.variableBorrowIndex       = params.borrowIndex;
         state.borrowReserveParams.currentVariableBorrowRate = params.resultingBorrowRate;
         state.borrowReserveParams.lastUpdateTimestamp       = params.updateTimestamp;
+        state.borrowReserveParams.accruedToTreasury         = borrowerInterest * 5/100 * 1e27 / expectedLiquidityIndex;
 
         state.borrowAssetDebtTokenParams.userBalance = params.remainingDebt;
         state.borrowAssetDebtTokenParams.totalSupply = params.remainingDebt;
