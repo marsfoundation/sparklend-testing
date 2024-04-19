@@ -395,6 +395,19 @@ contract SparkLendTestBase is UserActions {
         });
     }
 
+    function _getReserveTotalSupplySideValue(address asset) 
+        internal view returns (uint256 totalValue) 
+    {
+        IERC20 aToken = IERC20(pool.getReserveData(asset).aTokenAddress);
+        
+        uint256 totalSupply = aToken.totalSupply();
+        uint256 accruedToTreasury = 
+            pool.getReserveData(asset).accruedToTreasury 
+            * pool.getReserveNormalizedIncome(asset) / 1e27;  
+
+        totalValue = totalSupply + accruedToTreasury;
+    }
+
     /**********************************************************************************************/
     /*** Permit helper functions                                                                ***/
     /**********************************************************************************************/
