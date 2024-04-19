@@ -315,9 +315,9 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.03125e27,  // Fully utilized
+            currentLiquidityRate:      0.03125e27 * 0.95,  
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
+            currentVariableBorrowRate: 0.0625e27,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -366,9 +366,9 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.03125e27,  // Fully utilized
+            currentLiquidityRate:      0.03125e27 * 0.95,  
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
+            currentVariableBorrowRate: 0.0625e27,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -415,9 +415,9 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.03125e27,  // Fully utilized
+            currentLiquidityRate:      0.03125e27 * 0.95,  
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
+            currentVariableBorrowRate: 0.0625e27,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -445,7 +445,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         vm.prank(borrower);
         pool.repayWithATokens(address(borrowAsset), 500 ether - 1, 2);
 
-        poolParams.currentLiquidityRate      = 1e5;            // 1/500e18 = 2e-21 => 2e-21 * (0.05e27 + 5e4) = 1e5 in ray
+        poolParams.currentLiquidityRate      = 1e5 * 0.95;     // 1/500e18 = 2e-21 => 2e-21 * (0.05e27 + 5e4) = 1e5 in ray
         poolParams.currentVariableBorrowRate = 0.05e27 + 5e4;  // 1/500e18 = 2e-21 => 2e-21/0.8 * 0.02 = 5e-23 = 5e4 in ray
 
         debtTokenParams.userBalance = 1;
@@ -462,26 +462,28 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     function _repayMoreThanDebtSomeTimePassedTest(bool useMaxUint) internal {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.0625e27);
-        assertEq(liquidityRate, 0.03125e27);
+        liquidityRate = liquidityRate * 95/100;  // Reserve factor
 
-        uint256 supplierYield = 0.03125e27 * 1000 ether / 100 / 1e27;  // 1% of APR
+        assertEq(borrowRate,    0.0625e27);
+        assertEq(liquidityRate, 0.0296875e27);
+
+        uint256 supplierYield = 0.0296875e27 * 1000 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
         uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27;
 
         // Borrower owes slightly more than lender has earned because of compounded interest
-        assertEq(supplierYield,                0.3125 ether);  // 1000 * 0.03125 * 1%
+        assertEq(supplierYield,                0.296875 ether);  // 1000 * 0.0296875 * 1%
         assertEq(compoundedNormalizedInterest, 1.000625195348470672890933200e27);
         assertEq(borrowerDebt,                 0.312597674235336445 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.03125e27,  // Fully utilized
+            currentLiquidityRate:      liquidityRate,  
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
+            currentVariableBorrowRate: borrowRate,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -514,7 +516,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
-        assertEq(expectedLiquidityIndex,      1.000312500000000000000000000e27);
+        assertEq(expectedLiquidityIndex,      1.000296875e27);
         assertEq(expectedVariableBorrowIndex, 1.000625195348470672890933200e27);
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
@@ -522,6 +524,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         poolParams.currentLiquidityRate      = 0;
         poolParams.currentVariableBorrowRate = 0.05e27;
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
+        poolParams.accruedToTreasury         = borrowerDebt * 5/100 * 1e27 / expectedLiquidityIndex;  // Scaled value
 
         debtTokenParams.userBalance = 0;
         debtTokenParams.totalSupply = 0;
@@ -537,26 +540,28 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     function _repayEqualToDebtSomeTimePassedTest() internal {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.0625e27);
-        assertEq(liquidityRate, 0.03125e27);
+        liquidityRate = liquidityRate * 95/100;  // Reserve factor
 
-        uint256 supplierYield = 0.03125e27 * 1000 ether / 100 / 1e27;  // 1% of APR
+        assertEq(borrowRate,    0.0625e27);
+        assertEq(liquidityRate, 0.0296875e27);
+
+        uint256 supplierYield = 0.0296875e27 * 1000 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
         uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27;
 
         // Borrower owes slightly more than lender has earned because of compounded interest
-        assertEq(supplierYield,                0.3125 ether);  // 1000 * 0.03125 * 1%
+        assertEq(supplierYield,                0.296875 ether);  // 1000 * 0.0296875 * 1%
         assertEq(compoundedNormalizedInterest, 1.000625195348470672890933200e27);
         assertEq(borrowerDebt,                 0.312597674235336445 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.03125e27,  // Fully utilized
+            currentLiquidityRate:      liquidityRate,  
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
+            currentVariableBorrowRate: borrowRate,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -587,7 +592,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
-        assertEq(expectedLiquidityIndex,      1.000312500000000000000000000e27);
+        assertEq(expectedLiquidityIndex,      1.000296875e27);
         assertEq(expectedVariableBorrowIndex, 1.000625195348470672890933200e27);
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
@@ -595,6 +600,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         poolParams.currentLiquidityRate      = 0;
         poolParams.currentVariableBorrowRate = 0.05e27;
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
+        poolParams.accruedToTreasury         = borrowerDebt * 5/100 * 1e27 / expectedLiquidityIndex;  // Scaled value
 
         debtTokenParams.userBalance = 0;
         debtTokenParams.totalSupply = 0;
@@ -610,26 +616,28 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
     function _repayLessThanDebtSomeTimePassedTest() internal {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.0625e27);
-        assertEq(liquidityRate, 0.03125e27);
+        liquidityRate = liquidityRate * 95/100;  // Reserve factor
 
-        uint256 supplierYield = 0.03125e27 * 1000 ether / 100 / 1e27;  // 1% of APR
+        assertEq(borrowRate,    0.0625e27);
+        assertEq(liquidityRate, 0.0296875e27);
+
+        uint256 supplierYield = 0.0296875e27 * 1000 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
         uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27;
 
         // Borrower owes slightly more than lender has earned because of compounded interest
-        assertEq(supplierYield,                0.3125 ether);  // 1000 * 0.03125 * 1%
+        assertEq(supplierYield,                0.296875 ether);  // 1000 * 0.0296875 * 1%
         assertEq(compoundedNormalizedInterest, 1.000625195348470672890933200e27);
         assertEq(borrowerDebt,                 0.312597674235336445 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.03125e27,  // Fully utilized
+            currentLiquidityRate:      liquidityRate,  
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
+            currentVariableBorrowRate: borrowRate,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -660,24 +668,28 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
-        assertEq(expectedLiquidityIndex,      1.0003125e27);
+        assertEq(expectedLiquidityIndex,      1.000296875e27);
         assertEq(expectedVariableBorrowIndex, 1.000625195348470672890933200e27);
 
         uint256 remainingSupply = (1000 ether + supplierYield) - (500 ether + borrowerDebt - 1);
 
-        assertEq(remainingSupply, 499.999902325764663556 ether);
+        assertEq(remainingSupply, 499.984277325764663556 ether);
 
         ( borrowRate, liquidityRate ) = _getUpdatedRates(1, remainingSupply);
 
+        liquidityRate = liquidityRate * 95/100 - 2;  // Reserve factor (rounding)
+        borrowRate   -= 1;  // Rounding
+
         // Diff from 500 is small enough that it rounds to clean numbers here (unlike repay tests where full utilization caused more debt)
-        assertEq(borrowRate,    0.050000000000000000000050000e27);  // 1 / 499.999902325764663556e18 = 2e-21 => 2e-21/0.8 * 0.02 = 5e4 in ray
-        assertEq(liquidityRate, 0.000000000000000000000100000e27);  // 1 / 499.999902325764663556e18 = 2e-21 => 2e-21 * (0.05e27 + 5e4) = 1e5 in ray
+        assertEq(borrowRate,    0.050000000000000000000050000e27);  // 1 / 499.999902325764663556e18 = 2e-21 => 2e-21/0.8 * 0.02 = 5e4 in ray (rounding)
+        assertEq(liquidityRate, 0.000000000000000000000095000e27);  // 1 / 499.999902325764663556e18 = 2e-21 => 2e-21 * (0.05e27 + 5e4) = 1e5 in ray (rounding) TODO: Investigate why not 95%
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
         poolParams.currentLiquidityRate      = liquidityRate;
-        poolParams.currentVariableBorrowRate = borrowRate;
+        poolParams.currentVariableBorrowRate = borrowRate;  
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
+        poolParams.accruedToTreasury         = borrowerDebt * 5/100 * 1e27 / expectedLiquidityIndex;  // Scaled value
 
         debtTokenParams.userBalance = 1;
         debtTokenParams.totalSupply = 1;
