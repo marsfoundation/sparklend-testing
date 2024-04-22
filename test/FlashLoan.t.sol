@@ -909,16 +909,16 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
             ,
         ) = _loadStartingParamsAndAssertState(0);
 
-        // _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
 
-        // _callFlashLoan();
+        _callFlashLoan();
 
-        // // No state changes
-        // _assertPoolReserveState(poolParams);
-        // _assertATokenState(aTokenParams);
-        // _assertAssetState(assetParams);
+        // No state changes
+        _assertPoolReserveState(poolParams);
+        _assertATokenState(aTokenParams);
+        _assertAssetState(assetParams);
 
-        // _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
     }
 
     function _timePassedNoFeesTest() internal {
