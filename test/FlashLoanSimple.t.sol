@@ -487,6 +487,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         // NOTE: `accruedToTreasury` is scaled by the liquidityIndex before it is updated by the flashloan again to reflect supplier yield
 
         // 9.5% of 100 ether borrow
+        // TODO: Update all comments to make sense
         uint256 flashLoanAccrued = 9.5 ether * 1e27 / (borrowerInterest * 5/100 + 1000.049875 ether) + 1e27 + 1;  // Rounding
 
         // 1e27 + 9.5% of 100 borrow = 1.0095e27 - Note that this was updated WITHOUT time passing.
