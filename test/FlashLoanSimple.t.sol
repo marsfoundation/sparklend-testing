@@ -445,7 +445,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _assertAssetState(assetParams);
     }
 
-    function test_flashLoanSimple_10_TODO()
+    function test_flashLoanSimple_10()
         whenSomeTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsNotZero
