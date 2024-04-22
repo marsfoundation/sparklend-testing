@@ -315,7 +315,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.03125e27 * 0.95,  
+            currentLiquidityRate:      0.0296875e27,  // 3.125% * 95%  
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.0625e27,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
@@ -366,7 +366,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.03125e27 * 0.95,  
+            currentLiquidityRate:      0.0296875e27,  // 3.125% * 95%  
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.0625e27,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
@@ -415,7 +415,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.03125e27 * 0.95,  
+            currentLiquidityRate:      0.0296875e27,  // 3.125% * 95%  
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.0625e27,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,

@@ -234,8 +234,8 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.0525e27);          // 5% + 10%/80% of 2% = 5.25%
-        assertEq(liquidityRate, 0.00525e27 * 0.95);  // 10% of 5.25%
+        assertEq(borrowRate,    0.0525e27);     // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.0049875e27);  // 10% of 5.25%
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
@@ -299,9 +299,9 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
 
         assertEq(borrowRate,    0.0525e27);          // 5% + 10%/80% of 2% = 5.25%
-        assertEq(liquidityRate, 0.00525e27 * 0.95);  // 10% of 5.25%
+        assertEq(liquidityRate, 0.0049875e27);  // 10% of 5.25%
 
-        uint256 supplierYield = 0.00525e27 * 0.95 * 1000 ether / 100 / 1e27;  // 1% of APR
+        uint256 supplierYield = 0.0049875e27 * 1000 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
@@ -437,8 +437,8 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.0525e27);          // 5% + 10%/80% of 2% = 5.25%
-        assertEq(liquidityRate, 0.00525e27 * 0.95);  // 10% of 5.25%
+        assertEq(borrowRate,    0.0525e27);     // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.0049875e27);  // 10% of 5.25% * 95%
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
@@ -501,10 +501,10 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.0525e27);   // 5% + 10%/80% of 2% = 5.25%
-        assertEq(liquidityRate, 0.00525e27 * 0.95);  // 10% of 5.25%
+        assertEq(borrowRate,    0.0525e27);     // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.0049875e27);  // 10% of 5.25% * 95%
 
-        uint256 supplierYield = 0.00525e27 * 0.95 * 1000 ether / 100 / 1e27;  // 1% of APR
+        uint256 supplierYield = 0.0049875e27 * 1000 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 

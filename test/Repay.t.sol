@@ -311,7 +311,7 @@ contract RepayConcreteTests is RepayTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.37e27 * 0.95,  // Fully utilized
+            currentLiquidityRate:      0.3515e27,  // Fully utilized (37% * 95%)
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.37e27,  // Fully utilized: 5% + 2% + 30%
             currentStableBorrowRate:   0,
@@ -363,7 +363,7 @@ contract RepayConcreteTests is RepayTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.37e27 * 0.95,  // Fully utilized
+            currentLiquidityRate:      0.3515e27,  // Fully utilized (37% * 95%)
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.37e27,  // Fully utilized: 5% + 2% + 30%
             currentStableBorrowRate:   0,
@@ -415,7 +415,7 @@ contract RepayConcreteTests is RepayTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.37e27 * 0.95,  // Fully utilized
+            currentLiquidityRate:      0.3515e27,  // Fully utilized (37% * 95%)
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.37e27,  // Fully utilized: 5% + 2% + 30%
             currentStableBorrowRate:   0,

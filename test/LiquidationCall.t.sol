@@ -705,7 +705,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.remainingDebt        = 301.853426710065837121 ether;
         params.healthFactor         = 1.321833594366751193e18;
 
-        params.liquidityIndex         = 1.003515e27;                       // Full utilization for a 1% of a year
+        params.liquidityIndex         = 1.003515e27;                       // Full utilization for a 1% of a year (37% * 95%)
         params.borrowIndex            = 1.003706853420131674241446640e27;  // Smaller difference because compounded over a shorter period
         params.resultingBorrowRate    = 0.065036931634047337318693389e27;
         params.resultingLiquidityRate = 0.037162323997436454893740155e27;
@@ -829,7 +829,7 @@ contract LiquidationCallConcreteTest is LiquidationCallTestBase {
         params.remainingDebt        = 360.449082244133180581 ether;  // Bad debt because user has no collateral after liquidation
         params.healthFactor         = 0;  // HF goes to zero when there is no collateral backing debt
 
-        params.liquidityIndex         = 1.963013698630136986301369863e27;  // 1000/365 x 37%
+        params.liquidityIndex         = 1.963013698630136986301369863e27;  // 1000/365 x 37% * 95%
         params.borrowIndex            = 2.701096184290246559179463013e27;  // Significant difference because large APR and compounded over a year
         params.resultingBorrowRate    = 0.056672274100058502185344188e27;  // Borrow rate above base
         params.resultingLiquidityRate = 0.014369051973430990970975058e27;  // Liquidity rate above zero because of bad debt

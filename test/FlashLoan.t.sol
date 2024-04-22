@@ -452,7 +452,7 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
 
         // Utilization rate has decreased because of premium being added to the pool
         assertLt(borrowRate,    0.0525e27);
-        assertLt(liquidityRate, 0.0049875e27);
+        assertLt(liquidityRate, 0.0049875e27);  // 5.25% * 95%
         assertEq(borrowRate,    0.052475247524752475247524752e27);
         assertEq(liquidityRate, 0.004935790608763846681697872e27);
 
@@ -500,7 +500,7 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
 
         // Utilization rate has decreased because of premium being added to the pool
         assertLt(borrowRate,    0.0525e27);
-        assertLt(liquidityRate, 0.0049875e27);
+        assertLt(liquidityRate, 0.0049875e27);   // 5.25% * 95%
         assertEq(borrowRate,    0.052475247524752475247524752e27);
         assertEq(liquidityRate, 0.004935790608763846681697872e27);
 
@@ -676,16 +676,16 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         // NOTE: `accruedToTreasury` is scaled by the liquidityIndex before it is updated by the flashloan again to reflect supplier yield
 
         // 10% of 100 ether borrow
-        uint256 flashLoanAccrued = 10 ether * 1e27 / (borrowerInterest * 5/100 + 1000.049875 ether) + 1e27 + 1;  // Rounding
+        uint256 flashLoanNormalizedAccrual = 10 ether * 1e27 / (borrowerInterest * 5/100 + 1000.049875 ether) + 1e27 + 1;  // Rounding
 
-        // Update liquidityIndex again based on 10% of the borrow accrued over the total value of the pool
+        // Update liquidityIndex again based on 10% of the flashborrow accrued over the total value of the pool
         // (totalSupply + accruedToTreasury) Note that this was updated WITHOUT time passing
         // Also note that the borrowIndex does not update because they do not owe any more interest
         // This value is accrued against the liquidityIndex that was already updated to reflect the borrower interest
         // 1. Update indexes/rates to reflect yield earned since last pool update
         // 2. Update accruedToTreasury to reflect treasury earnings from yield
         // 3. Calculate flashloanAccrued to reflect the yield earned by the LPs (includes treasury as an LP based on accruedToTreasury earnings)
-        uint256 expectedLiquidityIndex = expectedYieldLiquidityIndex * flashLoanAccrued / 1e27;
+        uint256 expectedLiquidityIndex = expectedYieldLiquidityIndex * flashLoanNormalizedAccrual / 1e27;
         uint256 expectedLPBalance      = 1000 ether * expectedLiquidityIndex / 1e27;  // 100 flashborrow * 10% premium + supplier yield
 
         assertEq(expectedLiquidityIndex, 1.010049848744486783960059129e27);
@@ -753,20 +753,17 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         // NOTE: `accruedToTreasury` is scaled by the liquidityIndex before it is updated by the flashloan again to reflect supplier yield
 
         // 9.5% of 100 ether borrow
-        // TODO: Update all comments to make sense
-        uint256 flashLoanAccrued = 9.5 ether * 1e27 / (borrowerInterest * 5/100 + 1000.049875 ether) + 1e27 + 1;  // Rounding
+        uint256 flashLoanNormalizedAccrual = 9.5 ether * 1e27 / (borrowerInterest * 5/100 + 1000.049875 ether) + 1e27 + 1;  // Rounding
 
-        // 1e27 + 9.5% of 100 borrow = 1.0095e27 - Note that this was updated WITHOUT time passing.
+        // Update liquidityIndex again based on 9.5% of the flashborrow accrued over the total value of the pool
+        // (totalSupply + accruedToTreasury) Note that this was updated WITHOUT time passing.
         // This value is accrued against the liquidityIndex that was already updated to reflect the borrower interest.
         // Also note that the borrowIndex does not update because they do not owe any more interest.
-        // Also note that this index is 1.0095 and not 1.01 because it takes into account the accruedToTreasury.
         // The amount earned by the LPs is accrued to the index, and the accruedToTreasury amount is used in the calculation.
         // These amounts are calculated based on the state of the pool BEFORE the premium is sent in.
         // So the calculation is:
         // newIndex = oldIndex + (premiumToLP / (aToken.totalSupply + aToken.accruedToTreasury * oldIndex))
-        // newIndex = 1 + (9.5 / (1000 + 0 * 1))
-        // newIndex = 1.0095
-        poolParams.liquidityIndex = expectedYieldLiquidityIndex * flashLoanAccrued / 1e27;
+        poolParams.liquidityIndex = expectedYieldLiquidityIndex * flashLoanNormalizedAccrual / 1e27;
 
         assertEq(poolParams.liquidityIndex, 1.009549850057262444762056173e27);
 
@@ -776,7 +773,7 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         assertEq(aTokenParams.userBalance, 1009.549850057262444762 ether);
         assertEq(aTokenParams.totalSupply, 1009.549850057262444762 ether);
 
-        // Amount accrued to the treasury from the flashloan premium
+        // Amount accrued to the treasury from the flashloan premium, scaled against the resulting liquidityIndex
         uint256 accruedToTreasury = uint256(0.5 ether * 1e27) / poolParams.liquidityIndex;
 
         assertEq(accruedToTreasury, 0.495270243437349443 ether);
@@ -885,7 +882,7 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
             currentVariableBorrowRate: borrowRate,
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
-            accruedToTreasury:         0, // borrowerInterest * 5/100 * 1e27 / expectedYieldLiquidityIndex,
+            accruedToTreasury:         0, 
             unbacked:                  0
         });
 
@@ -945,7 +942,7 @@ contract FlashLoanSuccessTests is FlashLoanTestBase {
         _callFlashLoan();
 
         assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.000049875e27);  // 0.525% yield for 1% of a year = 0.00525%
+        assertEq(expectedYieldLiquidityIndex, 1.000049875e27);  // 0.525% yield for 1% of a year = 0.00525% * 95%
         assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
 
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);
