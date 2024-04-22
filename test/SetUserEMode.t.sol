@@ -3,11 +3,9 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { UserConfiguration } from "sparklend-v1-core/contracts/protocol/libraries/configuration/UserConfiguration.sol";
 import { Errors }            from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
-import { DataTypes }         from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
 
-import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
+import { SparkLendTestBase } from "./SparkLendTestBase.sol";
 
 contract SetUserEModeTestBase is SparkLendTestBase {
 
@@ -116,7 +114,10 @@ contract SetUserEModeSuccessTests is SetUserEModeTestBase {
         _;
     }
 
-    modifier whenUserDoesNotHaveActiveEMode { _; }
+    modifier whenUserDoesNotHaveActiveEMode { 
+        assertEq(pool.getUserEMode(borrower), 0);
+        _; 
+    }
 
     modifier whenUserHasActiveEMode {
         vm.prank(borrower);
@@ -127,6 +128,8 @@ contract SetUserEModeSuccessTests is SetUserEModeTestBase {
         _;
     }
 
+    modifier whenUserDoesNotHaveAnActiveBorrow { _; }
+
     modifier whenUserHasAnActiveBorrow {
         vm.prank(borrower);
         pool.setUserUseReserveAsCollateral(address(collateralAsset), true);
@@ -135,8 +138,6 @@ contract SetUserEModeSuccessTests is SetUserEModeTestBase {
         _borrow(borrower, address(collateralAsset), 100 ether);
         _;
     }
-
-    modifier whenUserDoesNotHaveAnActiveBorrow { _; }
 
     function test_setUserEMode_01() 
         public 

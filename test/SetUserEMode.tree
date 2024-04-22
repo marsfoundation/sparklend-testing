@@ -1,5 +1,5 @@
 pool.setUserEMode()
-├── when categoryId is not zero liquidationThreshold for categoryId is zero
+├── when categoryId is not zero and liquidationThreshold for categoryId is zero
    └── it should revert  
 ├── when user has an active borrow with another eMode categoryId
    └── it should revert
