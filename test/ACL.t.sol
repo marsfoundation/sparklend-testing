@@ -498,7 +498,8 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
     /**********************************************************************************************/
 
     function test_initReserves_assetListingAdminOrPoolAdminACL() public {
-        ConfiguratorInputTypes.InitReserveInput[] memory input = new ConfiguratorInputTypes.InitReserveInput[](1);
+        ConfiguratorInputTypes.InitReserveInput[] memory input 
+            = new ConfiguratorInputTypes.InitReserveInput[](1);
 
         input[0] = ConfiguratorInputTypes.InitReserveInput({
             aTokenImpl:                  address(borrowAsset),  // Address with code 
