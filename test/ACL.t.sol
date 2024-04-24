@@ -493,4 +493,406 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         poolConfigurator.setPoolPause(true);
     }
 
+    /**********************************************************************************************/
+    /*** Asset Listing Admin or Pool Admin ACL tests                                            ***/
+    /**********************************************************************************************/
+
+    function test_initReserves_assetListingAdminOrPoolAdminACL() public {
+        ConfiguratorInputTypes.InitReserveInput[] memory input = new ConfiguratorInputTypes.InitReserveInput[](1);
+
+        input[0] = ConfiguratorInputTypes.InitReserveInput({
+            aTokenImpl:                  address(borrowAsset),  // Address with code 
+            stableDebtTokenImpl:         address(borrowAsset),  // Address with code 
+            variableDebtTokenImpl:       address(borrowAsset),  // Address with code 
+            underlyingAssetDecimals:     18,
+            interestRateStrategyAddress: address(borrowAsset),  // Address with code 
+            underlyingAsset:             address(borrowAsset),  // Address with code 
+            treasury:                    treasury,
+            incentivesController:        address(0),
+            aTokenName:                  "aToken",
+            aTokenSymbol:                "aToken",
+            variableDebtTokenName:       "vdToken",
+            variableDebtTokenSymbol:     "vdToken",
+            stableDebtTokenName:         "sdToken",
+            stableDebtTokenSymbol:       "sdToken",
+            params:                      abi.encode("")
+        });
+
+        vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN));
+        poolConfigurator.initReserves(input);
+
+        // Other admins should fail
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN));
+        poolConfigurator.initReserves(input);
+        
+        vm.prank(RISK_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN));
+        poolConfigurator.initReserves(input);
+
+        // AssetListingAdmin and PoolAdmin pass ACL check in `onlyAssetListingOrPoolAdmin`
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(""));  // EVM revert in ConfiguratorLogic library
+        poolConfigurator.initReserves(input);
+
+        vm.prank(POOL_ADMIN);
+        vm.expectRevert(bytes(""));  // EVM revert in ConfiguratorLogic library
+        poolConfigurator.initReserves(input);
+    }
+
+    /**********************************************************************************************/
+    /*** Risk Admin or Pool Admin ACL tests                                                     ***/
+    /**********************************************************************************************/
+
+    function test_setReserveBorrowing_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
+    }
+
+    function test_configureReserveAsCollateral_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.configureReserveAsCollateral(address(borrowAsset), 50_00, 50_00, 101_00);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.configureReserveAsCollateral(address(borrowAsset), 50_00, 50_00, 101_00);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.configureReserveAsCollateral(address(borrowAsset), 50_00, 50_00, 101_00);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.configureReserveAsCollateral(address(borrowAsset), 50_00, 50_00, 101_00);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.configureReserveAsCollateral(address(borrowAsset), 50_00, 50_00, 101_00);
+    }
+
+    function test_setReserveStableRateBorrowing_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveStableRateBorrowing(address(borrowAsset), true);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveStableRateBorrowing(address(borrowAsset), true);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveStableRateBorrowing(address(borrowAsset), true);
+
+        // RiskAdmin and PoolAdmin pass ACL check in `onlyRiskOrPoolAdmins`
+
+        vm.prank(POOL_ADMIN);
+        vm.expectRevert(bytes(Errors.BORROWING_NOT_ENABLED));
+        poolConfigurator.setReserveStableRateBorrowing(address(borrowAsset), true);
+        
+        vm.prank(RISK_ADMIN);
+        vm.expectRevert(bytes(Errors.BORROWING_NOT_ENABLED));
+        poolConfigurator.setReserveStableRateBorrowing(address(borrowAsset), true);
+    }
+
+    function test_setReserveFlashLoaning_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveFlashLoaning(address(borrowAsset), true);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveFlashLoaning(address(borrowAsset), true);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveFlashLoaning(address(borrowAsset), true);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setReserveFlashLoaning(address(borrowAsset), true);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setReserveFlashLoaning(address(borrowAsset), true);
+    }
+
+    function test_setReserveFreeze_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveFreeze(address(borrowAsset), true);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveFreeze(address(borrowAsset), true);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveFreeze(address(borrowAsset), true);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setReserveFreeze(address(borrowAsset), true);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setReserveFreeze(address(borrowAsset), true);
+    }
+
+    function test_setReserveFactor_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveFactor(address(borrowAsset), 1_00);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveFactor(address(borrowAsset), 1_00);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveFactor(address(borrowAsset), 1_00);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setReserveFactor(address(borrowAsset), 1_00);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setReserveFactor(address(borrowAsset), 1_00);
+    }
+
+    function test_setDebtCeiling_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setDebtCeiling(address(borrowAsset), 500_000_00);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setDebtCeiling(address(borrowAsset), 500_000_00);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setDebtCeiling(address(borrowAsset), 500_000_00);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setDebtCeiling(address(borrowAsset), 500_000_00);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setDebtCeiling(address(borrowAsset), 500_000_00);
+    }
+
+    function test_setSiloedBorrowing_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setSiloedBorrowing(address(borrowAsset), true);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setSiloedBorrowing(address(borrowAsset), true);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setSiloedBorrowing(address(borrowAsset), true);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setSiloedBorrowing(address(borrowAsset), true);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setSiloedBorrowing(address(borrowAsset), true);
+    }
+
+    function test_setBorrowCap_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setBorrowCap(address(borrowAsset), 500_000_00);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setBorrowCap(address(borrowAsset), 500_000_00);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setBorrowCap(address(borrowAsset), 500_000_00);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setBorrowCap(address(borrowAsset), 500_000_00);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setBorrowCap(address(borrowAsset), 500_000_00);
+    }
+
+    function test_setSupplyCap_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setSupplyCap(address(borrowAsset), 500_000_00);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setSupplyCap(address(borrowAsset), 500_000_00);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setSupplyCap(address(borrowAsset), 500_000_00);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setSupplyCap(address(borrowAsset), 500_000_00);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setSupplyCap(address(borrowAsset), 500_000_00);
+    }
+
+    function test_setLiquidationProtocolFee_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setLiquidationProtocolFee(address(borrowAsset), 5_00);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setLiquidationProtocolFee(address(borrowAsset), 5_00);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setLiquidationProtocolFee(address(borrowAsset), 5_00);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setLiquidationProtocolFee(address(borrowAsset), 5_00);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setLiquidationProtocolFee(address(borrowAsset), 5_00);
+    }
+
+    function test_setEModeCategory_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setEModeCategory(1, 50_00, 50_00, 100_01, address(0), "emode1");
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setEModeCategory(1, 50_00, 50_00, 100_01, address(0), "emode1");
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setEModeCategory(1, 50_00, 50_00, 100_01, address(0), "emode1");
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setEModeCategory(1, 50_00, 50_00, 100_01, address(0), "emode1");
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setEModeCategory(1, 50_00, 50_00, 100_01, address(0), "emode1");
+    }
+
+    function test_setAssetEModeCategory_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setAssetEModeCategory(address(borrowAsset), 1);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setAssetEModeCategory(address(borrowAsset), 1);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setAssetEModeCategory(address(borrowAsset), 1);
+
+        // RiskAdmin and PoolAdmin pass ACL check in `onlyRiskOrPoolAdmins`
+
+        vm.prank(POOL_ADMIN);
+        vm.expectRevert(bytes(Errors.INVALID_EMODE_CATEGORY_ASSIGNMENT));
+        poolConfigurator.setAssetEModeCategory(address(borrowAsset), 1);
+        
+        vm.prank(RISK_ADMIN);
+        vm.expectRevert(bytes(Errors.INVALID_EMODE_CATEGORY_ASSIGNMENT));
+        poolConfigurator.setAssetEModeCategory(address(borrowAsset), 1);
+    }
+
+    function test_setUnbackedMintCap_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setUnbackedMintCap(address(borrowAsset), 500_000_00);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setUnbackedMintCap(address(borrowAsset), 500_000_00);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setUnbackedMintCap(address(borrowAsset), 500_000_00);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setUnbackedMintCap(address(borrowAsset), 500_000_00);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setUnbackedMintCap(address(borrowAsset), 500_000_00);
+    }
+
+    function test_setReserveInterestRateStrategyAddress_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveInterestRateStrategyAddress(address(borrowAsset), address(1));
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveInterestRateStrategyAddress(address(borrowAsset), address(1));
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setReserveInterestRateStrategyAddress(address(borrowAsset), address(1));
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setReserveInterestRateStrategyAddress(address(borrowAsset), address(1));
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setReserveInterestRateStrategyAddress(address(borrowAsset), address(1));
+    }
+
 }
