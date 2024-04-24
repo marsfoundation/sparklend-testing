@@ -6,6 +6,8 @@ import "forge-std/Test.sol";
 import { BaseImmutableAdminUpgradeabilityProxy } 
     from "sparklend-v1-core/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol";
 
+import { ConfiguratorInputTypes } from "sparklend-v1-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
+
 import { DataTypes } from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
 import { Errors }    from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
@@ -208,4 +210,121 @@ contract PoolACLTests is SparkLendTestBase {
         poolProxy.upgradeToAndCall(address(borrowAsset), abi.encodeWithSignature("totalSupply()"));  
     }
     
+}
+
+contract PoolConfiguratorACLTests is SparkLendTestBase {
+
+    address public POOL_ADMIN;
+
+    function setUp() public override {
+        super.setUp();
+        
+        POOL_ADMIN = admin;
+    }
+
+    /**********************************************************************************************/
+    /*** Pool Admin ACL tests                                                                   ***/
+    /**********************************************************************************************/
+
+    function test_dropReserve_poolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
+        poolConfigurator.dropReserve(address(borrowAsset));
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.dropReserve(address(borrowAsset));
+    }
+
+    function test_updateAToken_poolAdminACL() public {
+        ConfiguratorInputTypes.UpdateATokenInput memory input 
+            = ConfiguratorInputTypes.UpdateATokenInput({
+                asset:                address(borrowAsset),
+                treasury:             treasury,
+                incentivesController: address(0),
+                name:                 "aToken",
+                symbol:               "aToken",
+                implementation:       address(borrowAsset),  // Address with code
+                params :              abi.encode("")
+            });
+
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
+        poolConfigurator.updateAToken(input);
+
+        // Passes ACL check in `onlyPoolAdmin`
+        vm.prank(POOL_ADMIN);
+        vm.expectRevert(bytes(""));  // EVM revert in ConfiguratorLogic library
+        poolConfigurator.updateAToken(input);
+    }
+
+    function test_updateStableDebtToken_poolAdminACL() public {
+        ConfiguratorInputTypes.UpdateDebtTokenInput memory input 
+            = ConfiguratorInputTypes.UpdateDebtTokenInput({
+                asset:                address(borrowAsset),
+                incentivesController: address(0),
+                name:                 "aToken",
+                symbol:               "aToken",
+                implementation:       address(borrowAsset),  // Address with code
+                params :              abi.encode("")
+            });
+
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
+        poolConfigurator.updateStableDebtToken(input);
+
+        // Passes ACL check in `onlyPoolAdmin`
+        vm.prank(POOL_ADMIN);
+        vm.expectRevert(bytes(""));  // EVM revert in ConfiguratorLogic library
+        poolConfigurator.updateStableDebtToken(input);
+    }
+
+    function test_updateVariableDebtToken_poolAdminACL() public {
+        ConfiguratorInputTypes.UpdateDebtTokenInput memory input 
+            = ConfiguratorInputTypes.UpdateDebtTokenInput({
+                asset:                address(borrowAsset),
+                incentivesController: address(0),
+                name:                 "aToken",
+                symbol:               "aToken",
+                implementation:       address(borrowAsset),  // Address with code
+                params :              abi.encode("")
+            });
+
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
+        poolConfigurator.updateVariableDebtToken(input);
+
+        // Passes ACL check in `onlyPoolAdmin`
+        vm.prank(POOL_ADMIN);
+        vm.expectRevert(bytes(""));  // EVM revert in ConfiguratorLogic library
+        poolConfigurator.updateVariableDebtToken(input);
+    }
+
+    function test_setReserveActive_poolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
+        poolConfigurator.setReserveActive(address(borrowAsset), true);
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setReserveActive(address(borrowAsset), true);
+    }
+
+    function test_updateBridgeProtocolFee_poolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
+        poolConfigurator.updateBridgeProtocolFee(100);
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.updateBridgeProtocolFee(100);
+    }
+
+    function test_updateFlashloanPremiumTotal_poolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
+        poolConfigurator.updateFlashloanPremiumTotal(100);
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.updateFlashloanPremiumTotal(100);
+    }
+
+    function test_updateFlashloanPremiumToProtocol_poolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
+        poolConfigurator.updateFlashloanPremiumToProtocol(100);
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.updateFlashloanPremiumToProtocol(100);
+    }
+
 }
