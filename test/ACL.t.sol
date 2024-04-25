@@ -897,3 +897,106 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
     }
 
 }
+
+contract PoolAddressesProviderACLTests is SparkLendTestBase {
+
+    address public SC_SET_ADDRESS;
+
+    address public OWNER       = admin;
+    address public SET_ADDRESS = makeAddr("setAddress");
+
+    bytes public ownableError = "Ownable: caller is not the owner";
+
+    function setUp() public override {
+        super.setUp();
+
+        SC_SET_ADDRESS = address(pool);  // Address with code
+    }
+
+    /**********************************************************************************************/
+    /*** Owner ACL tests                                                                        ***/
+    /**********************************************************************************************/
+
+    function test_renounceOwnership_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.renounceOwnership();
+
+        vm.prank(OWNER);
+        poolAddressesProvider.renounceOwnership();
+    }
+
+    function test_transferOwnership_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.transferOwnership(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.transferOwnership(SET_ADDRESS);
+    }
+
+    function test_setMarketId_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setMarketId("marketId");
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setMarketId("marketId");
+    } 
+
+    function test_setAddress_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setAddress("id", SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setAddress("id", SET_ADDRESS);
+    } 
+
+    function test_setAddressAsProxy_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setAddressAsProxy("id", SC_SET_ADDRESS);
+
+        // Passes ACL check in `onlyOwner`
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(""));  // EVM revert
+        poolAddressesProvider.setAddressAsProxy("id", SC_SET_ADDRESS);
+    } 
+
+    function test_setPriceOracle_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPriceOracle(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setPriceOracle(SET_ADDRESS);
+    } 
+
+    function test_setACLManager_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setACLManager(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setACLManager(SET_ADDRESS);
+    } 
+
+    function test_setACLAdmin_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setACLAdmin(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setACLAdmin(SET_ADDRESS);
+    } 
+
+    function test_setPriceOracleSentinel_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPriceOracleSentinel(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setPriceOracleSentinel(SET_ADDRESS);
+    } 
+
+    function test_setPoolDataProvider_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPoolDataProvider(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setPoolDataProvider(SET_ADDRESS);
+    } 
+
+}
