@@ -50,12 +50,13 @@ contract SparkLendTestBase is UserActions {
     address riskAdmin      = makeAddr("riskAdmin"); 
     address treasury       = makeAddr("treasury");  // TODO: Use real treasury and demo withdrawal
 
-    AaveOracle            aaveOracle;
-    ACLManager            aclManager;
-    DataProvider          protocolDataProvider;
-    Pool                  pool;
-    PoolAddressesProvider poolAddressesProvider;
-    PoolConfigurator      poolConfigurator;
+    AaveOracle                    aaveOracle;
+    ACLManager                    aclManager;
+    DataProvider                  protocolDataProvider;
+    Pool                          pool;
+    PoolAddressesProvider         poolAddressesProvider;
+    PoolAddressesProviderRegistry registry;
+    PoolConfigurator              poolConfigurator;
 
     AToken            aTokenImpl;
     Pool              poolImpl;
@@ -79,8 +80,7 @@ contract SparkLendTestBase is UserActions {
         address deployer = address(this);
 
         poolAddressesProvider = new PoolAddressesProvider("0", deployer);
-
-        PoolAddressesProviderRegistry registry = new PoolAddressesProviderRegistry(deployer);
+        registry              = new PoolAddressesProviderRegistry(deployer);
 
         poolAddressesProvider.setACLAdmin(deployer);
 

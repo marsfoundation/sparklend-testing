@@ -1000,3 +1000,61 @@ contract PoolAddressesProviderACLTests is SparkLendTestBase {
     } 
 
 }
+
+contract PoolAddressesProviderRegistryACLTests is SparkLendTestBase {
+
+    address public SC_SET_ADDRESS;
+
+    address public OWNER       = admin;
+    address public SET_ADDRESS = makeAddr("setAddress");
+
+    bytes public ownableError = "Ownable: caller is not the owner";
+
+    function setUp() public override {
+        super.setUp();
+
+        SC_SET_ADDRESS = address(pool);  // Address with code
+    }
+
+    /**********************************************************************************************/
+    /*** Owner ACL tests                                                                        ***/
+    /**********************************************************************************************/
+
+    function test_renounceOwnership_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        registry.renounceOwnership();
+
+        vm.prank(OWNER);
+        registry.renounceOwnership();
+    }
+
+    function test_transferOwnership_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        registry.transferOwnership(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        registry.transferOwnership(SET_ADDRESS);
+    }
+
+    function test_registerAddressesProvider_poolAdminACL() public {
+        vm.expectRevert(ownableError);
+        registry.registerAddressesProvider(SET_ADDRESS, 2);  // ID 1 used up in `setUp`
+
+        vm.prank(OWNER);
+        registry.registerAddressesProvider(SET_ADDRESS, 2);  // ID 1 used up in `setUp`
+    }
+
+    function test_unregisterAddressesProvider_poolAdminACL() public {
+        vm.prank(OWNER);
+        registry.registerAddressesProvider(SET_ADDRESS, 2);  // ID 1 used up in `setUp`
+
+        vm.expectRevert(ownableError);
+        registry.unregisterAddressesProvider(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        registry.unregisterAddressesProvider(SET_ADDRESS);
+    }
+
+    
+}
+
