@@ -1250,3 +1250,43 @@ contract ACLManagerACLTests is SparkLendTestBase {
 
 }
 
+contract ATokenACLTests is SparkLendTestBase {
+
+    address public POOL_ADDRESSES_PROVIDER;
+    
+    function setUp() public override {
+        super.setUp();
+        POOL_ADDRESSES_PROVIDER = address(poolAddressesProvider);
+    }
+
+    /**********************************************************************************************/
+    /*** Pool Addresses Provider Upgradeability ACL tests                                       ***/
+    /**********************************************************************************************/
+
+    function test_upgradeTo_upgradeabilityACL() public {
+        BaseImmutableAdminUpgradeabilityProxy aBorrowAssetProxy 
+            = BaseImmutableAdminUpgradeabilityProxy(payable(address(aBorrowAsset)));
+
+        // Routes to fallback which EVM reverts when selector doesn't match on aBorrowAsset implementation
+        vm.expectRevert(bytes(""));
+        aBorrowAssetProxy.upgradeTo(address(borrowAsset));  // Use an address with code
+
+        vm.prank(POOL_ADDRESSES_PROVIDER);
+        aBorrowAssetProxy.upgradeTo(address(borrowAsset));  // Use an address with code
+    }
+
+    // NOTE: This function signature does NOT match what's on mainnet for the Pool proxy.
+    // TODO: Investigate this.
+    function test_upgradeToAndCall_upgradeabilityACL() public {
+        BaseImmutableAdminUpgradeabilityProxy aBorrowAssetProxy 
+            = BaseImmutableAdminUpgradeabilityProxy(payable(address(aBorrowAsset)));
+
+        // Routes to fallback which EVM reverts when selector doesn't match on aBorrowAsset implementation
+        vm.expectRevert(bytes(""));
+        aBorrowAssetProxy.upgradeToAndCall(address(borrowAsset), abi.encodeWithSignature("totalSupply()"));  
+
+        vm.prank(POOL_ADDRESSES_PROVIDER);
+        aBorrowAssetProxy.upgradeToAndCall(address(borrowAsset), abi.encodeWithSignature("totalSupply()"));  
+    } 
+}
+
