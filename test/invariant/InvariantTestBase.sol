@@ -20,18 +20,42 @@ contract InvariantTestBase is SparkLendTestBase {
 
         FuzzSelector memory fuzzSelector = FuzzSelector({
             addr: address(lenderHandler),
-            selectors: new bytes4[](1)
+            selectors: new bytes4[](3)
         });
 
         fuzzSelector.selectors[0] = lenderHandler.supply.selector;
+        fuzzSelector.selectors[1] = lenderHandler.supplyAndUseAsCollateral.selector;
+        fuzzSelector.selectors[2] = lenderHandler.withdraw.selector;
 
         targetContract(address(lenderHandler));
         targetSelector(fuzzSelector);
+
+        _initCollateral({
+            asset:                address(borrowAsset),
+            ltv:                  50_00,
+            liquidationThreshold: 50_00,
+            liquidationBonus:     101_00
+        });
+
+        _initCollateral({
+            asset:                address(collateralAsset),
+            ltv:                  50_00,
+            liquidationThreshold: 50_00,
+            liquidationBonus:     101_00
+        });
+
+        vm.startPrank(admin);
+        poolConfigurator.setReserveBorrowing(address(borrowAsset),     true);
+        poolConfigurator.setReserveBorrowing(address(collateralAsset), true);
+        vm.stopPrank();
     }
 
     function invariant_A() public {
         assertGe(aBorrowAsset.totalSupply(), 0);
-        console.log("handlerLogs: ", lenderHandler.data("supply"));
+        console.log("LenderHandler supply:                   ", lenderHandler.data("supply"));
+        console.log("LenderHandler supplyAndUseAsCollateral: ", lenderHandler.data("supplyAndUseAsCollateral"));
+        console.log("LenderHandler withdraw:                 ", lenderHandler.data("withdraw"));
+        console.log("LenderHandler withdraw - early exit:    ", lenderHandler.data("withdraw - early exit"));
     }
 
 }

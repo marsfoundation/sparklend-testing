@@ -26,7 +26,7 @@ contract HandlerBase is UserActions {
     function _getRandomReserve(uint256 assetIndex) internal view returns (address) {
         uint256 reserveLength = IPool(pool).getReservesCount();
 
-        return IPool(pool).getReserveAddressById(uint16(_bound(assetIndex, 0, reserveLength - 1)));
+        return IPool(pool).getReserveAddressById(uint16(bound(assetIndex, 0, reserveLength - 1)));
     }
 
 }
