@@ -1310,7 +1310,7 @@ contract ATokenACLTests is SparkLendTestBase {
     /*** Pool ACL tests                                                                         ***/
     /**********************************************************************************************/
 
-    function test_mint_adminACL() public {
+    function test_mint_poolACL() public {
         vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
         aBorrowAsset.mint(address(this), address(this), 100, 1e27);
 
@@ -1318,7 +1318,7 @@ contract ATokenACLTests is SparkLendTestBase {
         aBorrowAsset.mint(address(this), address(this), 100, 1e27);
     }
 
-    function test_burn_adminACL() public {
+    function test_burn_poolACL() public {
         vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
         aBorrowAsset.burn(address(this), address(this), 100, 1e27);
 
@@ -1326,7 +1326,7 @@ contract ATokenACLTests is SparkLendTestBase {
         aBorrowAsset.burn(address(this), address(this), 100, 1e27);
     }
 
-    function test_mintToTreasury_adminACL() public {
+    function test_mintToTreasury_poolACL() public {
         vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
         aBorrowAsset.mintToTreasury(100, 1e27);
 
@@ -1334,7 +1334,7 @@ contract ATokenACLTests is SparkLendTestBase {
         aBorrowAsset.mintToTreasury(100, 1e27);
     }
 
-    function test_transferOnLiquidation_adminACL() public {
+    function test_transferOnLiquidation_poolACL() public {
         vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
         aBorrowAsset.transferOnLiquidation(address(this), makeAddr("receiver"), 100);
 
@@ -1342,7 +1342,7 @@ contract ATokenACLTests is SparkLendTestBase {
         aBorrowAsset.transferOnLiquidation(address(this), makeAddr("receiver"), 100);
     }
 
-    function test_transferUnderlyingTo_adminACL() public {
+    function test_transferUnderlyingTo_poolACL() public {
         vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
         aBorrowAsset.transferUnderlyingTo(address(this), 100);
 
@@ -1350,7 +1350,7 @@ contract ATokenACLTests is SparkLendTestBase {
         aBorrowAsset.transferUnderlyingTo(address(this), 100);
     }
 
-    function test_handleRepayment_adminACL() public {
+    function test_handleRepayment_poolACL() public {
         vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
         aBorrowAsset.handleRepayment(address(this), address(this), 100);
 
@@ -1454,7 +1454,7 @@ contract VariableDebtTokenACLTests is SparkLendTestBase {
     /*** Pool ACL tests                                                                         ***/
     /**********************************************************************************************/
 
-    function test_mint_adminACL() public {
+    function test_mint_poolACL() public {
         vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
         debtToken.mint(address(this), address(this), 100 ether, 1e27);
 
@@ -1462,7 +1462,7 @@ contract VariableDebtTokenACLTests is SparkLendTestBase {
         debtToken.mint(address(this), address(this), 100 ether, 1e27);
     }
 
-    function test_burn_adminACL() public {
+    function test_burn_poolACL() public {
         vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
         debtToken.burn(address(this), 100 ether, 1e27);
 
