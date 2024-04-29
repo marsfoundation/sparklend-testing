@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import { IERC20, MockERC20 } from "../SparkLendTestBase.sol";
+import { IERC20, MockERC20 } from "test/SparkLendTestBase.sol";
 
 import { IFlashLoanReceiver, IPool, IPoolAddressesProvider } from 'sparklend-v1-core/contracts/flashloan/interfaces/IFlashLoanReceiver.sol';
 

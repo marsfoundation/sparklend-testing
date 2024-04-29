@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 
 import { Errors } from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
-import { SparkLendTestBase } from "./SparkLendTestBase.sol";
+import { SparkLendTestBase } from "test/SparkLendTestBase.sol";
 
-contract RepayTestBase is SparkLendTestBase {
+contract RepayWithATokensTestBase is SparkLendTestBase {
 
     address borrower = makeAddr("borrower");
     address lender   = makeAddr("lender");
@@ -28,94 +28,54 @@ contract RepayTestBase is SparkLendTestBase {
         poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
 
         _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
-        _supply(lender, address(borrowAsset), 500 ether);
+        _supply(borrower, address(borrowAsset), 1000 ether);  // Supply to get aTokens
         _borrow(borrower, address(borrowAsset), 500 ether);
-    }
-
-    function _callRepay(address asset, uint256 amount, uint256 rateMode, address onBehalfOf)
-        internal virtual
-    {
-        vm.prank(borrower);
-        pool.repay(asset, amount, rateMode, onBehalfOf);
     }
 
 }
 
-contract RepayFailureTests is RepayTestBase {
+contract RepayWithATokensFailureTests is RepayWithATokensTestBase {
 
-    function test_repay_whenAmountZero() public virtual {
+    function test_repayWithATokens_whenAmountZero() public virtual {
         vm.expectRevert(bytes(Errors.INVALID_AMOUNT));
-        _callRepay(address(borrowAsset), 0, 2, borrower);
+        pool.repayWithATokens(address(borrowAsset), 0, 2);
     }
 
-    function test_repay_whenAmountIsUint256MaxAndUserNotOwner() public virtual {
-        vm.expectRevert(bytes(Errors.NO_EXPLICIT_AMOUNT_TO_REPAY_ON_BEHALF));
-        _callRepay(address(borrowAsset), type(uint256).max, 2, makeAddr("user"));
-    }
-
-    function test_repay_whenNotActive() public {
+    function test_repayWithATokens_whenNotActive() public virtual {
         _repay(borrower, address(borrowAsset), 500 ether);
-        _withdraw(lender, address(borrowAsset), 500 ether);
+        _withdraw(borrower, address(borrowAsset), 1000 ether);
 
         vm.prank(admin);
         poolConfigurator.setReserveActive(address(borrowAsset), false);
 
         vm.expectRevert(bytes(Errors.RESERVE_INACTIVE));
-        _callRepay(address(borrowAsset), 500 ether, 2, borrower);
+        pool.repayWithATokens(address(borrowAsset), 500 ether, 2);
     }
 
-    function test_repay_whenPaused() public {
+    function test_repayWithATokens_whenPaused() public {
         vm.prank(admin);
         poolConfigurator.setReservePause(address(borrowAsset), true);
 
-        vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether);
-
         vm.expectRevert(bytes(Errors.RESERVE_PAUSED));
-        _callRepay(address(borrowAsset), 500 ether, 2, borrower);
+        pool.repayWithATokens(address(borrowAsset), 500 ether, 2);
     }
 
-    function test_repay_success_whenFrozen() public {
+    function test_repayWithATokens_success_whenFrozen() public {
         vm.prank(admin);
         poolConfigurator.setReserveFreeze(address(borrowAsset), true);
 
         vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether);
-        _callRepay(address(borrowAsset), 500 ether, 2, borrower);
+        pool.repayWithATokens(address(borrowAsset), 500 ether, 2);
     }
 
-    function test_repay_noDebt() public {
+    function test_repayWithATokens_noDebt() public virtual {
         vm.expectRevert(bytes(Errors.NO_DEBT_OF_SELECTED_TYPE));
-        _callRepay(address(borrowAsset), 500 ether, 2, lender);
-    }
-
-    function test_repay_insufficientApprovalBoundary() public virtual {
-        vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether - 1);
-        vm.expectRevert(stdError.arithmeticError);
-        _callRepay(address(borrowAsset), 500 ether, 2, borrower);
-
-        vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether);
-        _callRepay(address(borrowAsset), 500 ether, 2, borrower);
-    }
-
-    function test_repay_insufficientBalanceBoundary() public virtual {
-        deal(address(borrowAsset), borrower, 500 ether - 1);
-
-        vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether);
-        vm.expectRevert(stdError.arithmeticError);
-        _callRepay(address(borrowAsset), 500 ether, 2, borrower);
-
-        deal(address(borrowAsset), borrower, 500 ether);
-
-        _callRepay(address(borrowAsset), 500 ether, 2, borrower);
+        pool.repayWithATokens(address(borrowAsset), 500 ether, 2);
     }
 
 }
 
-contract RepayConcreteTests is RepayTestBase {
+contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
 
     address debtToken;
 
@@ -148,19 +108,31 @@ contract RepayConcreteTests is RepayTestBase {
         _;
     }
 
-    function test_repay_01()
+    function test_repayWithATokens_01()
         givenNotInIsolationMode
         givenNoTimeHasPassedSinceBorrow
         public
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _repayMoreThanDebtNoTimePassedTest();
+        _repayMoreThanDebtNoTimePassedTest({ useMaxUint: false });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repay_02()
+    function test_repayWithATokens_02()
+        givenNotInIsolationMode
+        givenNoTimeHasPassedSinceBorrow
+        public
+    {
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+        _repayMoreThanDebtNoTimePassedTest({ useMaxUint: true });
+
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    }
+
+    function test_repayWithATokens_03()
         givenNotInIsolationMode
         givenNoTimeHasPassedSinceBorrow
         public
@@ -172,7 +144,7 @@ contract RepayConcreteTests is RepayTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repay_03()
+    function test_repayWithATokens_04()
         givenNotInIsolationMode
         givenNoTimeHasPassedSinceBorrow
         public
@@ -184,19 +156,31 @@ contract RepayConcreteTests is RepayTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repay_04()
+    function test_repayWithATokens_05()
         givenNotInIsolationMode
         givenSomeTimeHasPassedSinceBorrow
         public
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
 
-        _repayMoreThanDebtSomeTimePassedTest();
+        _repayMoreThanDebtSomeTimePassedTest({ useMaxUint: false });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repay_05()
+    function test_repayWithATokens_06()
+        givenNotInIsolationMode
+        givenSomeTimeHasPassedSinceBorrow
+        public
+    {
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+
+        _repayMoreThanDebtSomeTimePassedTest({ useMaxUint: true });
+
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    }
+
+    function test_repayWithATokens_07()
         givenNotInIsolationMode
         givenSomeTimeHasPassedSinceBorrow
         public
@@ -208,7 +192,7 @@ contract RepayConcreteTests is RepayTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repay_06()
+    function test_repayWithATokens_08()
         givenNotInIsolationMode
         givenSomeTimeHasPassedSinceBorrow
         public
@@ -220,19 +204,31 @@ contract RepayConcreteTests is RepayTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repay_07()
+    function test_repayWithATokens_09()
         givenInIsolationMode
         givenNoTimeHasPassedSinceBorrow
         public
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
 
-        _repayMoreThanDebtNoTimePassedTest();
+        _repayMoreThanDebtNoTimePassedTest({ useMaxUint: false });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repay_08()
+    function test_repayWithATokens_10()
+        givenInIsolationMode
+        givenNoTimeHasPassedSinceBorrow
+        public
+    {
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
+
+        _repayMoreThanDebtNoTimePassedTest({ useMaxUint: true });
+
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    }
+
+    function test_repayWithATokens_11()
         givenInIsolationMode
         givenNoTimeHasPassedSinceBorrow
         public
@@ -244,7 +240,7 @@ contract RepayConcreteTests is RepayTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repay_09()
+    function test_repayWithATokens_12()
         givenInIsolationMode
         givenNoTimeHasPassedSinceBorrow
         public
@@ -258,19 +254,32 @@ contract RepayConcreteTests is RepayTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 1);
     }
 
-    function test_repay_10()
+    function test_repayWithATokens_13()
         givenInIsolationMode
         givenSomeTimeHasPassedSinceBorrow
         public
     {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
 
-        _repayMoreThanDebtSomeTimePassedTest();
+        _repayMoreThanDebtSomeTimePassedTest({ useMaxUint: false });
 
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repay_11()
+    function test_repayWithATokens_14()
+        givenInIsolationMode
+        givenSomeTimeHasPassedSinceBorrow
+        public
+    {
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 500_00);
+
+        _repayMoreThanDebtSomeTimePassedTest({ useMaxUint: true });
+
+        assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
+    }
+
+
+    function test_repayWithATokens_15()
         givenInIsolationMode
         givenSomeTimeHasPassedSinceBorrow
         public
@@ -282,7 +291,7 @@ contract RepayConcreteTests is RepayTestBase {
         assertEq(pool.getReserveData(address(collateralAsset)).isolationModeTotalDebt, 0);
     }
 
-    function test_repay_12()
+    function test_repayWithATokens_16()
         givenInIsolationMode
         givenSomeTimeHasPassedSinceBorrow
         public
@@ -302,18 +311,13 @@ contract RepayConcreteTests is RepayTestBase {
     /*** Test running functions                                                                 ***/
     /**********************************************************************************************/
 
-    function _repayMoreThanDebtNoTimePassedTest() internal {
-        vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether + 1);
-
-        borrowAsset.mint(borrower, 1);
-
+    function _repayMoreThanDebtNoTimePassedTest(bool useMaxUint) internal {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.37e27,  // Fully utilized
+            currentLiquidityRate:      0.03125e27,  // Fully utilized
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.37e27,  // Fully utilized: 5% + 2% + 30%
+            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -327,45 +331,44 @@ contract RepayConcreteTests is RepayTestBase {
             totalSupply: 500 ether
         });
 
-        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
-            user:          borrower,
-            asset:         address(borrowAsset),
-            allowance:     500 ether + 1,
-            userBalance:   500 ether + 1,
-            aTokenBalance: 0
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        borrower,
+            aToken:      address(aBorrowAsset),
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
         });
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
 
-        _callRepay(address(borrowAsset), 500 ether + 1, 2, borrower);
+        uint256 amount = useMaxUint ? type(uint256).max : 500 ether + 1;
 
+        vm.prank(borrower);
+        pool.repayWithATokens(address(borrowAsset), amount, 2);
+
+        // No more outstanding debt
         poolParams.currentLiquidityRate      = 0;
         poolParams.currentVariableBorrowRate = 0.05e27;
 
         debtTokenParams.userBalance = 0;
         debtTokenParams.totalSupply = 0;
 
-        assetParams.allowance     = 1;  // Didn't use whole allowance
-        assetParams.userBalance   = 1;  // Paid back full debt, has remaining balance
-        assetParams.aTokenBalance = 500 ether;
+        aTokenParams.userBalance = 500 ether;  // Paid back 500 ether, not including +1
+        aTokenParams.totalSupply = 500 ether;
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
     }
 
     function _repayEqualToDebtNoTimePassedTest() internal {
-        vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether);
-
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.37e27,  // Fully utilized
+            currentLiquidityRate:      0.03125e27,  // Fully utilized
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.37e27,  // Fully utilized: 5% + 2% + 30%
+            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -379,45 +382,42 @@ contract RepayConcreteTests is RepayTestBase {
             totalSupply: 500 ether
         });
 
-        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
-            user:          borrower,
-            asset:         address(borrowAsset),
-            allowance:     500 ether,
-            userBalance:   500 ether,
-            aTokenBalance: 0
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        borrower,
+            aToken:      address(aBorrowAsset),
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
         });
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
 
-        _callRepay(address(borrowAsset), 500 ether, 2, borrower);
+        vm.prank(borrower);
+        pool.repayWithATokens(address(borrowAsset), 500 ether + 1, 2);
 
+        // No more outstanding debt
         poolParams.currentLiquidityRate      = 0;
         poolParams.currentVariableBorrowRate = 0.05e27;
 
         debtTokenParams.userBalance = 0;
         debtTokenParams.totalSupply = 0;
 
-        assetParams.allowance     = 0;
-        assetParams.userBalance   = 0;
-        assetParams.aTokenBalance = 500 ether;
+        aTokenParams.userBalance = 500 ether;  // Paid back 500 ether
+        aTokenParams.totalSupply = 500 ether;
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
     }
 
     function _repayLessThanDebtNoTimePassedTest() internal {
-        vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether - 1);
-
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.37e27,  // Fully utilized
+            currentLiquidityRate:      0.03125e27,  // Fully utilized
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: 0.37e27,  // Fully utilized: 5% + 2% + 30%
+            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -431,19 +431,19 @@ contract RepayConcreteTests is RepayTestBase {
             totalSupply: 500 ether
         });
 
-        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
-            user:          borrower,
-            asset:         address(borrowAsset),
-            allowance:     500 ether - 1,
-            userBalance:   500 ether,
-            aTokenBalance: 0
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        borrower,
+            aToken:      address(aBorrowAsset),
+            userBalance: 1000 ether,
+            totalSupply: 1000 ether
         });
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
 
-        _callRepay(address(borrowAsset), 500 ether - 1, 2, borrower);
+        vm.prank(borrower);
+        pool.repayWithATokens(address(borrowAsset), 500 ether - 1, 2);
 
         poolParams.currentLiquidityRate      = 1e5;            // 1/500e18 = 2e-21 => 2e-21 * (0.05e27 + 5e4) = 1e5 in ray
         poolParams.currentVariableBorrowRate = 0.05e27 + 5e4;  // 1/500e18 = 2e-21 => 2e-21/0.8 * 0.02 = 5e-23 = 5e4 in ray
@@ -451,43 +451,37 @@ contract RepayConcreteTests is RepayTestBase {
         debtTokenParams.userBalance = 1;
         debtTokenParams.totalSupply = 1;
 
-        assetParams.allowance     = 0;
-        assetParams.userBalance   = 1;
-        assetParams.aTokenBalance = 500 ether - 1;
+        aTokenParams.userBalance = 500 ether + 1;  // Paid back 500 ether - 1
+        aTokenParams.totalSupply = 500 ether + 1;
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
     }
 
-    function _repayMoreThanDebtSomeTimePassedTest() internal {
-        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 500 ether);
+    function _repayMoreThanDebtSomeTimePassedTest(bool useMaxUint) internal {
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.37e27);
-        assertEq(liquidityRate, 0.37e27);
+        assertEq(borrowRate,    0.0625e27);
+        assertEq(liquidityRate, 0.03125e27);
 
-        uint256 supplierYield = 0.37e27 * 500 ether / 100 / 1e27;  // 1% of APR
+        uint256 supplierYield = 0.03125e27 * 1000 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
-        uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27 + 1;  // Rounding
-
-        vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether + borrowerDebt + 1);
-
-        borrowAsset.mint(borrower, borrowerDebt + 1);
+        uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27;
 
         // Borrower owes slightly more than lender has earned because of compounded interest
-        assertEq(supplierYield,                1.85 ether);  // 500 * 0.37 * 1%
-        assertEq(compoundedNormalizedInterest, 1.003706853420131674241446640e27);
-        assertEq(borrowerDebt,                 1.853426710065837121 ether);
+        assertEq(supplierYield,                0.3125 ether);  // 1000 * 0.03125 * 1%
+        assertEq(compoundedNormalizedInterest, 1.000625195348470672890933200e27);
+        assertEq(borrowerDebt,                 0.312597674235336445 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      liquidityRate,  // Fully utilized
+            currentLiquidityRate:      0.03125e27,  // Fully utilized
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: borrowRate,  // Fully utilized: 5% + 2% + 30%
+            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -501,25 +495,27 @@ contract RepayConcreteTests is RepayTestBase {
             totalSupply: 500 ether + borrowerDebt
         });
 
-        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
-            user:          borrower,
-            asset:         address(borrowAsset),
-            allowance:     500 ether + borrowerDebt + 1,
-            userBalance:   500 ether + borrowerDebt + 1,
-            aTokenBalance: 0
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        borrower,
+            aToken:      address(aBorrowAsset),
+            userBalance: 1000 ether + supplierYield,
+            totalSupply: 1000 ether + supplierYield
         });
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
 
-        _callRepay(address(borrowAsset), 500 ether + borrowerDebt + 1, 2, borrower);
+        uint256 amount = useMaxUint ? type(uint256).max : 500 ether + borrowerDebt + 1;
+
+        vm.prank(borrower);
+        pool.repayWithATokens(address(borrowAsset), amount, 2);
 
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
-        assertEq(expectedLiquidityIndex,      1.0037e27);
-        assertEq(expectedVariableBorrowIndex, 1.003706853420131674241446640e27);
+        assertEq(expectedLiquidityIndex,      1.000312500000000000000000000e27);
+        assertEq(expectedVariableBorrowIndex, 1.000625195348470672890933200e27);
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
@@ -530,43 +526,37 @@ contract RepayConcreteTests is RepayTestBase {
         debtTokenParams.userBalance = 0;
         debtTokenParams.totalSupply = 0;
 
-        assetParams.allowance     = 1;  // Didn't use whole allowance
-        assetParams.userBalance   = 1;  // Paid back full balance
-        assetParams.aTokenBalance = 500 ether + borrowerDebt;
+        aTokenParams.userBalance = (1000 ether + supplierYield) - (500 ether + borrowerDebt);  // Doesn't include the + 1
+        aTokenParams.totalSupply = (1000 ether + supplierYield) - (500 ether + borrowerDebt);
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
     }
 
     function _repayEqualToDebtSomeTimePassedTest() internal {
-        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 500 ether);
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.37e27);
-        assertEq(liquidityRate, 0.37e27);
+        assertEq(borrowRate,    0.0625e27);
+        assertEq(liquidityRate, 0.03125e27);
 
-        uint256 supplierYield = 0.37e27 * 500 ether / 100 / 1e27;  // 1% of APR
+        uint256 supplierYield = 0.03125e27 * 1000 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
-        uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27 + 1;  // Rounding
-
-        vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether + borrowerDebt);
-
-        borrowAsset.mint(borrower, borrowerDebt);
+        uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27;
 
         // Borrower owes slightly more than lender has earned because of compounded interest
-        assertEq(supplierYield,                1.85 ether);  // 500 * 0.37 * 1%
-        assertEq(compoundedNormalizedInterest, 1.003706853420131674241446640e27);
-        assertEq(borrowerDebt,                 1.853426710065837121 ether);
+        assertEq(supplierYield,                0.3125 ether);  // 1000 * 0.03125 * 1%
+        assertEq(compoundedNormalizedInterest, 1.000625195348470672890933200e27);
+        assertEq(borrowerDebt,                 0.312597674235336445 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      liquidityRate,  // Fully utilized
+            currentLiquidityRate:      0.03125e27,  // Fully utilized
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: borrowRate,  // Fully utilized: 5% + 2% + 30%
+            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -580,25 +570,25 @@ contract RepayConcreteTests is RepayTestBase {
             totalSupply: 500 ether + borrowerDebt
         });
 
-        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
-            user:          borrower,
-            asset:         address(borrowAsset),
-            allowance:     500 ether + borrowerDebt,
-            userBalance:   500 ether + borrowerDebt,
-            aTokenBalance: 0
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        borrower,
+            aToken:      address(aBorrowAsset),
+            userBalance: 1000 ether + supplierYield,
+            totalSupply: 1000 ether + supplierYield
         });
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
 
-        _callRepay(address(borrowAsset), 500 ether + borrowerDebt, 2, borrower);
+        vm.prank(borrower);
+        pool.repayWithATokens(address(borrowAsset), 500 ether + borrowerDebt, 2);
 
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
-        assertEq(expectedLiquidityIndex,      1.0037e27);
-        assertEq(expectedVariableBorrowIndex, 1.003706853420131674241446640e27);
+        assertEq(expectedLiquidityIndex,      1.000312500000000000000000000e27);
+        assertEq(expectedVariableBorrowIndex, 1.000625195348470672890933200e27);
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
@@ -609,43 +599,37 @@ contract RepayConcreteTests is RepayTestBase {
         debtTokenParams.userBalance = 0;
         debtTokenParams.totalSupply = 0;
 
-        assetParams.allowance     = 0;
-        assetParams.userBalance   = 0;
-        assetParams.aTokenBalance = 500 ether + borrowerDebt;
+        aTokenParams.userBalance = (1000 ether + supplierYield) - (500 ether + borrowerDebt);  // Matches exactly
+        aTokenParams.totalSupply = (1000 ether + supplierYield) - (500 ether + borrowerDebt);
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
     }
 
     function _repayLessThanDebtSomeTimePassedTest() internal {
-        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 500 ether);
+        ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(500 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.37e27);
-        assertEq(liquidityRate, 0.37e27);
+        assertEq(borrowRate,    0.0625e27);
+        assertEq(liquidityRate, 0.03125e27);
 
-        uint256 supplierYield = 0.37e27 * 500 ether / 100 / 1e27;  // 1% of APR
+        uint256 supplierYield = 0.03125e27 * 1000 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
-        uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27 + 1;  // Rounding
-
-        vm.prank(borrower);
-        borrowAsset.approve(address(pool), 500 ether + borrowerDebt - 1);
-
-        borrowAsset.mint(borrower, borrowerDebt - 1);
+        uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 500 ether / 1e27;
 
         // Borrower owes slightly more than lender has earned because of compounded interest
-        assertEq(supplierYield,                1.85 ether);  // 500 * 0.37 * 1%
-        assertEq(compoundedNormalizedInterest, 1.003706853420131674241446640e27);
-        assertEq(borrowerDebt,                 1.853426710065837121 ether);
+        assertEq(supplierYield,                0.3125 ether);  // 1000 * 0.03125 * 1%
+        assertEq(compoundedNormalizedInterest, 1.000625195348470672890933200e27);
+        assertEq(borrowerDebt,                 0.312597674235336445 ether);
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      liquidityRate,  // Fully utilized
+            currentLiquidityRate:      0.03125e27,  // Fully utilized
             variableBorrowIndex:       1e27,
-            currentVariableBorrowRate: borrowRate,  // Fully utilized: 5% + 2% + 30%
+            currentVariableBorrowRate: 0.0625e27,  // Fully utilized: 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
             lastUpdateTimestamp:       1,
             accruedToTreasury:         0,
@@ -659,42 +643,51 @@ contract RepayConcreteTests is RepayTestBase {
             totalSupply: 500 ether + borrowerDebt
         });
 
-        AssertAssetStateParams memory assetParams = AssertAssetStateParams({
-            user:          borrower,
-            asset:         address(borrowAsset),
-            allowance:     500 ether + borrowerDebt - 1,
-            userBalance:   500 ether + borrowerDebt - 1,
-            aTokenBalance: 0
+        AssertATokenStateParams memory aTokenParams = AssertATokenStateParams({
+            user:        borrower,
+            aToken:      address(aBorrowAsset),
+            userBalance: 1000 ether + supplierYield,
+            totalSupply: 1000 ether + supplierYield
         });
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
 
-        _callRepay(address(borrowAsset), 500 ether + borrowerDebt - 1, 2, borrower);
+        vm.prank(borrower);
+        pool.repayWithATokens(address(borrowAsset), 500 ether + borrowerDebt - 1, 2);
 
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
-        assertEq(expectedLiquidityIndex,      1.0037e27);
-        assertEq(expectedVariableBorrowIndex, 1.003706853420131674241446640e27);
+        assertEq(expectedLiquidityIndex,      1.0003125e27);
+        assertEq(expectedVariableBorrowIndex, 1.000625195348470672890933200e27);
+
+        uint256 remainingSupply = (1000 ether + supplierYield) - (500 ether + borrowerDebt - 1);
+
+        assertEq(remainingSupply, 499.999902325764663556 ether);
+
+        ( borrowRate, liquidityRate ) = _getUpdatedRates(1, remainingSupply);
+
+        // Diff from 500 is small enough that it rounds to clean numbers here (unlike repay tests where full utilization caused more debt)
+        assertEq(borrowRate,    0.050000000000000000000050000e27);  // 1 / 499.999902325764663556e18 = 2e-21 => 2e-21/0.8 * 0.02 = 5e4 in ray
+        assertEq(liquidityRate, 0.000000000000000000000100000e27);  // 1 / 499.999902325764663556e18 = 2e-21 => 2e-21 * (0.05e27 + 5e4) = 1e5 in ray
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
-        poolParams.currentLiquidityRate      = 0.99631e5;           // 1/501.853426710065837121e18 = 1.992613e-21 => 1.992613e-21 * (0.05e27 + 4.9815e4) = 0.99631e5 in ray
-        poolParams.currentVariableBorrowRate = 0.05e27 + 4.9815e4;  // 1/501.853426710065837121e18 = 1.992613e-21 => 1.992613e-21/0.8 * 0.02 = 4.9815e4 in ray
+        poolParams.currentLiquidityRate      = liquidityRate;
+        poolParams.currentVariableBorrowRate = borrowRate;
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
 
         debtTokenParams.userBalance = 1;
         debtTokenParams.totalSupply = 1;
 
-        assetParams.allowance     = 0;
-        assetParams.userBalance   = 0;
-        assetParams.aTokenBalance = 500 ether + borrowerDebt - 1;
+        aTokenParams.userBalance = (1000 ether + supplierYield) - (500 ether + borrowerDebt - 1);  // Less than the debt
+        aTokenParams.totalSupply = (1000 ether + supplierYield) - (500 ether + borrowerDebt - 1);
 
         _assertPoolReserveState(poolParams);
         _assertDebtTokenState(debtTokenParams);
-        _assertAssetState(assetParams);
+        _assertATokenState(aTokenParams);
     }
 
 }

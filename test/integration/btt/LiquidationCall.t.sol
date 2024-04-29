@@ -11,7 +11,7 @@ import { DataTypes }            from "sparklend-v1-core/contracts/protocol/libra
 import { MockOracleSentinel } from "test/mocks/MockOracleSentinel.sol";
 import { MockOracle }         from "test/mocks/MockOracle.sol";
 
-import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
+import { IERC20, SparkLendTestBase } from "test/SparkLendTestBase.sol";
 
 contract LiquidationCallTestBase is SparkLendTestBase {
 

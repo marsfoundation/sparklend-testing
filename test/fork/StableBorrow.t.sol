@@ -15,9 +15,9 @@ import { ReserveConfiguration } from "sparklend-v1-core/contracts/protocol/libra
 import { DataTypes }            from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
 import { Errors }               from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
-import { IntegrationTestBase } from "./IntegrationTestBase.sol";
+import { ForkTestBase } from "./ForkTestBase.sol";
 
-contract StableBorrowTests is IntegrationTestBase {
+contract StableBorrowTests is ForkTestBase {
 
     using ReserveConfiguration for DataTypes.ReserveConfigurationMap;
 

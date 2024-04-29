@@ -6,111 +6,315 @@ import "forge-std/Test.sol";
 import { Errors } from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
 import {
-    MockReceiverSimpleBasic,
-    MockReceiverSimpleReturnFalse,
-    MockReceiverSimpleInsufficientApprove,
-    MockReceiverSimpleInsufficientBalance,
-    MockReceiverSimpleMintPremium
-} from "test/mocks/MockReceiverSimple.sol";
+    MockReceiverBasic,
+    MockReceiverReturnFalse,
+    MockReceiverInsufficientApprove,
+    MockReceiverInsufficientBalance,
+    MockReceiverMintPremium
+} from "test/mocks/MockReceiver.sol";
 
-import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
+import { FlashLoanSimpleSuccessTests } from "test/integration/btt/FlashLoanSimple.t.sol";
 
-contract FlashLoanSimpleTestBase is SparkLendTestBase {
+import { IERC20, SparkLendTestBase } from "test/SparkLendTestBase.sol";
+
+contract FlashLoanTestBase is SparkLendTestBase {
 
     address borrower = makeAddr("borrower");
     address supplier = makeAddr("supplier");
 
     address receiver;
 
+    // Renaming assets for this test for easier comprehension
+    address asset0;
+    address asset1;
+
     function setUp() public virtual override {
         super.setUp();
 
-        receiver = address(new MockReceiverSimpleBasic(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverBasic(address(poolConfigurator), address(pool)));
+
+        asset0 = address(borrowAsset);
+        asset1 = address(collateralAsset);
 
         // Set up necessary conditions for success
-        _supply(supplier, address(borrowAsset), 1000 ether);
+        _supply(supplier, asset0, 1000 ether);
+        _supply(supplier, asset1, 1000 ether);
 
-        vm.prank(admin);
-        poolConfigurator.setReserveFlashLoaning(address(borrowAsset), true);
+        vm.startPrank(admin);
+        poolConfigurator.setReserveFlashLoaning(asset0, true);
+        poolConfigurator.setReserveFlashLoaning(asset1, true);
+        vm.stopPrank();
+    }
+
+    function _callFlashLoan(uint256 amount0, uint256 amount1, address onBehalfOf) internal virtual {
+        address[] memory assets  = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory modes   = new uint256[](2);
+
+        assets[0] = asset0;
+        assets[1] = asset1;
+
+        amounts[0] = amount0;
+        amounts[1] = amount1;
+
+        modes[0] = 0;
+        modes[1] = 0;
+
+        pool.flashLoan(receiver, assets, amounts, modes, onBehalfOf, new bytes(0), 0);
     }
 
 }
 
-contract FlashLoanSimpleFailureTests is FlashLoanSimpleTestBase {
+contract FlashLoanFailureTests is FlashLoanTestBase {
 
-    function test_flashLoanSimple_whenNotActive() public {
+    function test_flashLoan_whenLengthAssetsDoesNotEqualLengthAmounts() public {
+        address[] memory assets  = new address[](3);
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory modes   = new uint256[](2);
+
+        assets[0] = asset0;
+        assets[1] = asset1;
+
+        amounts[0] = 1;
+        amounts[1] = 1;
+
+        modes[0] = 0;
+        modes[1] = 0;
+
+        vm.expectRevert(bytes(Errors.INCONSISTENT_FLASHLOAN_PARAMS));
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+
+        assets = new address[](1);  // Check less than case as well
+        assets[0] = asset0;
+
+        vm.expectRevert(bytes(Errors.INCONSISTENT_FLASHLOAN_PARAMS));
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+    }
+
+    function test_flashLoan_whenModesLengthLtAmounts() public {
+        address[] memory assets  = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory modes   = new uint256[](1);
+
+        assets[0] = asset0;
+        assets[1] = asset1;
+
+        amounts[0] = 1;
+        amounts[1] = 1;
+
+        modes[0] = 0;
+
+        vm.expectRevert(stdError.indexOOBError);
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+
+        // Demonstrate modes can be greater than
+        modes = new uint256[](3);
+        modes[0] = 0;
+        modes[1] = 0;
+        modes[2] = 0;
+
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+    }
+
+    function test_flashLoan_whenNotActive_asset0() public {
         // Avoid RESERVE_LIQUIDITY_NOT_ZERO error when deactivating
-        _withdraw(supplier, address(borrowAsset), 1000 ether);
+        _withdraw(supplier, asset0, 1000 ether);
 
         vm.prank(admin);
-        poolConfigurator.setReserveActive(address(borrowAsset), false);
+        poolConfigurator.setReserveActive(asset0, false);
 
         vm.expectRevert(bytes(Errors.RESERVE_INACTIVE));
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoanSimple_whenPaused() public {
+    function test_flashLoan_whenNotActive_asset1() public {
+        // Avoid RESERVE_LIQUIDITY_NOT_ZERO error when deactivating
+        _withdraw(supplier, asset1, 1000 ether);
+
         vm.prank(admin);
-        poolConfigurator.setReservePause(address(borrowAsset), true);
+        poolConfigurator.setReserveActive(asset1, false);
+
+        vm.expectRevert(bytes(Errors.RESERVE_INACTIVE));
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_whenPaused_asset0() public {
+        vm.prank(admin);
+        poolConfigurator.setReservePause(asset0, true);
 
         vm.expectRevert(bytes(Errors.RESERVE_PAUSED));
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoanSimple_whenFrozen() public {
+    function test_flashLoan_whenPaused_asset1() public {
         vm.prank(admin);
-        poolConfigurator.setReserveFreeze(address(borrowAsset), true);
+        poolConfigurator.setReservePause(asset1, true);
 
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
+        vm.expectRevert(bytes(Errors.RESERVE_PAUSED));
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoanSimple_flashLoanNotEnabled() public {
+    function test_flashLoan_whenFrozen_asset0() public {
         vm.prank(admin);
-        poolConfigurator.setReserveFlashLoaning(address(borrowAsset), false);
+        poolConfigurator.setReserveFreeze(asset0, true);
+
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_whenFrozen_asset1() public {
+        vm.prank(admin);
+        poolConfigurator.setReserveFreeze(asset1, true);
+
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_flashLoanNotEnabled_asset0() public {
+        vm.prank(admin);
+        poolConfigurator.setReserveFlashLoaning(asset0, false);
 
         vm.expectRevert(bytes(Errors.FLASHLOAN_DISABLED));
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoanSimple_insufficientLiquidityBoundary() public {
+    function test_flashLoan_flashLoanNotEnabled_asset1() public {
+        vm.prank(admin);
+        poolConfigurator.setReserveFlashLoaning(asset1, false);
+
+        vm.expectRevert(bytes(Errors.FLASHLOAN_DISABLED));
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_insufficientLiquidityBoundary_asset0() public {
         vm.expectRevert(stdError.arithmeticError);
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether + 1, new bytes(0), 0);
+        _callFlashLoan(1000 ether + 1, 1000 ether, borrower);
 
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoanSimple_receiverReturnsFalse() public {
-        receiver = address(new MockReceiverSimpleReturnFalse(address(poolConfigurator), address(pool)));
+    function test_flashLoan_insufficientLiquidityBoundary_asset1() public {
+        vm.expectRevert(stdError.arithmeticError);
+        _callFlashLoan(1000 ether, 1000 ether + 1, borrower);
+
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_receiverReturnsFalse() public {
+        receiver = address(new MockReceiverReturnFalse(address(poolConfigurator), address(pool)));
 
         vm.expectRevert(bytes(Errors.INVALID_FLASHLOAN_EXECUTOR_RETURN));
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoanSimple_receiverInsufficientApprovalBoundary() public {
-        receiver = address(new MockReceiverSimpleInsufficientApprove(address(poolConfigurator), address(pool)));
+    function test_flashLoan_receiverInsufficientApprovalBoundary_asset0() public {
+        receiver = address(new MockReceiverInsufficientApprove(address(poolConfigurator), address(pool), asset0));
 
         vm.expectRevert(stdError.arithmeticError);
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
 
-        receiver = address(new MockReceiverSimpleBasic(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverBasic(address(poolConfigurator), address(pool)));
 
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
     }
 
-    function test_flashLoanSimple_receiverInsufficientBalanceBoundary() public {
-        receiver = address(new MockReceiverSimpleInsufficientBalance(address(poolConfigurator), address(pool)));
+    function test_flashLoan_receiverInsufficientApprovalBoundary_asset1() public {
+        receiver = address(new MockReceiverInsufficientApprove(address(poolConfigurator), address(pool), asset1));
 
         vm.expectRevert(stdError.arithmeticError);
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
 
-        receiver = address(new MockReceiverSimpleBasic(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverBasic(address(poolConfigurator), address(pool)));
 
-        pool.flashLoanSimple(receiver, address(borrowAsset), 1000 ether, new bytes(0), 0);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_receiverInsufficientBalanceBoundary_asset0() public {
+        receiver = address(new MockReceiverInsufficientBalance(address(poolConfigurator), address(pool), asset0));
+
+        vm.expectRevert(stdError.arithmeticError);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+
+        receiver = address(new MockReceiverBasic(address(poolConfigurator), address(pool)));
+
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_receiverInsufficientBalanceBoundary_asset1() public {
+        receiver = address(new MockReceiverInsufficientBalance(address(poolConfigurator), address(pool), asset1));
+
+        vm.expectRevert(stdError.arithmeticError);
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+
+        receiver = address(new MockReceiverBasic(address(poolConfigurator), address(pool)));
+
+        _callFlashLoan(1000 ether, 1000 ether, borrower);
+    }
+
+    function test_flashLoan_userTriesToFlashLoanIntoBorrow_asset0() public {
+        address[] memory assets  = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory modes   = new uint256[](2);
+
+        assets[0] = asset0;
+        assets[1] = asset1;
+
+        amounts[0] = 1000 ether;
+        amounts[1] = 1000 ether;
+
+        modes[0] = 1;
+        modes[1] = 0;
+
+        vm.expectRevert("FLASHLOAN_INTO_BORROW_DEPRECATED");
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+    }
+
+    function test_flashLoan_userTriesToFlashLoanIntoBorrow_asset1() public {
+        address[] memory assets  = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory modes   = new uint256[](2);
+
+        assets[0] = asset0;
+        assets[1] = asset1;
+
+        amounts[0] = 1000 ether;
+        amounts[1] = 1000 ether;
+
+        modes[0] = 0;
+        modes[1] = 1;
+
+        vm.expectRevert("FLASHLOAN_INTO_BORROW_DEPRECATED");
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
     }
 
 }
 
-contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
+// NOTE: These tests prove that the `flashLoan` contract works in the exact same way as
+//       `flashLoanSimple` when only one asset is used.
+contract FlashLoanFlashLoanSimpleEquivalenceTests is FlashLoanSimpleSuccessTests {
+
+    function setUp() public virtual override {
+        super.setUp();
+
+        // Overwrite the receiver to work with the interface in flashLoan
+        receiver = address(new MockReceiverMintPremium(address(poolConfigurator), address(pool)));
+    }
+
+    function _callFlashLoan() internal override {
+        address[] memory assets  = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        uint256[] memory modes   = new uint256[](1);
+
+        assets[0]  = address(borrowAsset);  // asset0 not defined in inherited contract
+        amounts[0] = amount;
+        modes[0]   = 0;
+
+        pool.flashLoan(receiver, assets, amounts, modes, address(borrower), new bytes(0), 0);
+    }
+
+}
+
+// NOTE: These tests use the same assertions and logic branches as `flashLoanSimple` but with
+//       two identical sets of assertions (state changes are the same), one for each asset.
+contract FlashLoanSuccessTests is FlashLoanTestBase {
 
     uint256 amount;  // Amount to set in the modifier
 
@@ -118,32 +322,27 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         super.setUp();
 
         // Mint the premium to allow for successful flashloans with premiums
-        receiver = address(new MockReceiverSimpleMintPremium(address(poolConfigurator), address(pool)));
+        receiver = address(new MockReceiverMintPremium(address(poolConfigurator), address(pool)));
 
-        _initCollateral({
-            asset:                address(collateralAsset),
-            ltv:                  50_00,
-            liquidationThreshold: 60_00,
-            liquidationBonus:     100_01
-        });
+        address collateral1 = _setUpNewCollateral(50_00, 50_00, 100_01);
+        address collateral2 = _setUpNewCollateral(50_00, 50_00, 100_01);
 
-        vm.prank(admin);
-        poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
+        vm.startPrank(admin);
+        poolConfigurator.setReserveBorrowing(address(asset0), true);
+        poolConfigurator.setReserveBorrowing(address(asset1), true);
+        vm.stopPrank();
 
-        // Set up an active borrow to make rates changes more realistic
-        _supplyAndUseAsCollateral(borrower, address(collateralAsset), 1000 ether);
-        _borrow(borrower, address(borrowAsset), 100 ether);
+        // Set up the same situations so the state changes can be compared
+        _supplyAndUseAsCollateral(borrower, address(collateral1), 1000 ether);
+        _supplyAndUseAsCollateral(borrower, address(collateral2), 1000 ether);
 
-        vm.prank(admin);
-        poolConfigurator.setReserveFlashLoaning(address(borrowAsset), true);
-    }
+        _borrow(borrower, address(asset0), 100 ether);
+        _borrow(borrower, address(asset1), 100 ether);
 
-    /**********************************************************************************************/
-    /*** Virtual functions (overridden in flashLoan tests to prove equivalence)                 ***/
-    /**********************************************************************************************/
-
-    function _callFlashLoan() internal virtual {
-        pool.flashLoanSimple(receiver, address(borrowAsset), amount, new bytes(0), 0);
+        vm.startPrank(admin);
+        poolConfigurator.setReserveFlashLoaning(address(asset0), true);
+        poolConfigurator.setReserveFlashLoaning(address(asset1), true);
+        vm.stopPrank();
     }
 
     /**********************************************************************************************/
@@ -183,11 +382,19 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _;
     }
 
+    modifier givenUserIsNotFlashBorrower { _; }
+
+    modifier givenUserIsFlashBorrower {
+        vm.prank(admin);
+        aclManager.addFlashBorrower(borrower);
+        _;
+    }
+
     /**********************************************************************************************/
     /*** BTT tests                                                                              ***/
     /**********************************************************************************************/
 
-    function test_flashLoanSimple_01()
+    function test_flashLoan_01()
         whenNoTimeHasPassed
         whenAmountIsZero
         public
@@ -195,7 +402,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _noStateChangeTest();
     }
 
-    function test_flashLoanSimple_02()
+    function test_flashLoan_02()
         whenNoTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsZero
@@ -205,7 +412,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _noStateChangeTest();
     }
 
-    function test_flashLoanSimple_03()
+    function test_flashLoan_03()
         whenNoTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsZero
@@ -216,27 +423,30 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _noStateChangeTest();
     }
 
-    function test_flashLoanSimple_04()
+    function test_flashLoan_04()
         whenNoTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsNotZero
+        givenUserIsNotFlashBorrower
         givenFlashLoanPremiumToProtocolIsZero
         public
     {
         (
-            AssertPoolReserveStateParams memory poolParams,
-            AssertATokenStateParams memory aTokenParams,
-            AssertAssetStateParams memory assetParams,
+            AssertPoolReserveStateParams memory poolParams0,
+            AssertATokenStateParams memory aTokenParams0,
+            AssertAssetStateParams memory assetParams0,
             ,
             ,
         ) = _loadStartingParamsAndAssertState(0);
 
+        _assertAsset1StateMatchesAsset0(poolParams0, aTokenParams0, assetParams0);
+
         _callFlashLoan();
 
-        aTokenParams.userBalance = 1010 ether;  // 100 flashborrow * 10% premium
-        aTokenParams.totalSupply = 1010 ether;  // 100 flashborrow * 10% premium
+        aTokenParams0.userBalance = 1010 ether;  // 100 flashborrow * 10% premium
+        aTokenParams0.totalSupply = 1010 ether;  // 100 flashborrow * 10% premium
 
-        assetParams.aTokenBalance = 910 ether;  // 100 flashborrow * 10% premium
+        assetParams0.aTokenBalance = 910 ether;  // 100 flashborrow * 10% premium
 
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1010 ether);
 
@@ -246,22 +456,25 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         assertEq(borrowRate,    0.052475247524752475247524752e27);
         assertEq(liquidityRate, 0.005195569061856680717576708e27);
 
-        poolParams.currentLiquidityRate      = liquidityRate;
-        poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
+        poolParams0.currentLiquidityRate      = liquidityRate;
+        poolParams0.currentVariableBorrowRate = borrowRate + 1;  // Rounding
 
         // 1e27 + 10% of 100 borrow = 1.01e27 - Note that this was updated WITHOUT time passing
         // Also note that the borrowIndex does not update because they do not owe any more interest
-        poolParams.liquidityIndex = 1.01e27;
+        poolParams0.liquidityIndex = 1.01e27;
 
-        _assertPoolReserveState(poolParams);
-        _assertATokenState(aTokenParams);
-        _assertAssetState(assetParams);
+        _assertPoolReserveState(poolParams0);
+        _assertATokenState(aTokenParams0);
+        _assertAssetState(assetParams0);
+
+        _assertAsset1StateMatchesAsset0(poolParams0, aTokenParams0, assetParams0);
     }
 
-    function test_flashLoanSimple_05()
+    function test_flashLoan_05()
         whenNoTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsNotZero
+        givenUserIsNotFlashBorrower
         givenFlashLoanPremiumToProtocolIsNotZero
         public
     {
@@ -272,6 +485,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
             ,
             ,
         ) = _loadStartingParamsAndAssertState(0);
+
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
 
         _callFlashLoan();
 
@@ -313,19 +528,22 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
 
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
+
         // NOTE: Below is not directly relevant to the flashloan test, but is is a demonstration
         //       of how the protocol fee is reflected as a state variable and then a real amount later on
         //       These asserts ensure that the calculation is done correctly.
 
-        assertEq(pool.getReserveNormalizedIncome(address(borrowAsset)), 1.0095e27);
+        assertEq(pool.getReserveNormalizedIncome(asset0), 1.0095e27);
 
-        address[] memory assets = new address[](1);
-        assets[0] = address(borrowAsset);
+        address[] memory assets = new address[](2);
+        assets[0] = asset0;
+        assets[1] = asset1;
 
         pool.mintToTreasury(assets);
 
         // Reserve normalized income doesn't change because accruedToTreasury is always factored into the index
-        assertEq(pool.getReserveNormalizedIncome(address(borrowAsset)), 1.0095e27);
+        assertEq(pool.getReserveNormalizedIncome(asset0), 1.0095e27);
 
         poolParams.accruedToTreasury = 0;
 
@@ -335,20 +553,57 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
 
-        _repay(borrower, address(borrowAsset), 100 ether);
-        _withdraw(supplier, address(borrowAsset), 1009.5 ether);
-        _withdraw(treasury, address(borrowAsset), 0.5 ether);
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
 
-        assertEq(aBorrowAsset.balanceOf(treasury), 0);
-        assertEq(aBorrowAsset.balanceOf(supplier), 0);
-        assertEq(aBorrowAsset.totalSupply(),       0);
+        _repay(borrower, asset0, 100 ether);
+        _repay(borrower, asset1, 100 ether);
 
-        assertEq(borrowAsset.balanceOf(treasury),              0.5 ether);
-        assertEq(borrowAsset.balanceOf(supplier),              1009.5 ether);
-        assertEq(borrowAsset.balanceOf(address(aBorrowAsset)), 0);
+        _withdraw(supplier, asset0, 1009.5 ether);
+        _withdraw(supplier, asset1, 1009.5 ether);
+        _withdraw(treasury, asset0, 0.5 ether);
+        _withdraw(treasury, asset1, 0.5 ether);
+
+        IERC20 aToken0 = IERC20(pool.getReserveData(asset0).aTokenAddress);
+        IERC20 aToken1 = IERC20(pool.getReserveData(asset1).aTokenAddress);
+
+        assertEq(aToken0.balanceOf(treasury), 0);
+        assertEq(aToken0.balanceOf(supplier), 0);
+        assertEq(aToken0.totalSupply(),       0);
+
+        assertEq(aToken1.balanceOf(treasury), 0);
+        assertEq(aToken1.balanceOf(supplier), 0);
+        assertEq(aToken1.totalSupply(),       0);
+
+        assertEq(IERC20(asset0).balanceOf(treasury),              0.5 ether);
+        assertEq(IERC20(asset0).balanceOf(supplier),              1009.5 ether);
+        assertEq(IERC20(asset0).balanceOf(address(aBorrowAsset)), 0);
     }
 
-    function test_flashLoanSimple_06()
+    function test_flashLoan_06()
+        whenNoTimeHasPassed
+        whenAmountIsNotZero
+        givenTotalPremiumIsNotZero
+        givenUserIsFlashBorrower
+        givenFlashLoanPremiumToProtocolIsZero
+        public
+    {
+        // No state changes when there are no premiums and no time has passed
+        _noStateChangeTest();
+    }
+
+    function test_flashLoan_07()
+        whenNoTimeHasPassed
+        whenAmountIsNotZero
+        givenTotalPremiumIsNotZero
+        givenUserIsFlashBorrower
+        givenFlashLoanPremiumToProtocolIsNotZero
+        public
+    {
+        // No state changes when there are no premiums and no time has passed
+        _noStateChangeTest();
+    }
+
+    function test_flashLoan_08()
         whenSomeTimeHasPassed
         whenAmountIsZero
         public
@@ -356,7 +611,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _timePassedNoFeesTest();
     }
 
-    function test_flashLoanSimple_07()
+    function test_flashLoan_09()
         whenSomeTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsZero
@@ -366,7 +621,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _timePassedNoFeesTest();
     }
 
-    function test_flashLoanSimple_08()
+    function test_flashLoan_10()
         whenSomeTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsZero
@@ -377,10 +632,11 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _timePassedNoFeesTest();
     }
 
-    function test_flashLoanSimple_09()
+    function test_flashLoan_11()
         whenSomeTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsNotZero
+        givenUserIsNotFlashBorrower
         givenFlashLoanPremiumToProtocolIsZero
         public
     {
@@ -392,6 +648,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
             uint256 expectedYieldLiquidityIndex,
             uint256 expectedBorrowIndex
         ) = _loadStartingParamsAndAssertState(WARP_TIME);
+
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
 
         _callFlashLoan();
 
@@ -427,12 +685,15 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
+
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
     }
 
-    function test_flashLoanSimple_10()
+    function test_flashLoan_12()
         whenSomeTimeHasPassed
         whenAmountIsNotZero
         givenTotalPremiumIsNotZero
+        givenUserIsNotFlashBorrower
         givenFlashLoanPremiumToProtocolIsNotZero
         public
     {
@@ -444,6 +705,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
             uint256 expectedYieldLiquidityIndex,
             uint256 expectedBorrowIndex
         ) = _loadStartingParamsAndAssertState(WARP_TIME);
+
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
 
         _callFlashLoan();
 
@@ -493,6 +756,32 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
+
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
+    }
+
+    function test_flashLoan_13()
+        whenSomeTimeHasPassed
+        whenAmountIsNotZero
+        givenTotalPremiumIsNotZero
+        givenUserIsFlashBorrower
+        givenFlashLoanPremiumToProtocolIsZero
+        public
+    {
+        // No premiums with flash borrower
+        _timePassedNoFeesTest();
+    }
+
+    function test_flashLoan_14()
+        whenSomeTimeHasPassed
+        whenAmountIsNotZero
+        givenTotalPremiumIsNotZero
+        givenUserIsFlashBorrower
+        givenFlashLoanPremiumToProtocolIsNotZero
+        public
+    {
+        // No premiums with flash borrower
+        _timePassedNoFeesTest();
     }
 
     /**********************************************************************************************/
@@ -599,12 +888,16 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
             ,
         ) = _loadStartingParamsAndAssertState(0);
 
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
+
         _callFlashLoan();
 
         // No state changes
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
+
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
     }
 
     function _timePassedNoFeesTest() internal {
@@ -616,6 +909,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
             uint256 expectedYieldLiquidityIndex,
             uint256 expectedBorrowIndex
         ) = _loadStartingParamsAndAssertState(WARP_TIME);
+
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
 
         _callFlashLoan();
 
@@ -640,8 +935,47 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
+
+        _assertAsset1StateMatchesAsset0(poolParams, aTokenParams, assetParams);
+    }
+
+    function _callFlashLoan() internal virtual {
+        address[] memory assets  = new address[](2);
+        uint256[] memory amounts = new uint256[](2);
+        uint256[] memory modes   = new uint256[](2);
+
+        assets[0] = asset0;
+        assets[1] = asset1;
+
+        amounts[0] = amount;
+        amounts[1] = amount;
+
+        modes[0] = 0;
+        modes[1] = 0;
+
+        vm.prank(borrower);
+        pool.flashLoan(receiver, assets, amounts, modes, borrower, new bytes(0), 0);
+    }
+
+    function _assertAsset1StateMatchesAsset0(
+        AssertPoolReserveStateParams memory poolParams0,
+        AssertATokenStateParams memory aTokenParams0,
+        AssertAssetStateParams memory assetParams0
+    )
+        internal
+    {
+        AssertPoolReserveStateParams memory poolParams1   = poolParams0;
+        AssertATokenStateParams      memory aTokenParams1 = aTokenParams0;
+        AssertAssetStateParams       memory assetParams1  = assetParams0;
+
+        poolParams1.asset    = asset1;
+        aTokenParams1.aToken = pool.getReserveData(asset1).aTokenAddress;
+        assetParams1.asset   = asset1;
+
+        _assertPoolReserveState(poolParams1);
+        _assertATokenState(aTokenParams1);
+        _assertAssetState(assetParams1);
     }
 
 }
-
 

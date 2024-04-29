@@ -10,7 +10,7 @@ import { Ethereum } from "sparklend-address-registry/Ethereum.sol";
 
 import { UserActions } from "src/UserActions.sol";
 
-contract IntegrationTestBase is UserActions {
+contract ForkTestBase is UserActions {
 
     IPool             constant pool             = IPool(Ethereum.POOL);
     IPoolConfigurator constant poolConfigurator = IPoolConfigurator(Ethereum.POOL_CONFIGURATOR);

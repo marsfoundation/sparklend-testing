@@ -10,7 +10,7 @@ import { UserConfiguration } from "sparklend-v1-core/contracts/protocol/librarie
 
 import { Errors } from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
-import { IERC20, SparkLendTestBase } from "./SparkLendTestBase.sol";
+import { IERC20, SparkLendTestBase } from "test/SparkLendTestBase.sol";
 
 contract WithdrawTestBase is SparkLendTestBase {
 

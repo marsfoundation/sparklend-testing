@@ -7,7 +7,7 @@ import { UserConfiguration } from "sparklend-v1-core/contracts/protocol/librarie
 import { Errors }            from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 import { DataTypes }         from "sparklend-v1-core/contracts/protocol/libraries/types/DataTypes.sol";
 
-import { SparkLendTestBase } from "./SparkLendTestBase.sol";
+import { SparkLendTestBase } from "test/SparkLendTestBase.sol";
 
 import { MockOracleSentinel } from "test/mocks/MockOracleSentinel.sol";
 
