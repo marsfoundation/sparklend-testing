@@ -16,6 +16,8 @@ import { Errors }    from "sparklend-v1-core/contracts/protocol/libraries/helper
 
 import { SparkLendTestBase } from "test/SparkLendTestBase.sol";
 
+// TODO: Reorder test contracts alphabetically
+
 contract PoolACLTests is SparkLendTestBase {
 
     address public A_TOKEN;
@@ -1468,6 +1470,56 @@ contract VariableDebtTokenACLTests is SparkLendTestBase {
 
         vm.prank(POOL);
         debtToken.burn(address(this), 100 ether, 1e27);
+    }
+    
+}
+
+contract AaveOracleACLTests is SparkLendTestBase {
+
+    address public ASSET_LISTING_ADMIN;
+    address public POOL_ADMIN;
+    
+    function setUp() public override {
+        super.setUp();
+
+        // NOTE: AssetListingAdmin is not used on mainnet so adding to this setUp instead of base
+        ASSET_LISTING_ADMIN = makeAddr("assetListingAdmin");
+        POOL_ADMIN          = admin;
+
+        vm.prank(admin);
+        aclManager.addAssetListingAdmin(ASSET_LISTING_ADMIN);
+    }
+
+    /**********************************************************************************************/
+    /*** Asset Listing Admin or Pool Admin ACL tests                                            ***/
+    /**********************************************************************************************/
+
+    function test_setAssetSources_assetListingAdminOrPoolAdminACL() public {
+        address[] memory assets  = new address[](1);
+        address[] memory sources = new address[](1);
+
+        assets[0]  = address(borrowAsset);
+        sources[0] = address(1);
+
+        vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN)); 
+        aaveOracle.setAssetSources(assets, sources);
+
+        vm.prank(POOL_ADMIN);
+        aaveOracle.setAssetSources(assets, sources);
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        aaveOracle.setAssetSources(assets, sources);
+    }
+
+    function test_setFallbackOracle_assetListingAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN)); 
+        aaveOracle.setFallbackOracle(makeAddr("fallbackOracle"));
+
+        vm.prank(POOL_ADMIN);
+        aaveOracle.setFallbackOracle(makeAddr("fallbackOracle"));
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        aaveOracle.setFallbackOracle(makeAddr("fallbackOracle"));
     }
     
 }
