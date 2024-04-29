@@ -3,6 +3,9 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
+import { IAaveIncentivesController } 
+    from "sparklend-v1-core/contracts/interfaces/IAaveIncentivesController.sol";
+
 import { BaseImmutableAdminUpgradeabilityProxy } 
     from "sparklend-v1-core/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol";
 
@@ -1252,11 +1255,19 @@ contract ACLManagerACLTests is SparkLendTestBase {
 
 contract ATokenACLTests is SparkLendTestBase {
 
-    address public POOL_ADDRESSES_PROVIDER;
+    address public ADMIN = admin;
+
+    address public POOL;
+    address public POOL_CONFIGURATOR;
     
     function setUp() public override {
         super.setUp();
-        POOL_ADDRESSES_PROVIDER = address(poolAddressesProvider);
+
+        POOL              = address(pool);
+        POOL_CONFIGURATOR = address(poolConfigurator);
+
+        // Supply some assets to the reserve so transfer functions work
+        _supply(address(this), address(borrowAsset), 100);
     }
 
     /**********************************************************************************************/
@@ -1271,12 +1282,10 @@ contract ATokenACLTests is SparkLendTestBase {
         vm.expectRevert(bytes(""));
         aBorrowAssetProxy.upgradeTo(address(borrowAsset));  // Use an address with code
 
-        vm.prank(POOL_ADDRESSES_PROVIDER);
+        vm.prank(POOL_CONFIGURATOR);
         aBorrowAssetProxy.upgradeTo(address(borrowAsset));  // Use an address with code
     }
 
-    // NOTE: This function signature does NOT match what's on mainnet for the Pool proxy.
-    // TODO: Investigate this.
     function test_upgradeToAndCall_upgradeabilityACL() public {
         BaseImmutableAdminUpgradeabilityProxy aBorrowAssetProxy 
             = BaseImmutableAdminUpgradeabilityProxy(payable(address(aBorrowAsset)));
@@ -1285,8 +1294,83 @@ contract ATokenACLTests is SparkLendTestBase {
         vm.expectRevert(bytes(""));
         aBorrowAssetProxy.upgradeToAndCall(address(borrowAsset), abi.encodeWithSignature("totalSupply()"));  
 
-        vm.prank(POOL_ADDRESSES_PROVIDER);
+        vm.prank(POOL_CONFIGURATOR);
         aBorrowAssetProxy.upgradeToAndCall(address(borrowAsset), abi.encodeWithSignature("totalSupply()"));  
     } 
+
+    /**********************************************************************************************/
+    /*** Pool ACL tests                                                                         ***/
+    /**********************************************************************************************/
+
+    function test_mint_adminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        aBorrowAsset.mint(address(this), address(this), 100, 1e27);
+
+        vm.prank(POOL);
+        aBorrowAsset.mint(address(this), address(this), 100, 1e27);
+    }
+
+    function test_burn_adminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        aBorrowAsset.burn(address(this), address(this), 100, 1e27);
+
+        vm.prank(POOL);
+        aBorrowAsset.burn(address(this), address(this), 100, 1e27);
+    }
+
+    function test_mintToTreasury_adminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        aBorrowAsset.mintToTreasury(100, 1e27);
+
+        vm.prank(POOL);
+        aBorrowAsset.mintToTreasury(100, 1e27);
+    }
+
+    function test_transferOnLiquidation_adminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        aBorrowAsset.transferOnLiquidation(address(this), makeAddr("receiver"), 100);
+
+        vm.prank(POOL);
+        aBorrowAsset.transferOnLiquidation(address(this), makeAddr("receiver"), 100);
+    }
+
+    function test_transferUnderlyingTo_adminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        aBorrowAsset.transferUnderlyingTo(address(this), 100);
+
+        vm.prank(POOL);
+        aBorrowAsset.transferUnderlyingTo(address(this), 100);
+    }
+
+    function test_handleRepayment_adminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        aBorrowAsset.handleRepayment(address(this), address(this), 100);
+
+        vm.prank(POOL);
+        aBorrowAsset.handleRepayment(address(this), address(this), 100);
+    }
+
+    /**********************************************************************************************/
+    /*** Pool Admin ACL tests                                                                   ***/
+    /**********************************************************************************************/
+
+    function test_rescueTokens_adminACL() public {
+        collateralAsset.mint(address(aBorrowAsset), 100);
+
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN)); 
+        aBorrowAsset.rescueTokens(address(collateralAsset), address(this), 100);
+
+        vm.prank(ADMIN);
+        aBorrowAsset.rescueTokens(address(collateralAsset), address(this), 100);
+    }
+
+    function test_setIncentivesController_adminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN)); 
+        aBorrowAsset.setIncentivesController(IAaveIncentivesController(address(1)));
+
+        vm.prank(ADMIN);
+        aBorrowAsset.setIncentivesController(IAaveIncentivesController(address(1)));
+    }
+    
 }
 
