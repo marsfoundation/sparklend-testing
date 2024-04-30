@@ -194,8 +194,6 @@ contract PoolACLTests is SparkLendTestBase {
         poolProxy.upgradeTo(address(borrowAsset));  // Use an address with code
     }
 
-    // NOTE: This function signature does NOT match what's on mainnet for the Pool proxy.
-    // TODO: Investigate this.
     function test_upgradeToAndCall_upgradeabilityACL() public {
         BaseImmutableAdminUpgradeabilityProxy poolProxy 
             = BaseImmutableAdminUpgradeabilityProxy(payable(address(pool)));
