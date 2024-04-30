@@ -959,6 +959,26 @@ contract PoolAddressesProviderACLTests is SparkLendTestBase {
         poolAddressesProvider.setAddressAsProxy("id", SC_SET_ADDRESS);
     } 
 
+    function test_setPoolImpl_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPoolImpl(SC_SET_ADDRESS);
+
+        // Passes ACL check in `onlyOwner`
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(""));  // EVM revert
+        poolAddressesProvider.setPoolImpl(SC_SET_ADDRESS);
+    }
+
+    function test_setPoolConfiguratorImpl_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPoolConfiguratorImpl(SC_SET_ADDRESS);
+
+        // Passes ACL check in `onlyOwner`
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(""));  // EVM revert
+        poolAddressesProvider.setPoolConfiguratorImpl(SC_SET_ADDRESS);
+    }
+
     function test_setPriceOracle_ownerACL() public {
         vm.expectRevert(ownableError);
         poolAddressesProvider.setPriceOracle(SET_ADDRESS);
