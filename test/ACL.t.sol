@@ -1271,7 +1271,7 @@ contract ATokenACLTests is SparkLendTestBase {
     }
 
     /**********************************************************************************************/
-    /*** Pool Addresses Provider Upgradeability ACL tests                                       ***/
+    /*** Pool Configurator Upgradeability ACL tests                                             ***/
     /**********************************************************************************************/
 
     function test_upgradeTo_upgradeabilityACL() public {
@@ -1415,7 +1415,7 @@ contract VariableDebtTokenACLTests is SparkLendTestBase {
     }
 
     /**********************************************************************************************/
-    /*** Pool Addresses Provider Upgradeability ACL tests                                       ***/
+    /*** Pool Configurator Upgradeability ACL tests                                             ***/
     /**********************************************************************************************/
 
     function test_upgradeTo_upgradeabilityACL() public {
