@@ -507,7 +507,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
-        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95% 
+        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95%
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
@@ -591,9 +591,9 @@ contract SupplyConcreteTests is SupplyTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
-        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95% 
+        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95%
 
-        uint256 supplierYield = 0.01045e27 * 500 ether / 100 / 1e27;  // 1% of APR 
+        uint256 supplierYield = 0.01045e27 * 500 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
@@ -766,7 +766,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
-        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95% 
+        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95%
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
@@ -850,9 +850,9 @@ contract SupplyConcreteTests is SupplyTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
-        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95% 
+        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95%
 
-        uint256 supplierYield = 0.01045e27 * 500 ether / 100 / 1e27;  // 1% of APR 
+        uint256 supplierYield = 0.01045e27 * 500 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 

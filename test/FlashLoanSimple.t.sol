@@ -309,7 +309,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         assertEq(accruedToTreasury, 0.495294700346706290 ether);
 
         poolParams.accruedToTreasury = accruedToTreasury;
-        
+
         _assertPoolReserveState(poolParams);
         _assertATokenState(aTokenParams);
         _assertAssetState(assetParams);
@@ -397,7 +397,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _callFlashLoan();
 
         assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.000049875e27);  // 0.525% yield for 1% of a year = 0.00525% * (1 - reserveFactor)
+        assertEq(expectedYieldLiquidityIndex, 1.000049875e27);  // 0.525% yield for 1% of a year * (1 - reserveFactor) = 0.00525% * 95%
         assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
 
         // Premium is only added to cash side
@@ -411,7 +411,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         assertEq(liquidityRate, 0.004938236030918590189350852e27);
 
         poolParams.variableBorrowIndex       = expectedBorrowIndex;
-        poolParams.currentLiquidityRate      = liquidityRate + 2;  // Rounding  
+        poolParams.currentLiquidityRate      = liquidityRate + 2;  // Rounding
         poolParams.currentVariableBorrowRate = borrowRate + 1;     // Rounding
         poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
         poolParams.accruedToTreasury         = borrowerInterest * 5/100 * 1e27 / expectedYieldLiquidityIndex + 1;  // Rounding
@@ -433,8 +433,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         assertEq(expectedLiquidityIndex, 1.010049848744486783960059129e27);
         assertEq(expectedLPBalance,      1010.049848744486783960 ether);
 
-        aTokenParams.userBalance = expectedLPBalance;  
-        aTokenParams.totalSupply = expectedLPBalance;  
+        aTokenParams.userBalance = expectedLPBalance;
+        aTokenParams.totalSupply = expectedLPBalance;
 
         assetParams.aTokenBalance = 910 ether;  // 100 flashborrow * 10% premium
 
@@ -464,7 +464,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _callFlashLoan();
 
         assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.000049875e27);  // 0.525% yield for 1% of a year = 0.00525% * (1 - reserveFactor)
+        assertEq(expectedYieldLiquidityIndex, 1.000049875e27);  // 0.525% yield for 1% of a year * (1 - reserveFactor) = 0.00525% * 95%
         assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
 
         ( uint256 borrowRate, uint256 liquidityRate )
@@ -481,7 +481,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
 
         poolParams.variableBorrowIndex       = expectedBorrowIndex;
         poolParams.currentLiquidityRate      = liquidityRate + 2;  // Rounding
-        poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
+        poolParams.currentVariableBorrowRate = borrowRate + 1;     // Rounding
         poolParams.lastUpdateTimestamp       = 1 + WARP_TIME;
         poolParams.accruedToTreasury         = borrowerInterest * 5/100 * 1e27 / expectedYieldLiquidityIndex + 1;  // Rounding
         // NOTE: `accruedToTreasury` is scaled by the liquidityIndex before it is updated by the flashloan again to reflect supplier yield
@@ -501,8 +501,8 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
 
         assertEq(poolParams.liquidityIndex, 1.009549850057262444762056173e27);
 
-        aTokenParams.userBalance = 1000 ether * poolParams.liquidityIndex / 1e27;  
-        aTokenParams.totalSupply = 1000 ether * poolParams.liquidityIndex / 1e27;  
+        aTokenParams.userBalance = 1000 ether * poolParams.liquidityIndex / 1e27;
+        aTokenParams.totalSupply = 1000 ether * poolParams.liquidityIndex / 1e27;
 
         assertEq(aTokenParams.userBalance, 1009.549850057262444762 ether);
         assertEq(aTokenParams.totalSupply, 1009.549850057262444762 ether);
@@ -644,7 +644,7 @@ contract FlashLoanSimpleSuccessTests is FlashLoanSimpleTestBase {
         _callFlashLoan();
 
         assertEq(borrowerInterest,            0.052513783297156325 ether);
-        assertEq(expectedYieldLiquidityIndex, 1.000049875e27);  // 0.525% yield for 1% of a year = 0.00525% * (1 - reserveFactor)
+        assertEq(expectedYieldLiquidityIndex, 1.000049875e27);  // 0.525% yield for 1% of a year * (1 - reserveFactor) = 0.00525% * 95%
         assertEq(expectedBorrowIndex,         1.000525137832971563250670960e27);
 
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether + borrowerInterest, 1000 ether + borrowerInterest);

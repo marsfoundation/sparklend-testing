@@ -472,8 +472,8 @@ contract BorrowConcreteTests is BorrowTestBase {
         vm.prank(borrower);
         pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
 
-        poolParams.currentLiquidityRate      = 0.03125e27 * 0.95;  // 50% utilized: 6.25% * 50% = 3.125% * (1 - reserveFactor)
-        poolParams.currentVariableBorrowRate = 0.0625e27;          // 50% utilized: 5% + 50%/80% * 2% = 6.25%TIL
+        poolParams.currentLiquidityRate      = 0.03125e27 * 0.95;  // 50% utilized: 6.25% * 50% *  * (1 - reserveFactor) = 3.125% * 95%
+        poolParams.currentVariableBorrowRate = 0.0625e27;          // 50% utilized: 5% + 50%/80% * 2% = 6.25%
 
         debtTokenParams.userBalance = 500 ether;
         debtTokenParams.totalSupply = 500 ether;
@@ -492,7 +492,7 @@ contract BorrowConcreteTests is BorrowTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.00525e27 * 0.95,  // 10% utilized: 5% * 10% = 0.525% * (1 - reserveFactor)
+            currentLiquidityRate:      0.00525e27 * 0.95,  // 10% utilized: 5% * 10% * (1 - reserveFactor) = 0.525% * 95%
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.0525e27,  // 10% utilized: 5% + 10%/80% * 2% = 5.25%
             currentStableBorrowRate:   0,
@@ -523,7 +523,7 @@ contract BorrowConcreteTests is BorrowTestBase {
         vm.prank(borrower);
         pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
 
-        poolParams.currentLiquidityRate      = 0.039e27 * 0.95;  // 60% utilized: 60% * 6.5% = 3.9% * (1 - reserveFactor)
+        poolParams.currentLiquidityRate      = 0.039e27 * 0.95;  // 60% utilized: 60% * 6.5% * (1 - reserveFactor)= 3.9% * 95%
         poolParams.currentVariableBorrowRate = 0.065e27;         // 60% utilized: 5% + 60%/80% * 2% = 6.5%
 
         debtTokenParams.userBalance = 500 ether;
@@ -584,7 +584,7 @@ contract BorrowConcreteTests is BorrowTestBase {
             = _getUpdatedRates(600 ether + borrowerDebt, 1000 ether + borrowerDebt);
 
         assertEq(borrowRate,    0.065000525110257445296653722e27);  // ~60% utilized: 5% + 60%/80% * 2% = ~6.5%
-        assertEq(liquidityRate, 0.037051596345660783435849413e27);  // ~60% utilized: 60% * ~6.5% = ~3.9% * (1 - reserveFactor)
+        assertEq(liquidityRate, 0.037051596345660783435849413e27);  // ~60% utilized: 60% * ~6.5% * (1 - reserveFactor) = ~3.9% * 95%
 
         uint256 expectedLiquidityIndex      = 1e27 + (1e27 * 0.00525e27 * 95/100 / 100 / 1e27);  // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;        // Accrues slightly more than 1% of APR because of compounded interest
@@ -593,7 +593,7 @@ contract BorrowConcreteTests is BorrowTestBase {
         assertEq(expectedVariableBorrowIndex, compoundedNormalizedInterest);
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
-        poolParams.currentLiquidityRate      = liquidityRate + 2;
+        poolParams.currentLiquidityRate      = liquidityRate + 2;  // Rounding
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
         poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;

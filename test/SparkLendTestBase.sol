@@ -380,7 +380,7 @@ contract SparkLendTestBase is UserActions {
         uint256 liquidityRate = borrowRate * borrowRatio / 1e27;
 
         // TODO: Update this once repayWithATokens is merged
-        return (borrowRate, liquidityRate * 95/100);  
+        return (borrowRate, liquidityRate * 95/100);
     }
 
     function _getUpdatedRates(uint256 borrowed, uint256 supplied)
@@ -396,15 +396,15 @@ contract SparkLendTestBase is UserActions {
         });
     }
 
-    function _getReserveTotalSupplySideValue(address asset) 
-        internal view returns (uint256 totalValue) 
+    function _getReserveTotalSupplySideValue(address asset)
+        internal view returns (uint256 totalValue)
     {
         IERC20 aToken = IERC20(pool.getReserveData(asset).aTokenAddress);
-        
+
         uint256 totalSupply = aToken.totalSupply();
-        uint256 accruedToTreasury = 
-            pool.getReserveData(asset).accruedToTreasury 
-            * pool.getReserveNormalizedIncome(asset) / 1e27;  
+        uint256 accruedToTreasury =
+            pool.getReserveData(asset).accruedToTreasury
+            * pool.getReserveNormalizedIncome(asset) / 1e27;
 
         totalValue = totalSupply + accruedToTreasury;
     }

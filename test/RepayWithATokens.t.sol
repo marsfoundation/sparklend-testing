@@ -315,7 +315,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.0296875e27,  // 3.125% * 95%  
+            currentLiquidityRate:      0.0296875e27,  // 3.125% * 95%
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.0625e27,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
@@ -366,7 +366,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.0296875e27,  // 3.125% * 95%  
+            currentLiquidityRate:      0.0296875e27,  // 3.125% * 95%
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.0625e27,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
@@ -415,7 +415,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      0.0296875e27,  // 3.125% * 95%  
+            currentLiquidityRate:      0.0296875e27,  // 3.125% * 95%
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: 0.0625e27,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
@@ -479,7 +479,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      liquidityRate,  
+            currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: borrowRate,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
@@ -555,7 +555,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      liquidityRate,  
+            currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: borrowRate,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
@@ -629,7 +629,7 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(borrowAsset),
             liquidityIndex:            1e27,
-            currentLiquidityRate:      liquidityRate,  
+            currentLiquidityRate:      liquidityRate,
             variableBorrowIndex:       1e27,
             currentVariableBorrowRate: borrowRate,  // 5% + 2% * (50%/80%)
             currentStableBorrowRate:   0,
@@ -676,12 +676,12 @@ contract RepayWithATokensConcreteTests is RepayWithATokensTestBase {
 
         // Diff from 500 is small enough that it rounds to clean numbers here (unlike repay tests where full utilization caused more debt)
         assertEq(borrowRate,    0.050000000000000000000050000e27);  // 1 / 499.999902325764663556e18 = 2e-21 => 2e-21/0.8 * 0.02 = 5e4 in ray (rounding)
-        assertEq(liquidityRate, 0.000000000000000000000095000e27);  // 1 / 499.999902325764663556e18 = 2e-21 => 2e-21 * (0.05e27 + 5e4) = 1e5 in ray (rounding) TODO: Investigate why not 95%
+        assertEq(liquidityRate, 0.000000000000000000000095000e27);  // 1 / 499.999902325764663556e18 = 2e-21 => 2e-21 * (0.05e27 + 5e4) = 1e5 in ray (rounding)
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
         poolParams.currentLiquidityRate      = liquidityRate;
-        poolParams.currentVariableBorrowRate = borrowRate;  
+        poolParams.currentVariableBorrowRate = borrowRate;
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
         poolParams.accruedToTreasury         = borrowerDebt * 5/100 * 1e27 / expectedLiquidityIndex;  // Scaled value
 
