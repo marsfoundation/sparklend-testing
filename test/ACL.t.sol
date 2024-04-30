@@ -494,6 +494,33 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
     }
 
     /**********************************************************************************************/
+    /*** Emergency Admin or Pool Admin ACL tests                                                ***/
+    /**********************************************************************************************/
+
+    function test_setReservePause_emergencyAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_OR_EMERGENCY_ADMIN));
+        poolConfigurator.setReservePause(address(borrowAsset), true);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_OR_EMERGENCY_ADMIN));
+        poolConfigurator.setReservePause(address(borrowAsset), true);
+
+        vm.prank(RISK_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_OR_EMERGENCY_ADMIN));
+        poolConfigurator.setReservePause(address(borrowAsset), true);
+
+        // EmergencyAdmin and PoolAdmin pass
+
+        vm.prank(EMERGENCY_ADMIN);
+        poolConfigurator.setReservePause(address(borrowAsset), true);
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setReservePause(address(borrowAsset), true);
+    }
+
+    /**********************************************************************************************/
     /*** Asset Listing Admin or Pool Admin ACL tests                                            ***/
     /**********************************************************************************************/
 
@@ -662,6 +689,29 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         
         vm.prank(RISK_ADMIN);
         poolConfigurator.setReserveFreeze(address(borrowAsset), true);
+    }
+
+    function test_setBorrowableInIsolation_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+        
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
     }
 
     function test_setReserveFactor_riskAdminOrPoolAdminACL() public {
