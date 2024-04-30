@@ -45,8 +45,10 @@ contract SparkLendTestBase is UserActions {
     // 3.65 days in seconds - gives clean numbers for testing (1% of APR)
     uint256 constant WARP_TIME = 365 days / 100;
 
-    address admin    = makeAddr("admin");
-    address treasury = makeAddr("treasury");
+    address admin          = makeAddr("admin");
+    address emergencyAdmin = makeAddr("emergencyAdmin");
+    address riskAdmin      = makeAddr("riskAdmin"); 
+    address treasury       = makeAddr("treasury");  // TODO: Use real treasury and demo withdrawal
 
     AaveOracle            aaveOracle;
     ACLManager            aclManager;
@@ -148,7 +150,8 @@ contract SparkLendTestBase is UserActions {
 
         registry.registerAddressesProvider(address(poolAddressesProvider), 1);
 
-        aclManager.addEmergencyAdmin(admin);
+        aclManager.addEmergencyAdmin(emergencyAdmin);
+        aclManager.addRiskAdmin(riskAdmin);
         aclManager.addPoolAdmin(admin);
         aclManager.grantRole(aclManager.DEFAULT_ADMIN_ROLE(), admin);
         aclManager.revokeRole(aclManager.DEFAULT_ADMIN_ROLE(), deployer);
