@@ -3,6 +3,9 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
+import { IAaveIncentivesController } from "sparklend-v1-core/contracts/interfaces/IAaveIncentivesController.sol";
+import { IVariableDebtToken }        from "sparklend-v1-core/contracts/interfaces/IVariableDebtToken.sol";
+
 import { BaseImmutableAdminUpgradeabilityProxy }
     from "sparklend-v1-core/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol";
 
@@ -942,6 +945,597 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(RISK_ADMIN);
         poolConfigurator.setReserveInterestRateStrategyAddress(address(borrowAsset), address(1));
+    }
+
+}
+
+contract PoolAddressesProviderACLTests is SparkLendTestBase {
+
+    address public SC_SET_ADDRESS;
+
+    address public OWNER       = admin;
+    address public SET_ADDRESS = makeAddr("setAddress");
+
+    bytes public ownableError = "Ownable: caller is not the owner";
+
+    function setUp() public override {
+        super.setUp();
+
+        SC_SET_ADDRESS = address(pool);  // Address with code
+    }
+
+    /**********************************************************************************************/
+    /*** Owner ACL tests                                                                        ***/
+    /**********************************************************************************************/
+
+    function test_renounceOwnership_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.renounceOwnership();
+
+        vm.prank(OWNER);
+        poolAddressesProvider.renounceOwnership();
+    }
+
+    function test_transferOwnership_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.transferOwnership(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.transferOwnership(SET_ADDRESS);
+    }
+
+    function test_setMarketId_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setMarketId("marketId");
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setMarketId("marketId");
+    }
+
+    function test_setAddress_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setAddress("id", SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setAddress("id", SET_ADDRESS);
+    }
+
+    function test_setAddressAsProxy_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setAddressAsProxy("id", SC_SET_ADDRESS);
+
+        // Passes ACL check in `onlyOwner`
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(""));  // EVM revert
+        poolAddressesProvider.setAddressAsProxy("id", SC_SET_ADDRESS);
+    }
+
+    function test_setPoolImpl_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPoolImpl(SC_SET_ADDRESS);
+
+        // Passes ACL check in `onlyOwner`
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(""));  // EVM revert
+        poolAddressesProvider.setPoolImpl(SC_SET_ADDRESS);
+    }
+
+    function test_setPoolConfiguratorImpl_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPoolConfiguratorImpl(SC_SET_ADDRESS);
+
+        // Passes ACL check in `onlyOwner`
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(""));  // EVM revert
+        poolAddressesProvider.setPoolConfiguratorImpl(SC_SET_ADDRESS);
+    }
+
+    function test_setPriceOracle_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPriceOracle(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setPriceOracle(SET_ADDRESS);
+    }
+
+    function test_setACLManager_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setACLManager(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setACLManager(SET_ADDRESS);
+    }
+
+    function test_setACLAdmin_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setACLAdmin(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setACLAdmin(SET_ADDRESS);
+    }
+
+    function test_setPriceOracleSentinel_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPriceOracleSentinel(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setPriceOracleSentinel(SET_ADDRESS);
+    }
+
+    function test_setPoolDataProvider_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPoolDataProvider(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        poolAddressesProvider.setPoolDataProvider(SET_ADDRESS);
+    }
+
+}
+
+contract PoolAddressesProviderRegistryACLTests is SparkLendTestBase {
+
+    address public OWNER       = admin;
+    address public SET_ADDRESS = makeAddr("setAddress");
+
+    bytes public ownableError = "Ownable: caller is not the owner";
+
+    /**********************************************************************************************/
+    /*** Owner ACL tests                                                                        ***/
+    /**********************************************************************************************/
+
+    function test_renounceOwnership_ownerACL() public {
+        vm.expectRevert(ownableError);
+        registry.renounceOwnership();
+
+        vm.prank(OWNER);
+        registry.renounceOwnership();
+    }
+
+    function test_transferOwnership_ownerACL() public {
+        vm.expectRevert(ownableError);
+        registry.transferOwnership(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        registry.transferOwnership(SET_ADDRESS);
+    }
+
+    function test_registerAddressesProvider_ownerACL() public {
+        vm.expectRevert(ownableError);
+        registry.registerAddressesProvider(SET_ADDRESS, 2);  // ID 1 used up in `setUp`
+
+        vm.prank(OWNER);
+        registry.registerAddressesProvider(SET_ADDRESS, 2);  // ID 1 used up in `setUp`
+    }
+
+    function test_unregisterAddressesProvider_ownerACL() public {
+        vm.prank(OWNER);
+        registry.registerAddressesProvider(SET_ADDRESS, 2);  // ID 1 used up in `setUp`
+
+        vm.expectRevert(ownableError);
+        registry.unregisterAddressesProvider(SET_ADDRESS);
+
+        vm.prank(OWNER);
+        registry.unregisterAddressesProvider(SET_ADDRESS);
+    }
+
+}
+
+contract ACLManagerACLTests is SparkLendTestBase {
+
+    address public ADMIN       = admin;
+    address public SET_ADDRESS = makeAddr("setAddress");
+
+    // address(this) == 0xdeb1e9a6be7baf84208bb6e10ac9f9bbe1d70809, role is DEFAULT_ADMIN_ROLE
+    // NOTE: Using raw string for address because vm.toString keeps checksum while the error message does not
+    bytes public defaultAdminError
+        = "AccessControl: account 0xdeb1e9a6be7baf84208bb6e10ac9f9bbe1d70809 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000";
+
+    function setUp() public override {
+        super.setUp();
+
+        assertEq(address(this), 0xDEb1E9a6Be7Baf84208BB6E10aC9F9bbE1D70809);
+    }
+
+    /**********************************************************************************************/
+    /*** Default Admin ACL tests                                                                ***/
+    /**********************************************************************************************/
+
+    function test_grantRole_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.grantRole(bytes32("TEST_ROLE"), SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.grantRole(bytes32("TEST_ROLE"), SET_ADDRESS);
+    }
+
+    function test_revokeRole_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.revokeRole(bytes32("TEST_ROLE"), SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.revokeRole(bytes32("TEST_ROLE"), SET_ADDRESS);
+    }
+
+    function test_setRoleAdmin_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.setRoleAdmin(bytes32("TEST_ROLE"), bytes32("TEST_ROLE_ADMIN"));
+
+        vm.prank(ADMIN);
+        aclManager.setRoleAdmin(bytes32("TEST_ROLE"), bytes32("TEST_ROLE_ADMIN"));
+    }
+
+    function test_addPoolAdmin_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.addPoolAdmin(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.addPoolAdmin(SET_ADDRESS);
+    }
+
+    function test_removePoolAdmin_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.removePoolAdmin(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.removePoolAdmin(SET_ADDRESS);
+    }
+
+    function test_addEmergencyAdmin_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.addEmergencyAdmin(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.addEmergencyAdmin(SET_ADDRESS);
+    }
+
+    function test_removeEmergencyAdmin_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.removeEmergencyAdmin(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.removeEmergencyAdmin(SET_ADDRESS);
+    }
+
+    function test_addRiskAdmin_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.addRiskAdmin(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.addRiskAdmin(SET_ADDRESS);
+    }
+
+    function test_removeRiskAdmin_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.removeRiskAdmin(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.removeRiskAdmin(SET_ADDRESS);
+    }
+
+    function test_addFlashBorrower_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.addFlashBorrower(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.addFlashBorrower(SET_ADDRESS);
+    }
+
+    function test_removeFlashBorrower_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.removeFlashBorrower(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.removeFlashBorrower(SET_ADDRESS);
+    }
+
+    function test_addBridge_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.addBridge(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.addBridge(SET_ADDRESS);
+    }
+
+    function test_removeBridge_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.removeBridge(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.removeBridge(SET_ADDRESS);
+    }
+
+    function test_addAssetListingAdmin_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.addAssetListingAdmin(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.addAssetListingAdmin(SET_ADDRESS);
+    }
+
+    function test_removeAssetListingAdmin_defaultAdminACL() public {
+        vm.expectRevert(defaultAdminError);
+        aclManager.removeAssetListingAdmin(SET_ADDRESS);
+
+        vm.prank(ADMIN);
+        aclManager.removeAssetListingAdmin(SET_ADDRESS);
+    }
+
+    /**********************************************************************************************/
+    /*** Role Admin ACL tests                                                                   ***/
+    /**********************************************************************************************/
+
+    // NOTE: Since these functions are called internally by all the above functions, only
+    //       these functions are tested with role admin functionality since its the same for all.
+
+    function test_grantRole_roleAdminACL() public {
+        address roleAdmin = makeAddr("roleAdmin");
+
+        vm.startPrank(ADMIN);
+        aclManager.setRoleAdmin(bytes32("TEST_ROLE"), bytes32("TEST_ROLE_ADMIN"));
+        aclManager.grantRole(bytes32("TEST_ROLE_ADMIN"), roleAdmin);
+        vm.stopPrank();
+
+        bytes memory errorMessage = abi.encodePacked(
+            "AccessControl: account 0xdeb1e9a6be7baf84208bb6e10ac9f9bbe1d70809 is missing role ",
+            vm.toString(bytes32("TEST_ROLE_ADMIN"))
+        );
+
+        vm.expectRevert(errorMessage);
+        aclManager.grantRole(bytes32("TEST_ROLE"), SET_ADDRESS);
+
+        vm.prank(roleAdmin);
+        aclManager.grantRole(bytes32("TEST_ROLE"), SET_ADDRESS);
+    }
+
+    function test_revokeRole_roleAdminACL() public {
+        address roleAdmin = makeAddr("roleAdmin");
+
+        vm.startPrank(ADMIN);
+        aclManager.setRoleAdmin(bytes32("TEST_ROLE"), bytes32("TEST_ROLE_ADMIN"));
+        aclManager.grantRole(bytes32("TEST_ROLE_ADMIN"), roleAdmin);
+        vm.stopPrank();
+
+        bytes memory errorMessage = abi.encodePacked(
+            "AccessControl: account 0xdeb1e9a6be7baf84208bb6e10ac9f9bbe1d70809 is missing role ",
+            vm.toString(bytes32("TEST_ROLE_ADMIN"))
+        );
+
+        vm.expectRevert(errorMessage);
+        aclManager.revokeRole(bytes32("TEST_ROLE"), SET_ADDRESS);
+
+        vm.prank(roleAdmin);
+        aclManager.revokeRole(bytes32("TEST_ROLE"), SET_ADDRESS);
+    }
+
+    /**********************************************************************************************/
+    /*** `msg.sender` ACL tests                                                                 ***/
+    /**********************************************************************************************/
+
+    function test_renounceRole_msgSenderACL() public {
+        vm.expectRevert(bytes("AccessControl: can only renounce roles for self"));
+        aclManager.renounceRole(bytes32("TEST_ROLE"), SET_ADDRESS);
+
+        vm.prank(SET_ADDRESS);
+        aclManager.renounceRole(bytes32("TEST_ROLE"), SET_ADDRESS);
+    }
+
+}
+
+contract ATokenACLTests is SparkLendTestBase {
+
+    address public ADMIN = admin;
+
+    address public POOL;
+    address public POOL_CONFIGURATOR;
+
+    function setUp() public override {
+        super.setUp();
+
+        POOL              = address(pool);
+        POOL_CONFIGURATOR = address(poolConfigurator);
+
+        // Supply some assets to the reserve so transfer functions work
+        _supply(address(this), address(borrowAsset), 100);
+    }
+
+    /**********************************************************************************************/
+    /*** Pool Configurator Upgradeability ACL tests                                             ***/
+    /**********************************************************************************************/
+
+    function test_upgradeTo_upgradeabilityACL() public {
+        BaseImmutableAdminUpgradeabilityProxy aBorrowAssetProxy
+            = BaseImmutableAdminUpgradeabilityProxy(payable(address(aBorrowAsset)));
+
+        // Routes to fallback which EVM reverts when selector doesn't match
+        // on aBorrowAsset implementation
+        vm.expectRevert(bytes(""));
+        aBorrowAssetProxy.upgradeTo(address(borrowAsset));  // Use an address with code
+
+        vm.prank(POOL_CONFIGURATOR);
+        aBorrowAssetProxy.upgradeTo(address(borrowAsset));  // Use an address with code
+    }
+
+    function test_upgradeToAndCall_upgradeabilityACL() public {
+        BaseImmutableAdminUpgradeabilityProxy aBorrowAssetProxy
+            = BaseImmutableAdminUpgradeabilityProxy(payable(address(aBorrowAsset)));
+
+        // Routes to fallback which EVM reverts when selector doesn't match
+        // on aBorrowAsset implementation
+        vm.expectRevert(bytes(""));
+        aBorrowAssetProxy.upgradeToAndCall(
+            address(borrowAsset),
+            abi.encodeWithSignature("totalSupply()")
+        );
+
+        vm.prank(POOL_CONFIGURATOR);
+        aBorrowAssetProxy.upgradeToAndCall(
+            address(borrowAsset),
+            abi.encodeWithSignature("totalSupply()")
+        );
+    }
+
+    /**********************************************************************************************/
+    /*** Pool ACL tests                                                                         ***/
+    /**********************************************************************************************/
+
+    function test_mint_poolACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
+        aBorrowAsset.mint(address(this), address(this), 100, 1e27);
+
+        vm.prank(POOL);
+        aBorrowAsset.mint(address(this), address(this), 100, 1e27);
+    }
+
+    function test_burn_poolACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
+        aBorrowAsset.burn(address(this), address(this), 100, 1e27);
+
+        vm.prank(POOL);
+        aBorrowAsset.burn(address(this), address(this), 100, 1e27);
+    }
+
+    function test_mintToTreasury_poolACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
+        aBorrowAsset.mintToTreasury(100, 1e27);
+
+        vm.prank(POOL);
+        aBorrowAsset.mintToTreasury(100, 1e27);
+    }
+
+    function test_transferOnLiquidation_poolACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
+        aBorrowAsset.transferOnLiquidation(address(this), makeAddr("receiver"), 100);
+
+        vm.prank(POOL);
+        aBorrowAsset.transferOnLiquidation(address(this), makeAddr("receiver"), 100);
+    }
+
+    function test_transferUnderlyingTo_poolACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
+        aBorrowAsset.transferUnderlyingTo(address(this), 100);
+
+        vm.prank(POOL);
+        aBorrowAsset.transferUnderlyingTo(address(this), 100);
+    }
+
+    function test_handleRepayment_poolACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
+        aBorrowAsset.handleRepayment(address(this), address(this), 100);
+
+        vm.prank(POOL);
+        aBorrowAsset.handleRepayment(address(this), address(this), 100);
+    }
+
+    /**********************************************************************************************/
+    /*** Pool Admin ACL tests                                                                   ***/
+    /**********************************************************************************************/
+
+    function test_rescueTokens_adminACL() public {
+        collateralAsset.mint(address(aBorrowAsset), 100);
+
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
+        aBorrowAsset.rescueTokens(address(collateralAsset), address(this), 100);
+
+        vm.prank(ADMIN);
+        aBorrowAsset.rescueTokens(address(collateralAsset), address(this), 100);
+    }
+
+    function test_setIncentivesController_adminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
+        aBorrowAsset.setIncentivesController(IAaveIncentivesController(address(1)));
+
+        vm.prank(ADMIN);
+        aBorrowAsset.setIncentivesController(IAaveIncentivesController(address(1)));
+    }
+
+}
+
+contract VariableDebtTokenACLTests is SparkLendTestBase {
+
+    IVariableDebtToken debtToken;
+
+    address public POOL;
+    address public POOL_CONFIGURATOR;
+
+    function setUp() public override {
+        super.setUp();
+
+        POOL              = address(pool);
+        POOL_CONFIGURATOR = address(poolConfigurator);
+
+        debtToken = IVariableDebtToken(
+            pool.getReserveData(address(borrowAsset)).variableDebtTokenAddress
+        );
+
+        _initCollateral({
+            asset:                address(collateralAsset),
+            ltv:                  50_00,
+            liquidationThreshold: 50_00,
+            liquidationBonus:     101_00
+        });
+
+        vm.prank(admin);
+        poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
+
+        _supply(address(this), address(borrowAsset), 100 ether);
+        _supplyAndUseAsCollateral(address(this), address(collateralAsset), 1000 ether);
+        _borrow(address(this), address(borrowAsset), 100 ether);
+    }
+
+    /**********************************************************************************************/
+    /*** Pool Configurator Upgradeability ACL tests                                             ***/
+    /**********************************************************************************************/
+
+    function test_upgradeTo_upgradeabilityACL() public {
+        BaseImmutableAdminUpgradeabilityProxy debtTokenProxy
+            = BaseImmutableAdminUpgradeabilityProxy(payable(address(debtToken)));
+
+        // Routes to fallback which EVM reverts when selector doesn't match
+        // on aBorrowAsset implementation
+        vm.expectRevert(bytes(""));
+        debtTokenProxy.upgradeTo(address(borrowAsset));  // Use an address with code
+
+        vm.prank(POOL_CONFIGURATOR);
+        debtTokenProxy.upgradeTo(address(borrowAsset));  // Use an address with code
+    }
+
+    function test_upgradeToAndCall_upgradeabilityACL() public {
+        BaseImmutableAdminUpgradeabilityProxy debtTokenProxy
+            = BaseImmutableAdminUpgradeabilityProxy(payable(address(debtToken)));
+
+        // Routes to fallback which EVM reverts when selector doesn't match
+        // on aBorrowAsset implementation
+        vm.expectRevert(bytes(""));
+        debtTokenProxy.upgradeToAndCall(
+            address(borrowAsset),
+            abi.encodeWithSignature("totalSupply()")
+        );
+
+        vm.prank(POOL_CONFIGURATOR);
+        debtTokenProxy.upgradeToAndCall(
+            address(borrowAsset),
+            abi.encodeWithSignature("totalSupply()")
+        );
+    }
+
+    /**********************************************************************************************/
+    /*** Pool ACL tests                                                                         ***/
+    /**********************************************************************************************/
+
+    function test_mint_poolACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
+        debtToken.mint(address(this), address(this), 100 ether, 1e27);
+
+        vm.prank(POOL);
+        debtToken.mint(address(this), address(this), 100 ether, 1e27);
+    }
+
+    function test_burn_poolACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
+        debtToken.burn(address(this), 100 ether, 1e27);
+
+        vm.prank(POOL);
+        debtToken.burn(address(this), 100 ether, 1e27);
     }
 
 }
