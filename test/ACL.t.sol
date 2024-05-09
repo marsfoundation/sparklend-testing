@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import { IAaveIncentivesController } from "sparklend-v1-core/contracts/interfaces/IAaveIncentivesController.sol";
 import { IVariableDebtToken }        from "sparklend-v1-core/contracts/interfaces/IVariableDebtToken.sol";
 
-import { BaseImmutableAdminUpgradeabilityProxy } 
+import { BaseImmutableAdminUpgradeabilityProxy }
     from "sparklend-v1-core/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol";
 
 import { ConfiguratorInputTypes } from "sparklend-v1-core/contracts/protocol/libraries/types/ConfiguratorInputTypes.sol";
@@ -45,7 +45,7 @@ contract AaveOracleACLTests is SparkLendTestBase {
         assets[0]  = address(borrowAsset);
         sources[0] = address(1);
 
-        vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN)); 
+        vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN));
         aaveOracle.setAssetSources(assets, sources);
 
         vm.prank(POOL_ADMIN);
@@ -56,7 +56,7 @@ contract AaveOracleACLTests is SparkLendTestBase {
     }
 
     function test_setFallbackOracle_assetListingAdminOrPoolAdminACL() public {
-        vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN)); 
+        vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN));
         aaveOracle.setFallbackOracle(makeAddr("fallbackOracle"));
 
         vm.prank(POOL_ADMIN);
@@ -78,7 +78,7 @@ contract PoolACLTests is SparkLendTestBase {
 
     function setUp() public override {
         super.setUp();
-        
+
         A_TOKEN                 = address(aBorrowAsset);
         BRIDGE                  = makeAddr("bridge");
         POOL_ADDRESSES_PROVIDER = address(poolAddressesProvider);
@@ -86,7 +86,6 @@ contract PoolACLTests is SparkLendTestBase {
         POOL_CONFIGURATOR       = address(poolConfigurator);
 
         bytes32 bridgeRole = keccak256('BRIDGE');
-        
         vm.prank(admin);
         aclManager.grantRole(bridgeRole, BRIDGE);
     }
@@ -240,7 +239,7 @@ contract PoolACLTests is SparkLendTestBase {
     /**********************************************************************************************/
 
     function test_upgradeTo_upgradeabilityACL() public {
-        BaseImmutableAdminUpgradeabilityProxy poolProxy 
+        BaseImmutableAdminUpgradeabilityProxy poolProxy
             = BaseImmutableAdminUpgradeabilityProxy(payable(address(pool)));
 
         // Routes to fallback which EVM reverts when selector doesn't match on pool implementation
@@ -251,20 +250,18 @@ contract PoolACLTests is SparkLendTestBase {
         poolProxy.upgradeTo(address(borrowAsset));  // Use an address with code
     }
 
-    // NOTE: This function signature does NOT match what's on mainnet for the Pool proxy.
-    // TODO: Investigate this.
     function test_upgradeToAndCall_upgradeabilityACL() public {
-        BaseImmutableAdminUpgradeabilityProxy poolProxy 
+        BaseImmutableAdminUpgradeabilityProxy poolProxy
             = BaseImmutableAdminUpgradeabilityProxy(payable(address(pool)));
 
         // Routes to fallback which EVM reverts when selector doesn't match on pool implementation
         vm.expectRevert(bytes(""));
-        poolProxy.upgradeToAndCall(address(borrowAsset), abi.encodeWithSignature("totalSupply()"));  
+        poolProxy.upgradeToAndCall(address(borrowAsset), abi.encodeWithSignature("totalSupply()"));
 
         vm.prank(POOL_ADDRESSES_PROVIDER);
-        poolProxy.upgradeToAndCall(address(borrowAsset), abi.encodeWithSignature("totalSupply()"));  
+        poolProxy.upgradeToAndCall(address(borrowAsset), abi.encodeWithSignature("totalSupply()"));
     }
-    
+
 }
 
 contract PoolConfiguratorACLTests is SparkLendTestBase {
@@ -276,7 +273,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
     function setUp() public override {
         super.setUp();
-        
+
         // NOTE: AssetListingAdmin is not used on mainnet so adding to this setUp instead of base
         ASSET_LISTING_ADMIN = makeAddr("assetListingAdmin");
         EMERGENCY_ADMIN     = emergencyAdmin;
@@ -316,7 +313,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
     }
 
     function test_updateAToken_onlyPoolAdminACL() public {
-        ConfiguratorInputTypes.UpdateATokenInput memory input 
+        ConfiguratorInputTypes.UpdateATokenInput memory input
             = ConfiguratorInputTypes.UpdateATokenInput({
                 asset:                address(borrowAsset),
                 treasury:             treasury,
@@ -339,7 +336,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(EMERGENCY_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateAToken(input);
-        
+
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateAToken(input);
@@ -353,7 +350,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
     }
 
     function test_updateStableDebtToken_onlyPoolAdminACL() public {
-        ConfiguratorInputTypes.UpdateDebtTokenInput memory input 
+        ConfiguratorInputTypes.UpdateDebtTokenInput memory input
             = ConfiguratorInputTypes.UpdateDebtTokenInput({
                 asset:                address(borrowAsset),
                 incentivesController: address(0),
@@ -375,7 +372,6 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(EMERGENCY_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateStableDebtToken(input);
-        
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateStableDebtToken(input);
@@ -389,7 +385,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
     }
 
     function test_updateVariableDebtToken_onlyPoolAdminACL() public {
-        ConfiguratorInputTypes.UpdateDebtTokenInput memory input 
+        ConfiguratorInputTypes.UpdateDebtTokenInput memory input
             = ConfiguratorInputTypes.UpdateDebtTokenInput({
                 asset:                address(borrowAsset),
                 incentivesController: address(0),
@@ -411,7 +407,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(EMERGENCY_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateVariableDebtToken(input);
-        
+
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateVariableDebtToken(input);
@@ -437,7 +433,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(EMERGENCY_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.setReserveActive(address(borrowAsset), true);
-        
+
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.setReserveActive(address(borrowAsset), true);
@@ -461,7 +457,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(EMERGENCY_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateBridgeProtocolFee(100);
-        
+
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateBridgeProtocolFee(100);
@@ -485,7 +481,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(EMERGENCY_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateFlashloanPremiumTotal(100);
-        
+
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateFlashloanPremiumTotal(100);
@@ -509,7 +505,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(EMERGENCY_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateFlashloanPremiumToProtocol(100);
-        
+
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         poolConfigurator.updateFlashloanPremiumToProtocol(100);
@@ -537,7 +533,6 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(POOL_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_EMERGENCY_ADMIN));
         poolConfigurator.setPoolPause(true);
-        
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_EMERGENCY_ADMIN));
         poolConfigurator.setPoolPause(true);
@@ -549,20 +544,47 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
     }
 
     /**********************************************************************************************/
+    /*** Emergency Admin or Pool Admin ACL tests                                                ***/
+    /**********************************************************************************************/
+
+    function test_setReservePause_emergencyAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_OR_EMERGENCY_ADMIN));
+        poolConfigurator.setReservePause(address(borrowAsset), true);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_OR_EMERGENCY_ADMIN));
+        poolConfigurator.setReservePause(address(borrowAsset), true);
+
+        vm.prank(RISK_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_OR_EMERGENCY_ADMIN));
+        poolConfigurator.setReservePause(address(borrowAsset), true);
+
+        // EmergencyAdmin and PoolAdmin pass
+
+        vm.prank(EMERGENCY_ADMIN);
+        poolConfigurator.setReservePause(address(borrowAsset), true);
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setReservePause(address(borrowAsset), true);
+    }
+
+    /**********************************************************************************************/
     /*** Asset Listing Admin or Pool Admin ACL tests                                            ***/
     /**********************************************************************************************/
 
     function test_initReserves_assetListingAdminOrPoolAdminACL() public {
-        ConfiguratorInputTypes.InitReserveInput[] memory input 
+        ConfiguratorInputTypes.InitReserveInput[] memory input
             = new ConfiguratorInputTypes.InitReserveInput[](1);
 
         input[0] = ConfiguratorInputTypes.InitReserveInput({
-            aTokenImpl:                  address(borrowAsset),  // Address with code 
-            stableDebtTokenImpl:         address(borrowAsset),  // Address with code 
-            variableDebtTokenImpl:       address(borrowAsset),  // Address with code 
+            aTokenImpl:                  address(borrowAsset),  // Address with code
+            stableDebtTokenImpl:         address(borrowAsset),  // Address with code
+            variableDebtTokenImpl:       address(borrowAsset),  // Address with code
             underlyingAssetDecimals:     18,
-            interestRateStrategyAddress: address(borrowAsset),  // Address with code 
-            underlyingAsset:             address(borrowAsset),  // Address with code 
+            interestRateStrategyAddress: address(borrowAsset),  // Address with code
+            underlyingAsset:             address(borrowAsset),  // Address with code
             treasury:                    treasury,
             incentivesController:        address(0),
             aTokenName:                  "aToken",
@@ -582,7 +604,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(EMERGENCY_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN));
         poolConfigurator.initReserves(input);
-        
+
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.CALLER_NOT_ASSET_LISTING_OR_POOL_ADMIN));
         poolConfigurator.initReserves(input);
@@ -620,7 +642,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setReserveBorrowing(address(borrowAsset), true);
     }
@@ -643,7 +665,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.configureReserveAsCollateral(address(borrowAsset), 50_00, 50_00, 101_00);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.configureReserveAsCollateral(address(borrowAsset), 50_00, 50_00, 101_00);
     }
@@ -667,7 +689,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(POOL_ADMIN);
         vm.expectRevert(bytes(Errors.BORROWING_NOT_ENABLED));
         poolConfigurator.setReserveStableRateBorrowing(address(borrowAsset), true);
-        
+
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.BORROWING_NOT_ENABLED));
         poolConfigurator.setReserveStableRateBorrowing(address(borrowAsset), true);
@@ -691,7 +713,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setReserveFlashLoaning(address(borrowAsset), true);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setReserveFlashLoaning(address(borrowAsset), true);
     }
@@ -714,9 +736,32 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setReserveFreeze(address(borrowAsset), true);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setReserveFreeze(address(borrowAsset), true);
+    }
+
+    function test_setBorrowableInIsolation_riskAdminOrPoolAdminACL() public {
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+
+        // Other admins should fail
+
+        vm.prank(ASSET_LISTING_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+
+        vm.prank(EMERGENCY_ADMIN);
+        vm.expectRevert(bytes(Errors.CALLER_NOT_RISK_OR_POOL_ADMIN));
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+
+        // RiskAdmin and PoolAdmin pass
+
+        vm.prank(POOL_ADMIN);
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
+
+        vm.prank(RISK_ADMIN);
+        poolConfigurator.setBorrowableInIsolation(address(borrowAsset), true);
     }
 
     function test_setReserveFactor_riskAdminOrPoolAdminACL() public {
@@ -737,7 +782,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setReserveFactor(address(borrowAsset), 1_00);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setReserveFactor(address(borrowAsset), 1_00);
     }
@@ -760,7 +805,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setDebtCeiling(address(borrowAsset), 500_000_00);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setDebtCeiling(address(borrowAsset), 500_000_00);
     }
@@ -783,7 +828,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setSiloedBorrowing(address(borrowAsset), true);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setSiloedBorrowing(address(borrowAsset), true);
     }
@@ -806,7 +851,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setBorrowCap(address(borrowAsset), 500_000_00);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setBorrowCap(address(borrowAsset), 500_000_00);
     }
@@ -829,7 +874,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setSupplyCap(address(borrowAsset), 500_000_00);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setSupplyCap(address(borrowAsset), 500_000_00);
     }
@@ -852,7 +897,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setLiquidationProtocolFee(address(borrowAsset), 5_00);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setLiquidationProtocolFee(address(borrowAsset), 5_00);
     }
@@ -875,7 +920,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setEModeCategory(1, 50_00, 50_00, 100_01, address(0), "emode1");
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setEModeCategory(1, 50_00, 50_00, 100_01, address(0), "emode1");
     }
@@ -899,7 +944,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
         vm.prank(POOL_ADMIN);
         vm.expectRevert(bytes(Errors.INVALID_EMODE_CATEGORY_ASSIGNMENT));
         poolConfigurator.setAssetEModeCategory(address(borrowAsset), 1);
-        
+
         vm.prank(RISK_ADMIN);
         vm.expectRevert(bytes(Errors.INVALID_EMODE_CATEGORY_ASSIGNMENT));
         poolConfigurator.setAssetEModeCategory(address(borrowAsset), 1);
@@ -923,7 +968,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setUnbackedMintCap(address(borrowAsset), 500_000_00);
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setUnbackedMintCap(address(borrowAsset), 500_000_00);
     }
@@ -946,7 +991,7 @@ contract PoolConfiguratorACLTests is SparkLendTestBase {
 
         vm.prank(POOL_ADMIN);
         poolConfigurator.setReserveInterestRateStrategyAddress(address(borrowAsset), address(1));
-        
+
         vm.prank(RISK_ADMIN);
         poolConfigurator.setReserveInterestRateStrategyAddress(address(borrowAsset), address(1));
     }
@@ -994,7 +1039,7 @@ contract PoolAddressesProviderACLTests is SparkLendTestBase {
 
         vm.prank(OWNER);
         poolAddressesProvider.setMarketId("marketId");
-    } 
+    }
 
     function test_setAddress_ownerACL() public {
         vm.expectRevert(ownableError);
@@ -1002,7 +1047,7 @@ contract PoolAddressesProviderACLTests is SparkLendTestBase {
 
         vm.prank(OWNER);
         poolAddressesProvider.setAddress("id", SET_ADDRESS);
-    } 
+    }
 
     function test_setAddressAsProxy_ownerACL() public {
         vm.expectRevert(ownableError);
@@ -1012,7 +1057,27 @@ contract PoolAddressesProviderACLTests is SparkLendTestBase {
         vm.prank(OWNER);
         vm.expectRevert(bytes(""));  // EVM revert
         poolAddressesProvider.setAddressAsProxy("id", SC_SET_ADDRESS);
-    } 
+    }
+
+    function test_setPoolImpl_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPoolImpl(SC_SET_ADDRESS);
+
+        // Passes ACL check in `onlyOwner`
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(""));  // EVM revert
+        poolAddressesProvider.setPoolImpl(SC_SET_ADDRESS);
+    }
+
+    function test_setPoolConfiguratorImpl_ownerACL() public {
+        vm.expectRevert(ownableError);
+        poolAddressesProvider.setPoolConfiguratorImpl(SC_SET_ADDRESS);
+
+        // Passes ACL check in `onlyOwner`
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(""));  // EVM revert
+        poolAddressesProvider.setPoolConfiguratorImpl(SC_SET_ADDRESS);
+    }
 
     function test_setPriceOracle_ownerACL() public {
         vm.expectRevert(ownableError);
@@ -1020,7 +1085,7 @@ contract PoolAddressesProviderACLTests is SparkLendTestBase {
 
         vm.prank(OWNER);
         poolAddressesProvider.setPriceOracle(SET_ADDRESS);
-    } 
+    }
 
     function test_setACLManager_ownerACL() public {
         vm.expectRevert(ownableError);
@@ -1028,7 +1093,7 @@ contract PoolAddressesProviderACLTests is SparkLendTestBase {
 
         vm.prank(OWNER);
         poolAddressesProvider.setACLManager(SET_ADDRESS);
-    } 
+    }
 
     function test_setACLAdmin_ownerACL() public {
         vm.expectRevert(ownableError);
@@ -1036,7 +1101,7 @@ contract PoolAddressesProviderACLTests is SparkLendTestBase {
 
         vm.prank(OWNER);
         poolAddressesProvider.setACLAdmin(SET_ADDRESS);
-    } 
+    }
 
     function test_setPriceOracleSentinel_ownerACL() public {
         vm.expectRevert(ownableError);
@@ -1044,7 +1109,7 @@ contract PoolAddressesProviderACLTests is SparkLendTestBase {
 
         vm.prank(OWNER);
         poolAddressesProvider.setPriceOracleSentinel(SET_ADDRESS);
-    } 
+    }
 
     function test_setPoolDataProvider_ownerACL() public {
         vm.expectRevert(ownableError);
@@ -1052,7 +1117,7 @@ contract PoolAddressesProviderACLTests is SparkLendTestBase {
 
         vm.prank(OWNER);
         poolAddressesProvider.setPoolDataProvider(SET_ADDRESS);
-    } 
+    }
 
 }
 
@@ -1101,7 +1166,6 @@ contract PoolAddressesProviderRegistryACLTests is SparkLendTestBase {
         vm.prank(OWNER);
         registry.unregisterAddressesProvider(SET_ADDRESS);
     }
-    
 }
 
 contract ACLManagerACLTests is SparkLendTestBase {
@@ -1111,7 +1175,7 @@ contract ACLManagerACLTests is SparkLendTestBase {
 
     // address(this) == 0xdeb1e9a6be7baf84208bb6e10ac9f9bbe1d70809, role is DEFAULT_ADMIN_ROLE
     // NOTE: Using raw string for address because vm.toString keeps checksum while the error message does not
-    bytes public defaultAdminError 
+    bytes public defaultAdminError
         = "AccessControl: account 0xdeb1e9a6be7baf84208bb6e10ac9f9bbe1d70809 is missing role 0x0000000000000000000000000000000000000000000000000000000000000000";
 
     function setUp() public override {
@@ -1130,7 +1194,7 @@ contract ACLManagerACLTests is SparkLendTestBase {
 
         vm.prank(ADMIN);
         aclManager.grantRole(bytes32("TEST_ROLE"), SET_ADDRESS);
-    } 
+    }
 
     function test_revokeRole_defaultAdminACL() public {
         vm.expectRevert(defaultAdminError);
@@ -1248,7 +1312,7 @@ contract ACLManagerACLTests is SparkLendTestBase {
     /*** Role Admin ACL tests                                                                   ***/
     /**********************************************************************************************/
 
-    // NOTE: Since these functions are called internally by all the above functions, only 
+    // NOTE: Since these functions are called internally by all the above functions, only
     //       these functions are tested with role admin functionality since its the same for all.
 
     function test_grantRole_roleAdminACL() public {
@@ -1311,7 +1375,6 @@ contract ATokenACLTests is SparkLendTestBase {
 
     address public POOL;
     address public POOL_CONFIGURATOR;
-    
     function setUp() public override {
         super.setUp();
 
@@ -1323,14 +1386,14 @@ contract ATokenACLTests is SparkLendTestBase {
     }
 
     /**********************************************************************************************/
-    /*** Pool Addresses Provider Upgradeability ACL tests                                       ***/
+    /*** Pool Configurator Upgradeability ACL tests                                             ***/
     /**********************************************************************************************/
 
     function test_upgradeTo_upgradeabilityACL() public {
-        BaseImmutableAdminUpgradeabilityProxy aBorrowAssetProxy 
+        BaseImmutableAdminUpgradeabilityProxy aBorrowAssetProxy
             = BaseImmutableAdminUpgradeabilityProxy(payable(address(aBorrowAsset)));
 
-        // Routes to fallback which EVM reverts when selector doesn't match 
+        // Routes to fallback which EVM reverts when selector doesn't match
         // on aBorrowAsset implementation
         vm.expectRevert(bytes(""));
         aBorrowAssetProxy.upgradeTo(address(borrowAsset));  // Use an address with code
@@ -1340,30 +1403,30 @@ contract ATokenACLTests is SparkLendTestBase {
     }
 
     function test_upgradeToAndCall_upgradeabilityACL() public {
-        BaseImmutableAdminUpgradeabilityProxy aBorrowAssetProxy 
+        BaseImmutableAdminUpgradeabilityProxy aBorrowAssetProxy
             = BaseImmutableAdminUpgradeabilityProxy(payable(address(aBorrowAsset)));
 
-        // Routes to fallback which EVM reverts when selector doesn't match 
+        // Routes to fallback which EVM reverts when selector doesn't match
         // on aBorrowAsset implementation
         vm.expectRevert(bytes(""));
         aBorrowAssetProxy.upgradeToAndCall(
-            address(borrowAsset), 
+            address(borrowAsset),
             abi.encodeWithSignature("totalSupply()")
-        );  
+        );
 
         vm.prank(POOL_CONFIGURATOR);
         aBorrowAssetProxy.upgradeToAndCall(
-            address(borrowAsset), 
+            address(borrowAsset),
             abi.encodeWithSignature("totalSupply()")
-        );  
-    } 
+        );
+    }
 
     /**********************************************************************************************/
     /*** Pool ACL tests                                                                         ***/
     /**********************************************************************************************/
 
     function test_mint_poolACL() public {
-        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
         aBorrowAsset.mint(address(this), address(this), 100, 1e27);
 
         vm.prank(POOL);
@@ -1371,7 +1434,7 @@ contract ATokenACLTests is SparkLendTestBase {
     }
 
     function test_burn_poolACL() public {
-        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
         aBorrowAsset.burn(address(this), address(this), 100, 1e27);
 
         vm.prank(POOL);
@@ -1379,7 +1442,7 @@ contract ATokenACLTests is SparkLendTestBase {
     }
 
     function test_mintToTreasury_poolACL() public {
-        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
         aBorrowAsset.mintToTreasury(100, 1e27);
 
         vm.prank(POOL);
@@ -1387,7 +1450,7 @@ contract ATokenACLTests is SparkLendTestBase {
     }
 
     function test_transferOnLiquidation_poolACL() public {
-        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
         aBorrowAsset.transferOnLiquidation(address(this), makeAddr("receiver"), 100);
 
         vm.prank(POOL);
@@ -1395,7 +1458,7 @@ contract ATokenACLTests is SparkLendTestBase {
     }
 
     function test_transferUnderlyingTo_poolACL() public {
-        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
         aBorrowAsset.transferUnderlyingTo(address(this), 100);
 
         vm.prank(POOL);
@@ -1403,7 +1466,7 @@ contract ATokenACLTests is SparkLendTestBase {
     }
 
     function test_handleRepayment_poolACL() public {
-        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
         aBorrowAsset.handleRepayment(address(this), address(this), 100);
 
         vm.prank(POOL);
@@ -1417,7 +1480,7 @@ contract ATokenACLTests is SparkLendTestBase {
     function test_rescueTokens_adminACL() public {
         collateralAsset.mint(address(aBorrowAsset), 100);
 
-        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN)); 
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         aBorrowAsset.rescueTokens(address(collateralAsset), address(this), 100);
 
         vm.prank(ADMIN);
@@ -1425,13 +1488,12 @@ contract ATokenACLTests is SparkLendTestBase {
     }
 
     function test_setIncentivesController_adminACL() public {
-        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN)); 
+        vm.expectRevert(bytes(Errors.CALLER_NOT_POOL_ADMIN));
         aBorrowAsset.setIncentivesController(IAaveIncentivesController(address(1)));
 
         vm.prank(ADMIN);
         aBorrowAsset.setIncentivesController(IAaveIncentivesController(address(1)));
     }
-    
 }
 
 contract VariableDebtTokenACLTests is SparkLendTestBase {
@@ -1440,7 +1502,6 @@ contract VariableDebtTokenACLTests is SparkLendTestBase {
 
     address public POOL;
     address public POOL_CONFIGURATOR;
-    
     function setUp() public override {
         super.setUp();
 
@@ -1467,14 +1528,14 @@ contract VariableDebtTokenACLTests is SparkLendTestBase {
     }
 
     /**********************************************************************************************/
-    /*** Pool Addresses Provider Upgradeability ACL tests                                       ***/
+    /*** Pool Configurator Upgradeability ACL tests                                             ***/
     /**********************************************************************************************/
 
     function test_upgradeTo_upgradeabilityACL() public {
-        BaseImmutableAdminUpgradeabilityProxy debtTokenProxy 
+        BaseImmutableAdminUpgradeabilityProxy debtTokenProxy
             = BaseImmutableAdminUpgradeabilityProxy(payable(address(debtToken)));
 
-        // Routes to fallback which EVM reverts when selector doesn't match 
+        // Routes to fallback which EVM reverts when selector doesn't match
         // on aBorrowAsset implementation
         vm.expectRevert(bytes(""));
         debtTokenProxy.upgradeTo(address(borrowAsset));  // Use an address with code
@@ -1484,30 +1545,30 @@ contract VariableDebtTokenACLTests is SparkLendTestBase {
     }
 
     function test_upgradeToAndCall_upgradeabilityACL() public {
-        BaseImmutableAdminUpgradeabilityProxy debtTokenProxy 
+        BaseImmutableAdminUpgradeabilityProxy debtTokenProxy
             = BaseImmutableAdminUpgradeabilityProxy(payable(address(debtToken)));
 
-        // Routes to fallback which EVM reverts when selector doesn't match 
+        // Routes to fallback which EVM reverts when selector doesn't match
         // on aBorrowAsset implementation
         vm.expectRevert(bytes(""));
         debtTokenProxy.upgradeToAndCall(
-            address(borrowAsset), 
+            address(borrowAsset),
             abi.encodeWithSignature("totalSupply()")
-        );  
+        );
 
         vm.prank(POOL_CONFIGURATOR);
         debtTokenProxy.upgradeToAndCall(
-            address(borrowAsset), 
+            address(borrowAsset),
             abi.encodeWithSignature("totalSupply()")
-        );  
-    } 
+        );
+    }
 
     /**********************************************************************************************/
     /*** Pool ACL tests                                                                         ***/
     /**********************************************************************************************/
 
     function test_mint_poolACL() public {
-        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
         debtToken.mint(address(this), address(this), 100 ether, 1e27);
 
         vm.prank(POOL);
@@ -1515,11 +1576,10 @@ contract VariableDebtTokenACLTests is SparkLendTestBase {
     }
 
     function test_burn_poolACL() public {
-        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL)); 
+        vm.expectRevert(bytes(Errors.CALLER_MUST_BE_POOL));
         debtToken.burn(address(this), 100 ether, 1e27);
 
         vm.prank(POOL);
         debtToken.burn(address(this), 100 ether, 1e27);
     }
-    
 }
