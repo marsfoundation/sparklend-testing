@@ -472,7 +472,7 @@ contract BorrowConcreteTests is BorrowTestBase {
         vm.prank(borrower);
         pool.borrow(address(borrowAsset), 500 ether, 2, 0, borrower);
 
-        poolParams.currentLiquidityRate      = 0.03125e27 * 0.95;  // 50% utilized: 6.25% * 50% *  * (1 - reserveFactor) = 3.125% * 95%
+        poolParams.currentLiquidityRate      = 0.03125e27 * 0.95;  // 50% utilized: 6.25% * 50% * (1 - reserveFactor) = 3.125% * 95%
         poolParams.currentVariableBorrowRate = 0.0625e27;          // 50% utilized: 5% + 50%/80% * 2% = 6.25%
 
         debtTokenParams.userBalance = 500 ether;
