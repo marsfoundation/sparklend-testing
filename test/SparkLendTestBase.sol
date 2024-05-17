@@ -387,10 +387,9 @@ contract SparkLendTestBase is UserActions {
         uint256 borrowRate
             = baseRate + (slope1 * slope1Ratio / 1e27) + (slope2 * slope2Ratio / 1e27);
 
-        uint256 liquidityRate = borrowRate * borrowRatio * (10_000 - reserveFactor) / 1e27 / 10_000;
+        uint256 liquidityRate = borrowRate * borrowRatio / 1e27;
 
-        // TODO: Update this once repayWithATokens is merged
-        return (borrowRate, liquidityRate * 95/100);
+        return (borrowRate, liquidityRate * (10_000 - reserveFactor) / 10_000);
     }
 
     function _getUpdatedRates(uint256 borrowed, uint256 totalValue)
@@ -403,7 +402,7 @@ contract SparkLendTestBase is UserActions {
             slope1:        SLOPE1,
             slope2:        SLOPE2,
             optimalRatio:  OPTIMAL_RATIO,
-            reserveFactor: 0
+            reserveFactor: 5_00
         });
     }
 
