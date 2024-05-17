@@ -17,7 +17,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
     address borrowAsset2;
 
     function setUp() public override {
-        super.setUp();        
+        super.setUp();
 
         borrowAsset1 = _setUpNewReserve();
         borrowAsset2 = _setUpNewReserve();
@@ -44,7 +44,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
     }
 
     modifier whenReservesHaveAccruedValue {
-        vm.warp(1 + WARP_TIME);  // Using warp so multiple assets can be tested with this 
+        vm.warp(1 + WARP_TIME);  // Using warp so multiple assets can be tested with this
 
         _;
     }
@@ -56,7 +56,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
     modifier whenAccruedToTreasuryHasBeenUpdated(address borrowAsset_) {
         // Update reserve state without updating reserve value
-        _supply(borrower, borrowAsset_, 1 ether);  
+        _supply(borrower, borrowAsset_, 1 ether);
         _withdraw(borrower, borrowAsset_, 1 ether);
 
         assertGt(pool.getReserveData(borrowAsset_).accruedToTreasury, 0);
@@ -88,7 +88,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
         vm.prank(admin);
         poolConfigurator.setReserveActive(borrowAsset1, false);
-        
+
         address[] memory assets = new address[](1);
         assets[0] = borrowAsset1;
 
@@ -96,7 +96,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
     }
 
-    function test_mintToTreasury_03() public proveNoOp {        
+    function test_mintToTreasury_03() public proveNoOp {
         address[] memory assets = new address[](1);
         assets[0] = borrowAsset1;
 
@@ -104,11 +104,11 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
     }
 
-    function test_mintToTreasury_04() 
-        public 
+    function test_mintToTreasury_04()
+        public
         whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasNotBeenUpdated(borrowAsset1)
-        proveNoOp 
+        proveNoOp
     {
         address[] memory assets = new address[](1);
         assets[0] = borrowAsset1;
@@ -117,13 +117,13 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
     }
 
-    function test_mintToTreasury_05() 
-        public 
+    function test_mintToTreasury_05()
+        public
         whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenNoTimeHasPassed
     {
-        ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex, uint256 supplierYield ) 
+        ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex, uint256 supplierYield )
             = _noTimePassedTestBefore(borrowAsset1);
 
         address[] memory assets = new address[](1);
@@ -131,20 +131,20 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
 
         _noTimePassedTestAfter(
-            borrowAsset1, 
-            scaledAccruedToTreasury, 
-            liquidityIndex, 
+            borrowAsset1,
+            scaledAccruedToTreasury,
+            liquidityIndex,
             supplierYield
         );
     }
 
-    function test_mintToTreasury_06() 
-        public 
+    function test_mintToTreasury_06()
+        public
         whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenSomeTimeHasPassed
-    {        
-        ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex2, uint256 supplierYield ) 
+    {
+        ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex2, uint256 supplierYield )
             = _someTimePassedTestBefore(borrowAsset1);
 
         address[] memory assets = new address[](1);
@@ -152,19 +152,19 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
 
         _someTimePassedTestAfter(
-            borrowAsset1, 
-            scaledAccruedToTreasury, 
-            liquidityIndex2, 
+            borrowAsset1,
+            scaledAccruedToTreasury,
+            liquidityIndex2,
             supplierYield
         );
     }
 
-    function test_mintToTreasury_07() 
-        public  
+    function test_mintToTreasury_07()
+        public
         whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
     {
-        ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex, uint256 supplierYield ) 
+        ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex, uint256 supplierYield )
             = _noTimePassedTestBefore(borrowAsset1);
 
         IERC20 aBorrowAsset2 = IERC20(pool.getReserveData(borrowAsset2).aTokenAddress);
@@ -177,9 +177,9 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
 
         _noTimePassedTestAfter(
-            borrowAsset1, 
-            scaledAccruedToTreasury, 
-            liquidityIndex, 
+            borrowAsset1,
+            scaledAccruedToTreasury,
+            liquidityIndex,
             supplierYield
         );
 
@@ -187,14 +187,14 @@ contract MintToTreasuryTests is SparkLendTestBase {
         assertEq(aBorrowAsset2.totalSupply(), totalSupplyBefore);
     }
 
-    function test_mintToTreasury_08() 
-        public 
+    function test_mintToTreasury_08()
+        public
         whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
     {
         // NOTE: In order to set a reserve inactive, both totalSupply and accruedToTreasury have to
         //       be zero. Withdrawing sets totalSupply to zero, but increases accruedToTreasury.
-        //       To get accruedToTreasury to zero, we have to mint to treasury first, which 
+        //       To get accruedToTreasury to zero, we have to mint to treasury first, which
         //       increases totalSupply, so a withdraw is done from treasury to get
         //       totalSupply to zero.
 
@@ -220,8 +220,8 @@ contract MintToTreasuryTests is SparkLendTestBase {
 
         vm.prank(admin);
         poolConfigurator.setReserveActive(borrowAsset2, false);
-        
-        ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex, uint256 supplierYield ) 
+
+        ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex, uint256 supplierYield )
             = _noTimePassedTestBefore(borrowAsset1);
 
         uint256 totalSupplyBefore = aBorrowAsset2.totalSupply();
@@ -232,9 +232,9 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
 
         _noTimePassedTestAfter(
-            borrowAsset1, 
-            scaledAccruedToTreasury, 
-            liquidityIndex, 
+            borrowAsset1,
+            scaledAccruedToTreasury,
+            liquidityIndex,
             supplierYield
         );
 
@@ -242,13 +242,13 @@ contract MintToTreasuryTests is SparkLendTestBase {
         assertEq(aBorrowAsset2.totalSupply(), totalSupplyBefore);
     }
 
-    function test_mintToTreasury_09() 
-        public 
+    function test_mintToTreasury_09()
+        public
         whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenAccruedToTreasuryHasNotBeenUpdated(borrowAsset2)
-    { 
-        ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex, uint256 supplierYield ) 
+    {
+        ( uint256 scaledAccruedToTreasury, uint256 liquidityIndex, uint256 supplierYield )
             = _noTimePassedTestBefore(borrowAsset1);
 
         IERC20 aBorrowAsset2 = IERC20(pool.getReserveData(borrowAsset2).aTokenAddress);
@@ -261,9 +261,9 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
 
         _noTimePassedTestAfter(
-            borrowAsset1, 
-            scaledAccruedToTreasury, 
-            liquidityIndex, 
+            borrowAsset1,
+            scaledAccruedToTreasury,
+            liquidityIndex,
             supplierYield
         );
 
@@ -271,17 +271,17 @@ contract MintToTreasuryTests is SparkLendTestBase {
         assertEq(aBorrowAsset2.totalSupply(), totalSupplyBefore);
     }
 
-    function test_mintToTreasury_10() 
-        public 
+    function test_mintToTreasury_10()
+        public
         whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset2)
         whenNoTimeHasPassed
-    { 
-        ( uint256 scaledAccruedToTreasury1, uint256 liquidityIndex1, uint256 supplierYield1 ) 
+    {
+        ( uint256 scaledAccruedToTreasury1, uint256 liquidityIndex1, uint256 supplierYield1 )
         = _noTimePassedTestBefore(borrowAsset1);
 
-        ( uint256 scaledAccruedToTreasury2, uint256 liquidityIndex2, uint256 supplierYield2 ) 
+        ( uint256 scaledAccruedToTreasury2, uint256 liquidityIndex2, uint256 supplierYield2 )
             = _noTimePassedTestBefore(borrowAsset2);
 
         address[] memory assets = new address[](2);
@@ -290,31 +290,31 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
 
         _noTimePassedTestAfter(
-            borrowAsset1, 
-            scaledAccruedToTreasury1, 
-            liquidityIndex1, 
+            borrowAsset1,
+            scaledAccruedToTreasury1,
+            liquidityIndex1,
             supplierYield1
         );
 
         _noTimePassedTestAfter(
-            borrowAsset2, 
-            scaledAccruedToTreasury2, 
-            liquidityIndex2, 
+            borrowAsset2,
+            scaledAccruedToTreasury2,
+            liquidityIndex2,
             supplierYield2
         );
     }
 
-    function test_mintToTreasury_11() 
-        public 
+    function test_mintToTreasury_11()
+        public
         whenReservesHaveAccruedValue
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset1)
         whenAccruedToTreasuryHasBeenUpdated(borrowAsset2)
         whenSomeTimeHasPassed
-    { 
-        ( uint256 scaledAccruedToTreasury1, uint256 liquidityIndex1, uint256 supplierYield1 ) 
+    {
+        ( uint256 scaledAccruedToTreasury1, uint256 liquidityIndex1, uint256 supplierYield1 )
             = _someTimePassedTestBefore(borrowAsset1);
 
-        ( uint256 scaledAccruedToTreasury2, uint256 liquidityIndex2, uint256 supplierYield2 ) 
+        ( uint256 scaledAccruedToTreasury2, uint256 liquidityIndex2, uint256 supplierYield2 )
             = _someTimePassedTestBefore(borrowAsset2);
 
         address[] memory assets = new address[](2);
@@ -323,24 +323,24 @@ contract MintToTreasuryTests is SparkLendTestBase {
         pool.mintToTreasury(assets);
 
         _someTimePassedTestAfter(
-            borrowAsset1, 
-            scaledAccruedToTreasury1, 
-            liquidityIndex1, 
+            borrowAsset1,
+            scaledAccruedToTreasury1,
+            liquidityIndex1,
             supplierYield1
         );
 
         _someTimePassedTestAfter(
-            borrowAsset2, 
-            scaledAccruedToTreasury2, 
-            liquidityIndex2, 
+            borrowAsset2,
+            scaledAccruedToTreasury2,
+            liquidityIndex2,
             supplierYield2
         );
     }
 
-    function _noTimePassedTestBefore(address borrowAsset_) 
+    function _noTimePassedTestBefore(address borrowAsset_)
         internal returns (
-            uint256 scaledAccruedToTreasury, 
-            uint256 liquidityIndex, 
+            uint256 scaledAccruedToTreasury,
+            uint256 liquidityIndex,
             uint256 supplierYield
         )
     {
@@ -350,7 +350,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
         supplierYield  = 500 ether * liquidityRate / 100 / 1e27;  // 1% of a year has passed
         liquidityIndex = 1e27 + (liquidityRate * 1/100);
 
-        uint256 borrowerInterest = _getBorrowerInterest(0.055e27, WARP_TIME, 100 ether);
+        uint256 borrowerInterest = _getAccruedInterest(0.055e27, WARP_TIME, 100 ether);
 
         scaledAccruedToTreasury = borrowerInterest * 5/100 * 1e27 / liquidityIndex;
 
@@ -359,7 +359,7 @@ contract MintToTreasuryTests is SparkLendTestBase {
         assertEq(scaledAccruedToTreasury, 0.002750468954274655 ether);  // 5% of borrowerInterest
 
         IAToken aBorrowAsset_ = IAToken(pool.getReserveData(borrowAsset_).aTokenAddress);
-        
+
         assertEq(aBorrowAsset_.totalSupply(),             500 ether + supplierYield);
         assertEq(aBorrowAsset_.balanceOf(treasury),       0);
         assertEq(aBorrowAsset_.scaledBalanceOf(treasury), 0);
@@ -368,9 +368,9 @@ contract MintToTreasuryTests is SparkLendTestBase {
     }
 
     function _noTimePassedTestAfter(
-        address borrowAsset_, 
-        uint256 scaledAccruedToTreasury, 
-        uint256 liquidityIndex, 
+        address borrowAsset_,
+        uint256 scaledAccruedToTreasury,
+        uint256 liquidityIndex,
         uint256 supplierYield
     ) internal {
         uint256 accruedToTreasury = scaledAccruedToTreasury * liquidityIndex / 1e27 + 1;  // Rounding
@@ -386,10 +386,10 @@ contract MintToTreasuryTests is SparkLendTestBase {
         assertEq(pool.getReserveData(borrowAsset_).accruedToTreasury, 0);
     }
 
-    function _someTimePassedTestBefore(address borrowAsset_) 
+    function _someTimePassedTestBefore(address borrowAsset_)
         internal returns (
-            uint256 scaledAccruedToTreasury, 
-            uint256 liquidityIndex2, 
+            uint256 scaledAccruedToTreasury,
+            uint256 liquidityIndex2,
             uint256 supplierYield
         )
     {
@@ -398,32 +398,34 @@ contract MintToTreasuryTests is SparkLendTestBase {
         uint256 liquidityRate1  = 0.055e27 * 20/100 * 95/100;
         uint256 liquidityIndex1 = 1e27 + (liquidityRate1 * 1/100);  // 1% of a year has passed
 
-        uint256 borrowerInterest1 = _getBorrowerInterest(0.055e27, WARP_TIME, 100 ether);
+        uint256 totalInterest = _getAccruedInterest(0.055e27, WARP_TIME, 100 ether);
 
-        ( , uint256 liquidityRate2 ) 
-            = _getUpdatedRates(100 ether + borrowerInterest1, 500 ether + borrowerInterest1, 5_00);
+        ( , uint256 liquidityRate2 )
+            = _getUpdatedRates(100 ether + totalInterest, 500 ether + totalInterest);
+
+        liquidityRate2 += 1;  // Rounding
 
         liquidityIndex2 = (1e27 + (liquidityRate2 * 1/100)) * liquidityIndex1 / 1e27;  // 1% of a year has passed
         supplierYield   = 500 ether * liquidityIndex2 / 1e27 - 500 ether;
 
-        scaledAccruedToTreasury = borrowerInterest1 * 5/100 * 1e27 / liquidityIndex1;
+        scaledAccruedToTreasury = totalInterest * 5/100 * 1e27 / liquidityIndex1;
 
         assertEq(pool.getReserveData(borrowAsset_).liquidityIndex,       liquidityIndex1);
         assertEq(pool.getReserveNormalizedIncome(borrowAsset_),          liquidityIndex2);
         assertEq(pool.getReserveData(borrowAsset_).currentLiquidityRate, liquidityRate2);
 
         // Rates increase because of the accrued interest increasing utilization
-        assertEq(liquidityRate1,    0.01045e27);
-        assertEq(liquidityRate2,    0.010455017011611857160935024e27);
-        assertEq(liquidityIndex1,   1.0001045e27);
-        assertEq(liquidityIndex2,   1.000209061095608895706000083e27);
-        assertEq(borrowerInterest1, 0.055015127565607543 ether);
-        assertEq(supplierYield,     0.104530547804447853 ether);
+        assertEq(liquidityRate1,  0.01045e27);
+        assertEq(liquidityRate2,  0.010455017011611857160935024e27);
+        assertEq(liquidityIndex1, 1.0001045e27);
+        assertEq(liquidityIndex2, 1.000209061095608895706000083e27);
+        assertEq(totalInterest,   0.055015127565607543 ether);
+        assertEq(supplierYield,   0.104530547804447853 ether);
 
         assertEq(scaledAccruedToTreasury, 0.002750468954274655 ether);
 
         IAToken aBorrowAsset_ = IAToken(pool.getReserveData(borrowAsset_).aTokenAddress);
-        
+
         assertEq(aBorrowAsset_.totalSupply(),             500 ether + supplierYield);
         assertEq(aBorrowAsset_.balanceOf(treasury),       0);
         assertEq(aBorrowAsset_.scaledBalanceOf(treasury), 0);
@@ -432,9 +434,9 @@ contract MintToTreasuryTests is SparkLendTestBase {
     }
 
     function _someTimePassedTestAfter(
-        address borrowAsset_, 
-        uint256 scaledAccruedToTreasury, 
-        uint256 liquidityIndex, 
+        address borrowAsset_,
+        uint256 scaledAccruedToTreasury,
+        uint256 liquidityIndex,
         uint256 supplierYield
     ) internal {
         uint256 accruedToTreasury = scaledAccruedToTreasury * liquidityIndex / 1e27 + 1;  // Rounding

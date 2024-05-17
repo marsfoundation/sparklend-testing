@@ -47,7 +47,7 @@ contract SparkLendTestBase is UserActions {
 
     address admin          = makeAddr("admin");
     address emergencyAdmin = makeAddr("emergencyAdmin");
-    address riskAdmin      = makeAddr("riskAdmin"); 
+    address riskAdmin      = makeAddr("riskAdmin");
     address treasury       = makeAddr("treasury");  // TODO: Use real treasury and demo withdrawal
 
     AaveOracle                    aaveOracle;
@@ -352,7 +352,7 @@ contract SparkLendTestBase is UserActions {
         interestRate = term1 + term2 + term3 + term4;
     }
 
-    function _getBorrowerInterest(uint256 rate, uint256 timeDelta, uint256 amount)
+    function _getAccruedInterest(uint256 rate, uint256 timeDelta, uint256 amount)
         internal pure returns (uint256 interest)
     {
         interest = amount * (_getCompoundedNormalizedInterest(rate, timeDelta) - 1e27) / 1e27;
@@ -622,8 +622,8 @@ contract SparkLendTestBase is UserActions {
         }
     }
 
-    function _logStorageModification(VmSafe.AccountAccess memory record, uint256 index) 
-        internal view 
+    function _logStorageModification(VmSafe.AccountAccess memory record, uint256 index)
+        internal view
     {
         console.log("");
         console2.log("account:  %s", vm.getLabel(record.account));
@@ -646,7 +646,7 @@ contract SparkLendTestBase is UserActions {
         if (_bytes == 0) return false;
 
         address extractedAddress = address(uint160(uint256(_bytes)));
-    
+
         // Check if the address equals the original bytes32 value when padded back to bytes32
         return extractedAddress != address(0) && bytes32(bytes20(extractedAddress)) == _bytes;
     }
