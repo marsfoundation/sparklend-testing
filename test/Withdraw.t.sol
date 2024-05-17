@@ -234,8 +234,8 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.0525e27);   // 5% + 10%/80% of 2% = 5.25%
-        assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
+        assertEq(borrowRate,    0.0525e27);     // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.0049875e27);  // 10% of 5.25%
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
@@ -273,8 +273,8 @@ contract WithdrawConcreteTests is WithdrawTestBase {
 
         ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether, 200 ether);
 
-        assertEq(borrowRate,    0.0625e27);   // 5% + 50%/80% of 2% = 6.25%
-        assertEq(liquidityRate, 0.03125e27);  // 50% of 6.25% = 3.125%
+        assertEq(borrowRate,    0.0625e27);          // 5% + 50%/80% of 2% = 6.25%
+        assertEq(liquidityRate, 0.03125e27 * 0.95);  // 50% of 6.25% = 3.125%
 
         poolParams.currentLiquidityRate      = liquidityRate;
         poolParams.currentVariableBorrowRate = borrowRate;
@@ -298,17 +298,17 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.0525e27);   // 5% + 10%/80% of 2% = 5.25%
-        assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
+        assertEq(borrowRate,    0.0525e27);     // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.0049875e27);  // 10% of 5.25%
 
-        uint256 supplierYield = 0.00525e27 * 1000 ether / 100 / 1e27;  // 1% of APR
+        uint256 supplierYield = 0.0049875e27 * 1000 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
         uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 100 ether / 1e27;
 
         // Borrower owes slightly more than lender has earned because of compounded interest
-        assertEq(supplierYield,                0.0525 ether);
+        assertEq(supplierYield,                0.049875 ether);
         assertEq(compoundedNormalizedInterest, 1.00052513783297156325067096e27);
         assertEq(borrowerDebt,                 0.052513783297156325 ether);
 
@@ -350,20 +350,21 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate * 1/100);              // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
-        assertEq(expectedLiquidityIndex,      1.0000525e27);
+        assertEq(expectedLiquidityIndex,      1.000049875e27);
         assertEq(expectedVariableBorrowIndex, 1.000525137832971563250670960e27);
 
         ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether + borrowerDebt, 200 ether + borrowerDebt);
 
         // Slightly higher now because utilization is higher (last test was 5% + 50%/80% of 2% = 6.25%)
         assertEq(borrowRate,    0.062503281249901840824889794e27);
-        assertEq(liquidityRate, 0.031259844180369559207886302e27);
+        assertEq(liquidityRate, 0.031259844180369559207886302e27 * uint256(95)/100);
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
-        poolParams.currentLiquidityRate      = liquidityRate + 1;  // Rounding
+        poolParams.currentLiquidityRate      = liquidityRate + 2;  // Rounding
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
         poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
+        poolParams.accruedToTreasury         = borrowerDebt * 5/100 * 1e27 / expectedLiquidityIndex + 1;  // Rounding
 
         aTokenParams.userBalance = 200 ether + supplierYield;
         aTokenParams.totalSupply = 200 ether + supplierYield;
@@ -436,8 +437,8 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.0525e27);   // 5% + 10%/80% of 2% = 5.25%
-        assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
+        assertEq(borrowRate,    0.0525e27);     // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.0049875e27);  // 10% of 5.25% * 95%
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
@@ -475,8 +476,8 @@ contract WithdrawConcreteTests is WithdrawTestBase {
 
         ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether, 200 ether);
 
-        assertEq(borrowRate,    0.0625e27);   // 5% + 50%/80% of 2% = 6.25%
-        assertEq(liquidityRate, 0.03125e27);  // 50% of 6.25% = 3.125%
+        assertEq(borrowRate,    0.0625e27);          // 5% + 50%/80% of 2% = 6.25%
+        assertEq(liquidityRate, 0.03125e27 * 0.95);  // 50% of 6.25% = 3.125%
 
         poolParams.currentLiquidityRate      = liquidityRate;
         poolParams.currentVariableBorrowRate = borrowRate;
@@ -500,17 +501,17 @@ contract WithdrawConcreteTests is WithdrawTestBase {
     {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 1000 ether);
 
-        assertEq(borrowRate,    0.0525e27);   // 5% + 10%/80% of 2% = 5.25%
-        assertEq(liquidityRate, 0.00525e27);  // 10% of 5.25%
+        assertEq(borrowRate,    0.0525e27);     // 5% + 10%/80% of 2% = 5.25%
+        assertEq(liquidityRate, 0.0049875e27);  // 10% of 5.25% * 95%
 
-        uint256 supplierYield = 0.00525e27 * 1000 ether / 100 / 1e27;  // 1% of APR
+        uint256 supplierYield = 0.0049875e27 * 1000 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
         uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 100 ether / 1e27;
 
         // Borrower owes slightly more than lender has earned because of compounded interest
-        assertEq(supplierYield,                0.0525 ether);
+        assertEq(supplierYield,                0.049875 ether);  // 95% of 0.0525
         assertEq(compoundedNormalizedInterest, 1.00052513783297156325067096e27);
         assertEq(borrowerDebt,                 0.052513783297156325 ether);
 
@@ -552,20 +553,21 @@ contract WithdrawConcreteTests is WithdrawTestBase {
         uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate * 1/100);              // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
-        assertEq(expectedLiquidityIndex,      1.0000525e27);
+        assertEq(expectedLiquidityIndex,      1.000049875e27);
         assertEq(expectedVariableBorrowIndex, 1.000525137832971563250670960e27);
 
         ( borrowRate, liquidityRate ) = _getUpdatedRates(100 ether + borrowerDebt, 200 ether + borrowerDebt);
 
         // Slightly higher now because utilization is higher (last test was 5% + 50%/80% of 2% = 6.25%)
         assertEq(borrowRate,    0.062503281249901840824889794e27);
-        assertEq(liquidityRate, 0.031259844180369559207886302e27);
+        assertEq(liquidityRate, 0.031259844180369559207886302e27 * uint256(95)/100);
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
-        poolParams.currentLiquidityRate      = liquidityRate + 1;  // Rounding
+        poolParams.currentLiquidityRate      = liquidityRate + 2;  // Rounding
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
         poolParams.currentVariableBorrowRate = borrowRate + 1;  // Rounding
         poolParams.lastUpdateTimestamp       = WARP_TIME * 2 + 1;
+        poolParams.accruedToTreasury         = borrowerDebt * 5/100 * 1e27 / expectedLiquidityIndex + 1;  // Rounding
 
         aTokenParams.userBalance = 200 ether + supplierYield;
         aTokenParams.totalSupply = 200 ether + supplierYield;

@@ -217,8 +217,10 @@ contract SparkLendTestBase is UserActions {
             params:                      ""
         });
 
-        vm.prank(admin);
+        vm.startPrank(admin);
         poolConfigurator.initReserves(reserveInputs);
+        poolConfigurator.setReserveFactor(address(token), 5_00);
+        vm.stopPrank();
     }
 
     function _setUpMockOracle(address asset, int256 price) internal {
@@ -387,7 +389,8 @@ contract SparkLendTestBase is UserActions {
 
         uint256 liquidityRate = borrowRate * borrowRatio * (10_000 - reserveFactor) / 1e27 / 10_000;
 
-        return (borrowRate, liquidityRate);
+        // TODO: Update this once repayWithATokens is merged
+        return (borrowRate, liquidityRate * 95/100);
     }
 
     function _getUpdatedRates(uint256 borrowed, uint256 totalValue)
@@ -416,6 +419,19 @@ contract SparkLendTestBase is UserActions {
             optimalRatio:  OPTIMAL_RATIO,
             reserveFactor: reserveFactor
         });
+    }
+
+    function _getReserveTotalSupplySideValue(address asset)
+        internal view returns (uint256 totalValue)
+    {
+        IERC20 aToken = IERC20(pool.getReserveData(asset).aTokenAddress);
+
+        uint256 totalSupply = aToken.totalSupply();
+        uint256 accruedToTreasury =
+            pool.getReserveData(asset).accruedToTreasury
+            * pool.getReserveNormalizedIncome(asset) / 1e27;
+
+        totalValue = totalSupply + accruedToTreasury;
     }
 
     /**********************************************************************************************/
