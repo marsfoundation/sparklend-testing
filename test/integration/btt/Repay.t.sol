@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import { Errors } from "sparklend-v1-core/contracts/protocol/libraries/helpers/Errors.sol";
 
-import { SparkLendTestBase } from "./SparkLendTestBase.sol";
+import { SparkLendTestBase } from "test/SparkLendTestBase.sol";
 
 contract RepayTestBase is SparkLendTestBase {
 

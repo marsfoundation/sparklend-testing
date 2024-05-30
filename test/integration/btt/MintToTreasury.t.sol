@@ -7,7 +7,7 @@ import { IERC20 } from "erc20-helpers/interfaces/IERC20.sol";
 
 import { IAToken } from "sparklend-v1-core/contracts/interfaces/IAToken.sol";
 
-import { SparkLendTestBase } from "./SparkLendTestBase.sol";
+import { SparkLendTestBase } from "test/SparkLendTestBase.sol";
 
 contract MintToTreasuryTests is SparkLendTestBase {
 

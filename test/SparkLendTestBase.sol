@@ -47,7 +47,7 @@ contract SparkLendTestBase is UserActions {
 
     address admin          = makeAddr("admin");
     address emergencyAdmin = makeAddr("emergencyAdmin");
-    address riskAdmin      = makeAddr("riskAdmin");
+    address riskAdmin      = makeAddr("riskAdmin"); 
     address treasury       = makeAddr("treasury");  // TODO: Use real treasury and demo withdrawal
 
     AaveOracle                    aaveOracle;
