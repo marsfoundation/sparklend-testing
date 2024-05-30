@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import { IPool } from "sparklend-v1-core/contracts/interfaces/IPool.sol";
 
-import { MockERC20 } from "erc20-helpers/MockERC20.sol";
+import { IERC20 } from "erc20-helpers/interfaces/IERC20.sol";
 
 import "forge-std/Test.sol";
 
@@ -23,15 +23,15 @@ contract UserActions is Test {
     function _supply(address pool, address user, address asset, uint256 amount) internal {
         vm.startPrank(user);
         deal(asset, user, amount);
-        // MockERC20(asset).mint(user, amount);
-        MockERC20(asset).approve(address(pool), amount);
+        IERC20(asset).approve(address(pool), amount);
         IPool(pool).supply(asset, amount, user, 0);
         vm.stopPrank();
     }
 
     function _repay(address pool, address user, address asset, uint256 amount) internal {
         vm.startPrank(user);
-        MockERC20(asset).approve(address(pool), amount);
+        deal(asset, user, amount);
+        IERC20(asset).approve(address(pool), amount);
         IPool(pool).repay(asset, amount, 2, user);
         vm.stopPrank();
     }
