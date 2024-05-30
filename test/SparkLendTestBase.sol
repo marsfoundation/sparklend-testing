@@ -217,8 +217,10 @@ contract SparkLendTestBase is UserActions {
             params:                      ""
         });
 
-        vm.prank(admin);
+        vm.startPrank(admin);
         poolConfigurator.initReserves(reserveInputs);
+        poolConfigurator.setReserveFactor(address(token), 5_00);
+        vm.stopPrank();
     }
 
     function _setUpMockOracle(address asset, int256 price) internal {
@@ -350,6 +352,12 @@ contract SparkLendTestBase is UserActions {
         interestRate = term1 + term2 + term3 + term4;
     }
 
+    function _getAccruedInterest(uint256 rate, uint256 timeDelta, uint256 amount)
+        internal pure returns (uint256 interest)
+    {
+        interest = amount * (_getCompoundedNormalizedInterest(rate, timeDelta) - 1e27) / 1e27;
+    }
+
     function _rateExp(uint256 x, uint256 n) internal pure returns (uint256 result) {
         result = x / 365 days;
 
@@ -364,7 +372,8 @@ contract SparkLendTestBase is UserActions {
         uint256 baseRate,
         uint256 slope1,
         uint256 slope2,
-        uint256 optimalRatio
+        uint256 optimalRatio,
+        uint256 reserveFactor
     )
         internal pure returns (uint256, uint256)
     {
@@ -380,20 +389,48 @@ contract SparkLendTestBase is UserActions {
 
         uint256 liquidityRate = borrowRate * borrowRatio / 1e27;
 
-        return (borrowRate, liquidityRate);
+        return (borrowRate, liquidityRate * (10_000 - reserveFactor) / 10_000);
     }
 
-    function _getUpdatedRates(uint256 borrowed, uint256 supplied)
+    function _getUpdatedRates(uint256 borrowed, uint256 totalValue)
         internal pure returns (uint256, uint256)
     {
         return _getUpdatedRates({
-            borrowed:     borrowed,
-            totalValue:   supplied,
-            baseRate:     BASE_RATE,
-            slope1:       SLOPE1,
-            slope2:       SLOPE2,
-            optimalRatio: OPTIMAL_RATIO
+            borrowed:      borrowed,
+            totalValue:    totalValue,
+            baseRate:      BASE_RATE,
+            slope1:        SLOPE1,
+            slope2:        SLOPE2,
+            optimalRatio:  OPTIMAL_RATIO,
+            reserveFactor: 5_00
         });
+    }
+
+    function _getUpdatedRates(uint256 borrowed, uint256 totalValue, uint256 reserveFactor)
+        internal pure returns (uint256, uint256)
+    {
+        return _getUpdatedRates({
+            borrowed:      borrowed,
+            totalValue:    totalValue,
+            baseRate:      BASE_RATE,
+            slope1:        SLOPE1,
+            slope2:        SLOPE2,
+            optimalRatio:  OPTIMAL_RATIO,
+            reserveFactor: reserveFactor
+        });
+    }
+
+    function _getReserveTotalSupplySideValue(address asset)
+        internal view returns (uint256 totalValue)
+    {
+        IERC20 aToken = IERC20(pool.getReserveData(asset).aTokenAddress);
+
+        uint256 totalSupply = aToken.totalSupply();
+        uint256 accruedToTreasury =
+            pool.getReserveData(asset).accruedToTreasury
+            * pool.getReserveNormalizedIncome(asset) / 1e27;
+
+        totalValue = totalSupply + accruedToTreasury;
     }
 
     /**********************************************************************************************/
@@ -559,15 +596,41 @@ contract SparkLendTestBase is UserActions {
                     records[i].storageAccesses[j].previousValue
                 ) continue;
 
-                console.log("");
-                console2.log("account:  %s", vm.getLabel(records[i].account));
-                console2.log("accessor: %s", vm.getLabel(records[i].accessor));
-                console2.log("slot:     %s", vm.toString(records[i].storageAccesses[j].slot));
-
-                _logAddressOrUint("oldValue:", records[i].storageAccesses[j].previousValue);
-                _logAddressOrUint("newValue:", records[i].storageAccesses[j].newValue);
+                _logStorageModification(records[i], j);
             }
         }
+    }
+
+    modifier proveNoOp {
+        // NOTE: If there is state setup in the test, add `vm.startStateDiffRecording();` right
+        //       before the function to be tested is called.
+
+        vm.startStateDiffRecording();
+
+        _;
+
+        VmSafe.AccountAccess[] memory records = vm.stopAndReturnStateDiff();
+
+        for (uint256 i = 0; i < records.length; i++) {
+            for (uint256 j; j < records[i].storageAccesses.length; j++) {
+                if (!records[i].storageAccesses[j].isWrite) continue;
+
+                _logStorageModification(records[i], j);
+                fail("Storage write detected");
+            }
+        }
+    }
+
+    function _logStorageModification(VmSafe.AccountAccess memory record, uint256 index)
+        internal view
+    {
+        console.log("");
+        console2.log("account:  %s", vm.getLabel(record.account));
+        console2.log("accessor: %s", vm.getLabel(record.accessor));
+        console2.log("slot:     %s", vm.toString(record.storageAccesses[index].slot));
+
+        _logAddressOrUint("oldValue:", record.storageAccesses[index].previousValue);
+        _logAddressOrUint("newValue:", record.storageAccesses[index].newValue);
     }
 
     function _logAddressOrUint(string memory key, bytes32 _bytes) internal view {
@@ -581,11 +644,7 @@ contract SparkLendTestBase is UserActions {
     function isAddress(bytes32 _bytes) public pure returns (bool) {
         if (_bytes == 0) return false;
 
-        // Extract the 20 bytes Ethereum address
-        address extractedAddress;
-        assembly {
-            extractedAddress := mload(add(_bytes, 0x14))
-        }
+        address extractedAddress = address(uint160(uint256(_bytes)));
 
         // Check if the address equals the original bytes32 value when padded back to bytes32
         return extractedAddress != address(0) && bytes32(bytes20(extractedAddress)) == _bytes;

@@ -1,0 +1,30 @@
+pool.mintToTreasury()
+├── when minting with one asset
+    ├── when the reserve is invalid
+        └── it succeeds with a no-op [01]
+    ├── when the reserve is inactive
+        └── it succeeds with a no-op [02]
+    ├── when the reserve has NOT accrued any value
+        └── it succeeds with a no-op [03]
+    └── when the reserve has accrued value 
+        ├── when accruedToTreasury has NOT been updated
+            └── it succeeds with a no-op [04]
+        └── when accruedToTreasury has been updated
+            ├── when no time has passed
+                └── it succeeds transferring aTokens to treasury [05]
+            └── when some time has passed
+                └── it succeeds transferring more aTokens to treasury according to current normalizedIncome and old scaledBalance [06]
+├── when minting with two assets (conditions on the first asset are kept as what is in test 05, second asset changing)
+    ├── when the reserve is invalid
+        └── it succeeds with a no-op [07]
+    ├── when the reserve is inactive
+        └── it succeeds with a no-op [08]
+    └── when the reserve has accrued value (skipping non-accrued value test because of warping side effects)
+        ├── when accruedToTreasury has NOT been updated
+            └── it succeeds with a no-op [09]
+        └── when accruedToTreasury has been updated
+            ├── when no time has passed
+                └── it succeeds transferring aTokens to treasury [10]
+            └── when some time has passed
+                └── it succeeds transferring more aTokens to treasury according to current normalizedIncome and old scaledBalance [11]
+

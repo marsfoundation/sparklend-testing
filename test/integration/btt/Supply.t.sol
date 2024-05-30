@@ -507,7 +507,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
-        assertEq(liquidityRate, 0.011e27);
+        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95%
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
@@ -555,7 +555,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         // Both are lower because supply decreased utilization
         assertEq(borrowRate,    0.052e27);
-        assertEq(liquidityRate, 0.00416e27);
+        assertEq(liquidityRate, 0.00416e27 * 0.95);
 
         poolParams.currentLiquidityRate      = liquidityRate;
         poolParams.currentVariableBorrowRate = borrowRate;
@@ -591,16 +591,16 @@ contract SupplyConcreteTests is SupplyTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
-        assertEq(liquidityRate, 0.011e27);
+        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95%
 
-        uint256 supplierYield = 0.011e27 * 500 ether / 100 / 1e27;  // 1% of APR
+        uint256 supplierYield = 0.01045e27 * 500 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
         uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 100 ether / 1e27;
 
         // Borrower owes slightly more than lender has earned because of compounded interest
-        assertEq(supplierYield,                0.055 ether);
+        assertEq(supplierYield,                0.055 ether * 0.95);
         assertEq(compoundedNormalizedInterest, 1.000550151275656075434506e27);
         assertEq(borrowerDebt,                 0.055015127565607543 ether);
 
@@ -646,10 +646,10 @@ contract SupplyConcreteTests is SupplyTestBase {
         // Approving 750 instead of 1000 to get cleaner numbers
         _callSupply(address(collateralAsset), 750 ether, supplier, 0);
 
-        uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
+        uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate * 1/100);              // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
-        assertEq(expectedLiquidityIndex,      1.00011e27);
+        assertEq(expectedLiquidityIndex,      1.0001045e27);  // 95% of 0.00011e27
         assertEq(expectedVariableBorrowIndex, 1.000550151275656075434506e27);
 
         // NOTE: Utilization is based off of the totalDebt / totalLiquidityPlusDebt, this means that the
@@ -660,13 +660,14 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         // // Both are lower because supply decreased utilization
         assertEq(borrowRate,    0.052001012233796670018774935e27);
-        assertEq(liquidityRate, 0.004162186465985497605393897e27);
+        assertEq(liquidityRate, 0.004162186465985497605393897e27 * uint256(95)/100);
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
         poolParams.currentLiquidityRate      = liquidityRate;
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
         poolParams.currentVariableBorrowRate = borrowRate;
         poolParams.lastUpdateTimestamp       = WARP_TIME + 1;
+        poolParams.accruedToTreasury         = borrowerDebt * 5/100 * 1e27 / expectedLiquidityIndex;
 
         aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether + supplierYield;
@@ -765,7 +766,7 @@ contract SupplyConcreteTests is SupplyTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
-        assertEq(liquidityRate, 0.011e27);
+        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95%
 
         AssertPoolReserveStateParams memory poolParams = AssertPoolReserveStateParams({
             asset:                     address(collateralAsset),
@@ -813,7 +814,7 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         // Both are lower because supply decreased utilization
         assertEq(borrowRate,    0.052e27);
-        assertEq(liquidityRate, 0.00416e27);
+        assertEq(liquidityRate, 0.00416e27 * 0.95);
 
         poolParams.currentLiquidityRate      = liquidityRate;
         poolParams.currentVariableBorrowRate = borrowRate;
@@ -849,16 +850,16 @@ contract SupplyConcreteTests is SupplyTestBase {
         ( uint256 borrowRate, uint256 liquidityRate ) = _getUpdatedRates(100 ether, 500 ether);
 
         assertEq(borrowRate,    0.055e27);
-        assertEq(liquidityRate, 0.011e27);
+        assertEq(liquidityRate, 0.01045e27);  // 1.1% * 95%
 
-        uint256 supplierYield = 0.011e27 * 500 ether / 100 / 1e27;  // 1% of APR
+        uint256 supplierYield = 0.01045e27 * 500 ether / 100 / 1e27;  // 1% of APR
 
         uint256 compoundedNormalizedInterest = _getCompoundedNormalizedInterest(borrowRate, WARP_TIME);
 
         uint256 borrowerDebt = (compoundedNormalizedInterest - 1e27) * 100 ether / 1e27;
 
         // Borrower owes slightly more than lender has earned because of compounded interest
-        assertEq(supplierYield,                0.055 ether);
+        assertEq(supplierYield,                0.055 ether * 0.95);
         assertEq(compoundedNormalizedInterest, 1.000550151275656075434506e27);
         assertEq(borrowerDebt,                 0.055015127565607543 ether);
 
@@ -904,10 +905,10 @@ contract SupplyConcreteTests is SupplyTestBase {
         // Approving 750 instead of 1000 to get cleaner numbers
         _callSupply(address(collateralAsset), 750 ether, supplier, 0);
 
-        uint256 expectedLiquidityIndex      = 1e27 + (1e27 * liquidityRate / 100 / 1e27);  // Normalized yield accrues 1% of APR
+        uint256 expectedLiquidityIndex      = 1e27 + (liquidityRate * 1/100);              // Normalized yield accrues 1% of APR
         uint256 expectedVariableBorrowIndex = 1e27 * compoundedNormalizedInterest / 1e27;  // Accrues slightly more than 1% of APR because of compounded interest
 
-        assertEq(expectedLiquidityIndex,      1.00011e27);
+        assertEq(expectedLiquidityIndex,      1.0001045e27);  // 95% of 0.00011e27
         assertEq(expectedVariableBorrowIndex, 1.000550151275656075434506e27);
 
         // NOTE: Utilization is based off of the totalDebt / totalLiquidityPlusDebt, this means that the
@@ -918,13 +919,14 @@ contract SupplyConcreteTests is SupplyTestBase {
 
         // // Both are lower because supply decreased utilization
         assertEq(borrowRate,    0.052001012233796670018774935e27);
-        assertEq(liquidityRate, 0.004162186465985497605393897e27);
+        assertEq(liquidityRate, 0.004162186465985497605393897e27 * uint256(95)/100);
 
         poolParams.liquidityIndex            = expectedLiquidityIndex;
         poolParams.currentLiquidityRate      = liquidityRate;
         poolParams.variableBorrowIndex       = expectedVariableBorrowIndex;
         poolParams.currentVariableBorrowRate = borrowRate;
         poolParams.lastUpdateTimestamp       = WARP_TIME * 2 + 1;
+        poolParams.accruedToTreasury         = borrowerDebt * 5/100 * 1e27 / expectedLiquidityIndex;
 
         aTokenParams.userBalance = 750 ether;
         aTokenParams.totalSupply = 1250 ether + supplierYield;
